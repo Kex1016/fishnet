@@ -11,6 +11,7 @@ import { boardHref, PLAYTIME } from "#lib/api/metric.ts";
 import { parseScope, type Scope } from "#lib/api/scope.ts";
 import { formatStat, group } from "#lib/format/stat-display.ts";
 import type { TimePoint } from "#lib/charts/index.ts";
+import { prepareFeed } from "#lib/milestones/prepare.server.ts";
 import { barRows, boardSum, isOutage } from "../boards.ts";
 
 export const load: PageServerLoad = async ({ params }) => {
@@ -27,7 +28,7 @@ export const load: PageServerLoad = async ({ params }) => {
     c.players({ online: true, limit: 100 }),
     boardSum(c, PLAYTIME, scope, withoutHidden),
     Promise.all(featured.map((b) => c.leaderboard(b.metric, scope, { limit: 5 }))),
-    c.milestones({ scope, limit: 5 }),
+    c.milestones({ scope, limit: 5 }).then(prepareFeed),
     h.server(id, "week"),
     h.online(scope, "week"),
     h.onlineRecent(scope),

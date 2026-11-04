@@ -5,12 +5,12 @@ import { boardHref, metricKey } from "#lib/api/metric.ts";
 import { ok, fail } from "#lib/api/result.ts";
 import type { Leaderboard } from "#lib/api/types.ts";
 
-// the server modules read $app/env/private; there is no SvelteKit under bun test
-mock.module("$app/env/private", () => ({
-  CAKEUTILS_API_TOKEN: "", CAKEUTILS_API_URL: "http://x.invalid", CAKEUTILS_RATE: "", FISHNET_ALLOW_MOCK: "", FISHNET_DATA_DIR: "/nonexistent",
-  FISHNET_MOCK: "", HIDDEN_PLAYERS_FILE: "/nonexistent/hidden.txt", NODE_ENV: "test", ORIGIN: ""
+// composite.server.ts reaches the opt-out list, which reads $app/env (not there under bun test): nobody is hidden here
+mock.module("../src/lib/server/hidden.ts", () => ({
+  isHidden: () => false,
+  isHiddenPlayer: () => false,
+  withoutHidden: <T>(rows: T[]) => rows
 }));
-mock.module("$app/env", () => ({ building: false, dev: false }));
 const { compositeBoard, includeFor, resetCompositeMemo } = await import("../src/routes/leaderboards/composite.server.ts");
 
 describe("config", () => {

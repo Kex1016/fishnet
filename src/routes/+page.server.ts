@@ -11,6 +11,7 @@ import type { Result } from "#lib/api/result.ts";
 import { formatStat, group } from "#lib/format/stat-display.ts";
 import { day } from "#lib/format/dates.ts";
 import type { TimePoint } from "#lib/charts/index.ts";
+import { prepareFeed } from "#lib/milestones/prepare.server.ts";
 import { barRows, boardSum, isOutage, type BoardSum } from "./servers/boards.ts";
 
 type Tile = { key: string; label: string; value: string; note?: string; href?: string; spark?: TimePoint[] };
@@ -34,7 +35,7 @@ export const load: PageServerLoad = async () => {
     c.players({ online: true, limit: 100 }),
     c.players({ limit: 1 }),
     Promise.all(boards.map((b) => boardSum(c, b.metric, "network", withoutHidden))),
-    c.milestones({ limit: 5 }),
+    c.milestones({ limit: 5 }).then(prepareFeed),
     h.online("network", "week"),
     h.onlineRecent("network"),
     h.joinsPerWeek("month"),

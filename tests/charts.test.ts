@@ -122,7 +122,8 @@ describe("uptime buckets", () => {
 describe("time ticks", () => {
   test("ms ticks land on minutes, hours and days", () => {
     expect(niceTicks(148_000_000, 4, "ms")).toEqual([0, 43_200_000, 86_400_000, 129_600_000, 172_800_000]);
-    expect(niceTicks(9 * 60_000, 4, "ms")).toEqual([0, 120_000, 240_000, 360_000, 480_000, 600_000]);
+    expect(niceTicks(9 * 60_000, 4, "ms")).toEqual([0, 300_000, 600_000]);
+    expect(niceTicks(7 * 60_000, 4, "ms")).toEqual([0, 120_000, 240_000, 360_000, 480_000]);
     expect(niceTicks(400 * 86_400_000, 4, "ms")[1]).toBe(100 * 86_400_000);
   });
   test("ticks (20 per second) likewise", () => {

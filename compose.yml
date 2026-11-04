@@ -1,0 +1,12 @@
+# W0 scaffold (W9 owns it from here). Only Caddy on the host reaches the site: 127.0.0.1:3000.
+services:
+  fishnet:
+    build: .
+    image: fishnet:${FISHNET_TAG:-latest}
+    container_name: fishnet
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3000:3000"
+    env_file: .env
+    volumes:
+      - ./data:/app/data

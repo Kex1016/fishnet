@@ -1,0 +1,2243 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "cakeutils public API",
+    "version": "2.0.0",
+    "description": "Token-only HTTP API of the cakeutils Velocity plugin (v2/API.md). Every route except GET /v2/health needs 'Authorization: Bearer cu_<id>_<secret>'. Errors are RFC 9457 application/problem+json. Times are epoch milliseconds."
+  },
+  "tags": [
+    {
+      "name": "admin"
+    },
+    {
+      "name": "leaderboards"
+    },
+    {
+      "name": "meta"
+    },
+    {
+      "name": "network"
+    },
+    {
+      "name": "players"
+    },
+    {
+      "name": "stats"
+    }
+  ],
+  "security": [
+    {
+      "bearer": []
+    }
+  ],
+  "paths": {
+    "/v2/health": {
+      "get": {
+        "operationId": "health",
+        "tags": [
+          "meta"
+        ],
+        "summary": "Liveness check. The only route without a token.",
+        "description": "No token.",
+        "x-cakeutils-scopes": [],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "headers": {
+              "ETag": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Health"
+                }
+              }
+            }
+          },
+          "304": {
+            "description": "Not modified (If-None-Match matched the ETag)"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        },
+        "security": []
+      }
+    },
+    "/v2/network": {
+      "get": {
+        "operationId": "getNetwork",
+        "tags": [
+          "network"
+        ],
+        "summary": "Servers (id, display_name, online player count, players waiting for it, mc_version, platform) and the total online.",
+        "description": "Scopes: one of read, read:players.",
+        "x-cakeutils-scopes": [
+          "read",
+          "read:players"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "headers": {
+              "ETag": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Network"
+                }
+              }
+            }
+          },
+          "304": {
+            "description": "Not modified (If-None-Match matched the ETag)"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/v2/players": {
+      "get": {
+        "operationId": "listPlayers",
+        "tags": [
+          "players"
+        ],
+        "summary": "Known players by name; filter by online state and name substring.",
+        "description": "Scopes: one of read, read:players.",
+        "x-cakeutils-scopes": [
+          "read",
+          "read:players"
+        ],
+        "parameters": [
+          {
+            "name": "online",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            },
+            "description": "true = online now, false = everyone else; absent = all."
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 64
+            },
+            "description": "Case-insensitive substring."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 10
+            },
+            "description": "Page size."
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 1000000,
+              "default": 0
+            },
+            "description": "Rows to skip."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "headers": {
+              "ETag": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlayerList"
+                }
+              }
+            }
+          },
+          "304": {
+            "description": "Not modified (If-None-Match matched the ETag)"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/v2/players/{ref}": {
+      "get": {
+        "operationId": "getPlayer",
+        "tags": [
+          "players"
+        ],
+        "summary": "Identity, online state, server, first/last seen, skin, prefix/suffix segments, playtime summary.",
+        "description": "Scopes: one of read, read:players, read:stats.",
+        "x-cakeutils-scopes": [
+          "read",
+          "read:players",
+          "read:stats"
+        ],
+        "parameters": [
+          {
+            "name": "ref",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Player UUID (dashed or undashed) or exact name (case-insensitive)."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "headers": {
+              "ETag": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlayerProfile"
+                }
+              }
+            }
+          },
+          "304": {
+            "description": "Not modified (If-None-Match matched the ETag)"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/v2/players/{ref}/playtime": {
+      "get": {
+        "operationId": "getPlayerPlaytime",
+        "tags": [
+          "players"
+        ],
+        "summary": "Live playtime in ms: total for the scope, per server and per mini-server. Private mini-servers are left out of by_mini; their time stays in total_ms and by_server.",
+        "description": "Scopes: one of read, read:players, read:stats.",
+        "x-cakeutils-scopes": [
+          "read",
+          "read:players",
+          "read:stats"
+        ],
+        "parameters": [
+          {
+            "name": "ref",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Player UUID (dashed or undashed) or exact name (case-insensitive)."
+          },
+          {
+            "name": "scope",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "network",
+              "pattern": "^(network|server:[A-Za-z0-9._-]{1,64}|mini:[A-Za-z0-9._-]{1,64}/[^/]{1,64})$"
+            },
+            "description": "network (default), server:<id> or mini:<server-id>/<mini-id>. A private mini-server (public:false) answers exactly like one that was never seen, for every token."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "headers": {
+              "ETag": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Playtime"
+                }
+              }
+            }
+          },
+          "304": {
+            "description": "Not modified (If-None-Match matched the ETag)"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/v2/players:batch": {
+      "post": {
+        "operationId": "batchPlayers",
+        "tags": [
+          "players"
+        ],
+        "summary": "Up to 100 players in one call, with optional playtime and stat values (include: \"playtime\", \"stats:<type>:<subject>\").",
+        "description": "Scopes: one of read, read:players, read:stats.",
+        "x-cakeutils-scopes": [
+          "read",
+          "read:players",
+          "read:stats"
+        ],
+        "parameters": [
+          {
+            "name": "scope",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "network",
+              "pattern": "^(network|server:[A-Za-z0-9._-]{1,64}|mini:[A-Za-z0-9._-]{1,64}/[^/]{1,64})$"
+            },
+            "description": "network (default), server:<id> or mini:<server-id>/<mini-id>. A private mini-server (public:false) answers exactly like one that was never seen, for every token."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BatchRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BatchResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "413": {
+            "$ref": "#/components/responses/ContentTooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/v2/players/{ref}/stats": {
+      "get": {
+        "operationId": "listPlayerStats",
+        "tags": [
+          "stats"
+        ],
+        "summary": "A player's stat values in a scope: {type, subject, name, unit, value, display, icon}.",
+        "description": "Scopes: one of read, read:players, read:stats.",
+        "x-cakeutils-scopes": [
+          "read",
+          "read:players",
+          "read:stats"
+        ],
+        "parameters": [
+          {
+            "name": "ref",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Player UUID (dashed or undashed) or exact name (case-insensitive)."
+          },
+          {
+            "name": "scope",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "network",
+              "pattern": "^(network|server:[A-Za-z0-9._-]{1,64}|mini:[A-Za-z0-9._-]{1,64}/[^/]{1,64})$"
+            },
+            "description": "network (default), server:<id> or mini:<server-id>/<mini-id>. A private mini-server (public:false) answers exactly like one that was never seen, for every token."
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Only this stat type (minecraft: may be omitted)."
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 64
+            },
+            "description": "Case-insensitive substring."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 10
+            },
+            "description": "Page size."
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 1000000,
+              "default": 0
+            },
+            "description": "Rows to skip."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "headers": {
+              "ETag": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatList"
+                }
+              }
+            }
+          },
+          "304": {
+            "description": "Not modified (If-None-Match matched the ETag)"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/v2/players/{ref}/stats/{type}/{subject}": {
+      "get": {
+        "operationId": "getPlayerStat",
+        "tags": [
+          "stats"
+        ],
+        "summary": "One stat value (0 when the player has none). 404 when nobody has ever recorded this stat.",
+        "description": "Scopes: one of read, read:players, read:stats.",
+        "x-cakeutils-scopes": [
+          "read",
+          "read:players",
+          "read:stats"
+        ],
+        "parameters": [
+          {
+            "name": "ref",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Player UUID (dashed or undashed) or exact name (case-insensitive)."
+          },
+          {
+            "name": "type",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Stat type key, e.g. minecraft:mined (the minecraft: namespace may be omitted)."
+          },
+          {
+            "name": "subject",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Subject key, e.g. minecraft:stone."
+          },
+          {
+            "name": "scope",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "network",
+              "pattern": "^(network|server:[A-Za-z0-9._-]{1,64}|mini:[A-Za-z0-9._-]{1,64}/[^/]{1,64})$"
+            },
+            "description": "network (default), server:<id> or mini:<server-id>/<mini-id>. A private mini-server (public:false) answers exactly like one that was never seen, for every token."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "headers": {
+              "ETag": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatRow"
+                }
+              }
+            }
+          },
+          "304": {
+            "description": "Not modified (If-None-Match matched the ETag)"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/v2/players/{ref}/relations": {
+      "get": {
+        "operationId": "getPlayerRelations",
+        "tags": [
+          "players"
+        ],
+        "summary": "Friends (uuid, name, online) and the player's party {leader, members} or null.",
+        "description": "Scopes: one of read, read:relations.",
+        "x-cakeutils-scopes": [
+          "read",
+          "read:relations"
+        ],
+        "parameters": [
+          {
+            "name": "ref",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Player UUID (dashed or undashed) or exact name (case-insensitive)."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "headers": {
+              "ETag": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Relations"
+                }
+              }
+            }
+          },
+          "304": {
+            "description": "Not modified (If-None-Match matched the ETag)"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/v2/stats/types": {
+      "get": {
+        "operationId": "listStatTypes",
+        "tags": [
+          "stats"
+        ],
+        "summary": "Stat types with English names and the kind they count.",
+        "description": "Scopes: one of read, read:stats.",
+        "x-cakeutils-scopes": [
+          "read",
+          "read:stats"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "headers": {
+              "ETag": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatTypes"
+                }
+              }
+            }
+          },
+          "304": {
+            "description": "Not modified (If-None-Match matched the ETag)"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/v2/stats/subjects": {
+      "get": {
+        "operationId": "listStatSubjects",
+        "tags": [
+          "stats"
+        ],
+        "summary": "Subject catalogue: key, kind, name, unit, icon url. One row per (subject, kind) name; a subject without a name yet has kind and name null.",
+        "description": "Scopes: one of read, read:stats.",
+        "x-cakeutils-scopes": [
+          "read",
+          "read:stats"
+        ],
+        "parameters": [
+          {
+            "name": "type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Only subjects recorded under this stat type."
+          },
+          {
+            "name": "kind",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "block",
+                "item",
+                "entity",
+                "custom",
+                "other"
+              ]
+            },
+            "description": "Only names of this kind."
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 64
+            },
+            "description": "Case-insensitive substring."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 10
+            },
+            "description": "Page size."
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 1000000,
+              "default": 0
+            },
+            "description": "Rows to skip."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "headers": {
+              "ETag": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubjectList"
+                }
+              }
+            }
+          },
+          "304": {
+            "description": "Not modified (If-None-Match matched the ETag)"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/v2/stats/subjects/{subject}": {
+      "get": {
+        "operationId": "getStatSubject",
+        "tags": [
+          "stats"
+        ],
+        "summary": "One subject, its names per kind, and the stat types that have data for it.",
+        "description": "Scopes: one of read, read:stats.",
+        "x-cakeutils-scopes": [
+          "read",
+          "read:stats"
+        ],
+        "parameters": [
+          {
+            "name": "subject",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Subject key, e.g. minecraft:stone."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "headers": {
+              "ETag": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubjectDetail"
+                }
+              }
+            }
+          },
+          "304": {
+            "description": "Not modified (If-None-Match matched the ETag)"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/v2/icons/{sha256}.png": {
+      "get": {
+        "operationId": "getIcon",
+        "tags": [
+          "stats"
+        ],
+        "summary": "An icon PNG by its SHA-256. Immutable.",
+        "description": "Scopes: one of read, read:stats.",
+        "x-cakeutils-scopes": [
+          "read",
+          "read:stats"
+        ],
+        "parameters": [
+          {
+            "name": "sha256",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Lower-case hex SHA-256 of the PNG."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "PNG image",
+            "headers": {
+              "ETag": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "image/png": {
+                "schema": {
+                  "type": "string",
+                  "contentMediaType": "image/png"
+                }
+              }
+            }
+          },
+          "304": {
+            "description": "Not modified (If-None-Match matched the ETag)"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/v2/leaderboards/stats/{type}/{subject}": {
+      "get": {
+        "operationId": "statLeaderboard",
+        "tags": [
+          "leaderboards"
+        ],
+        "summary": "Top players for a stat; subject \"*\" = whole-type total (unit count). Ties by first-seen player. 404 when nobody has ever recorded the stat or type. 400 mixed_units for \"*\" on a type of kind custom (custom:*): its stats have different units, so ask for one subject.",
+        "description": "Scopes: one of read, read:stats.",
+        "x-cakeutils-scopes": [
+          "read",
+          "read:stats"
+        ],
+        "parameters": [
+          {
+            "name": "type",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Stat type key, e.g. minecraft:mined (the minecraft: namespace may be omitted)."
+          },
+          {
+            "name": "subject",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Subject key, e.g. minecraft:stone."
+          },
+          {
+            "name": "scope",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "network",
+              "pattern": "^(network|server:[A-Za-z0-9._-]{1,64}|mini:[A-Za-z0-9._-]{1,64}/[^/]{1,64})$"
+            },
+            "description": "network (default), server:<id> or mini:<server-id>/<mini-id>. A private mini-server (public:false) answers exactly like one that was never seen, for every token."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 10
+            },
+            "description": "Page size."
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 1000000,
+              "default": 0
+            },
+            "description": "Rows to skip."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "headers": {
+              "ETag": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Leaderboard"
+                }
+              }
+            }
+          },
+          "304": {
+            "description": "Not modified (If-None-Match matched the ETag)"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/v2/leaderboards/playtime": {
+      "get": {
+        "operationId": "playtimeLeaderboard",
+        "tags": [
+          "leaderboards"
+        ],
+        "summary": "Top players by playtime (milliseconds, open sessions included). Ties by first-seen player.",
+        "description": "Scopes: one of read, read:stats.",
+        "x-cakeutils-scopes": [
+          "read",
+          "read:stats"
+        ],
+        "parameters": [
+          {
+            "name": "scope",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "network",
+              "pattern": "^(network|server:[A-Za-z0-9._-]{1,64}|mini:[A-Za-z0-9._-]{1,64}/[^/]{1,64})$"
+            },
+            "description": "network (default), server:<id> or mini:<server-id>/<mini-id>. A private mini-server (public:false) answers exactly like one that was never seen, for every token."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 10
+            },
+            "description": "Page size."
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 1000000,
+              "default": 0
+            },
+            "description": "Rows to skip."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "headers": {
+              "ETag": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Leaderboard"
+                }
+              }
+            }
+          },
+          "304": {
+            "description": "Not modified (If-None-Match matched the ETag)"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/v2/mini-servers": {
+      "get": {
+        "operationId": "listMiniServers",
+        "tags": [
+          "network"
+        ],
+        "summary": "Occupied mini-servers: id, display_name, public, server, players, player_count. Mini-servers with public:false are listed only for tokens holding read; a read:players token sees public ones only.",
+        "description": "Scopes: one of read, read:players.",
+        "x-cakeutils-scopes": [
+          "read",
+          "read:players"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "headers": {
+              "ETag": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MiniServers"
+                }
+              }
+            }
+          },
+          "304": {
+            "description": "Not modified (If-None-Match matched the ETag)"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/v2/admin/announce": {
+      "post": {
+        "operationId": "announce",
+        "tags": [
+          "admin"
+        ],
+        "summary": "Sends a one-off announcement (MiniMessage) to everyone or to one server.",
+        "description": "Scopes: one of admin:announce.",
+        "x-cakeutils-scopes": [
+          "admin:announce"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AnnounceRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnnounceResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "413": {
+            "$ref": "#/components/responses/ContentTooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/v2/openapi.json": {
+      "get": {
+        "operationId": "openapi",
+        "tags": [
+          "meta"
+        ],
+        "summary": "This OpenAPI 3.1 document. Any valid token.",
+        "description": "Any valid token.",
+        "x-cakeutils-scopes": [],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "headers": {
+              "ETag": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpenApiDocument"
+                }
+              }
+            }
+          },
+          "304": {
+            "description": "Not modified (If-None-Match matched the ETag)"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearer": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "cu_<id>_<secret>"
+      }
+    },
+    "responses": {
+      "BadRequest": {
+        "description": "Bad Request",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/Problem"
+            }
+          }
+        }
+      },
+      "Unauthorized": {
+        "description": "Unauthorized",
+        "headers": {
+          "WWW-Authenticate": {
+            "schema": {
+              "type": "string"
+            }
+          }
+        },
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/Problem"
+            }
+          }
+        }
+      },
+      "Forbidden": {
+        "description": "Forbidden",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/Problem"
+            }
+          }
+        }
+      },
+      "NotFound": {
+        "description": "Not Found",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/Problem"
+            }
+          }
+        }
+      },
+      "ContentTooLarge": {
+        "description": "Content Too Large",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/Problem"
+            }
+          }
+        }
+      },
+      "TooManyRequests": {
+        "description": "Too Many Requests",
+        "headers": {
+          "Retry-After": {
+            "description": "Seconds until a request is allowed again.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          "RateLimit-Limit": {
+            "schema": {
+              "type": "integer"
+            }
+          },
+          "RateLimit-Remaining": {
+            "schema": {
+              "type": "integer"
+            }
+          }
+        },
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/Problem"
+            }
+          }
+        }
+      },
+      "InternalError": {
+        "description": "Internal Server Error",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/Problem"
+            }
+          }
+        }
+      },
+      "NotImplemented": {
+        "description": "Not Implemented",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/Problem"
+            }
+          }
+        }
+      }
+    },
+    "schemas": {
+      "Problem": {
+        "type": "object",
+        "required": [
+          "type",
+          "title",
+          "status",
+          "detail"
+        ],
+        "properties": {
+          "type": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "status": {
+            "type": "integer"
+          },
+          "detail": {
+            "type": "string"
+          }
+        }
+      },
+      "Health": {
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "properties": {
+          "status": {
+            "type": "string",
+            "const": "ok"
+          }
+        }
+      },
+      "OpenApiDocument": {
+        "type": "object"
+      },
+      "Network": {
+        "type": "object",
+        "required": [
+          "servers",
+          "total_online"
+        ],
+        "properties": {
+          "servers": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "id",
+                "display_name",
+                "online",
+                "waiting",
+                "mc_version",
+                "platform"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "display_name": {
+                  "type": "string"
+                },
+                "online": {
+                  "type": "integer",
+                  "description": "players on this server now"
+                },
+                "waiting": {
+                  "type": "integer",
+                  "description": "players waiting for this server to come up (cakelimbo); 0 without it. Counts only"
+                },
+                "mc_version": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "platform": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              }
+            }
+          },
+          "total_online": {
+            "type": "integer"
+          }
+        }
+      },
+      "PlayerSummary": {
+        "type": "object",
+        "required": [
+          "uuid",
+          "name",
+          "online",
+          "server"
+        ],
+        "properties": {
+          "uuid": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "online": {
+            "type": "boolean"
+          },
+          "server": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "PlayerList": {
+        "type": "object",
+        "required": [
+          "total",
+          "players"
+        ],
+        "properties": {
+          "total": {
+            "type": "integer"
+          },
+          "players": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PlayerSummary"
+            }
+          }
+        }
+      },
+      "Segment": {
+        "type": "object",
+        "required": [
+          "text"
+        ],
+        "properties": {
+          "text": {
+            "type": "string"
+          },
+          "color": {
+            "type": "string"
+          },
+          "bold": {
+            "type": "boolean"
+          },
+          "italic": {
+            "type": "boolean"
+          },
+          "underlined": {
+            "type": "boolean"
+          },
+          "strikethrough": {
+            "type": "boolean"
+          },
+          "obfuscated": {
+            "type": "boolean"
+          }
+        }
+      },
+      "Playtime": {
+        "type": "object",
+        "required": [
+          "scope",
+          "total_ms",
+          "by_server",
+          "by_mini"
+        ],
+        "properties": {
+          "scope": {
+            "type": "string"
+          },
+          "total_ms": {
+            "type": "integer"
+          },
+          "by_server": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "integer"
+            }
+          },
+          "by_mini": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "integer"
+            }
+          }
+        }
+      },
+      "PlayerProfile": {
+        "type": "object",
+        "required": [
+          "uuid",
+          "name",
+          "online",
+          "server",
+          "first_seen",
+          "last_seen",
+          "skin",
+          "prefix",
+          "suffix",
+          "playtime"
+        ],
+        "properties": {
+          "uuid": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "online": {
+            "type": "boolean"
+          },
+          "server": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "first_seen": {
+            "type": "integer"
+          },
+          "last_seen": {
+            "type": "integer"
+          },
+          "skin": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "skin texture URL (online players)"
+          },
+          "prefix": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Segment"
+            }
+          },
+          "suffix": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Segment"
+            }
+          },
+          "playtime": {
+            "$ref": "#/components/schemas/Playtime"
+          }
+        }
+      },
+      "StatValue": {
+        "type": "object",
+        "required": [
+          "type",
+          "subject",
+          "name",
+          "unit",
+          "value",
+          "display",
+          "icon"
+        ],
+        "properties": {
+          "type": {
+            "type": "string"
+          },
+          "subject": {
+            "type": "string"
+          },
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "unit": {
+            "type": "string",
+            "enum": [
+              "count",
+              "distance_cm",
+              "ticks",
+              "damage_tenths"
+            ]
+          },
+          "value": {
+            "type": "integer"
+          },
+          "display": {
+            "type": "string"
+          },
+          "icon": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "StatRow": {
+        "type": "object",
+        "required": [
+          "uuid",
+          "scope",
+          "type",
+          "subject",
+          "name",
+          "unit",
+          "value",
+          "display",
+          "icon"
+        ],
+        "properties": {
+          "uuid": {
+            "type": "string"
+          },
+          "scope": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "subject": {
+            "type": "string"
+          },
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "unit": {
+            "type": "string",
+            "enum": [
+              "count",
+              "distance_cm",
+              "ticks",
+              "damage_tenths"
+            ]
+          },
+          "value": {
+            "type": "integer"
+          },
+          "display": {
+            "type": "string"
+          },
+          "icon": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "StatList": {
+        "type": "object",
+        "required": [
+          "uuid",
+          "scope",
+          "total",
+          "stats"
+        ],
+        "properties": {
+          "uuid": {
+            "type": "string"
+          },
+          "scope": {
+            "type": "string"
+          },
+          "total": {
+            "type": "integer"
+          },
+          "stats": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StatValue"
+            }
+          }
+        }
+      },
+      "Relations": {
+        "type": "object",
+        "required": [
+          "uuid",
+          "friends",
+          "party"
+        ],
+        "properties": {
+          "uuid": {
+            "type": "string"
+          },
+          "friends": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Member"
+            }
+          },
+          "party": {
+            "oneOf": [
+              {
+                "type": "object",
+                "required": [
+                  "leader",
+                  "members"
+                ],
+                "properties": {
+                  "leader": {
+                    "$ref": "#/components/schemas/Member"
+                  },
+                  "members": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/Member"
+                    }
+                  }
+                }
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "Member": {
+        "type": "object",
+        "required": [
+          "uuid",
+          "name",
+          "online"
+        ],
+        "properties": {
+          "uuid": {
+            "type": "string"
+          },
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "online": {
+            "type": "boolean"
+          }
+        }
+      },
+      "BatchRequest": {
+        "type": "object",
+        "required": [
+          "refs"
+        ],
+        "properties": {
+          "refs": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 100,
+            "items": {
+              "type": "string"
+            }
+          },
+          "include": {
+            "type": "array",
+            "maxItems": 32,
+            "items": {
+              "type": "string",
+              "description": "\"playtime\" or \"stats:<type>:<subject>\""
+            }
+          }
+        }
+      },
+      "BatchResponse": {
+        "type": "object",
+        "required": [
+          "scope",
+          "players",
+          "not_found"
+        ],
+        "properties": {
+          "scope": {
+            "type": "string"
+          },
+          "players": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "ref",
+                "uuid",
+                "name",
+                "online",
+                "server"
+              ],
+              "properties": {
+                "ref": {
+                  "type": "string"
+                },
+                "uuid": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "online": {
+                  "type": "boolean"
+                },
+                "server": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "playtime": {
+                  "$ref": "#/components/schemas/Playtime"
+                },
+                "stats": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "$ref": "#/components/schemas/StatValue"
+                  }
+                }
+              }
+            }
+          },
+          "not_found": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "StatTypes": {
+        "type": "object",
+        "required": [
+          "types"
+        ],
+        "properties": {
+          "types": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "key",
+                "name",
+                "kind"
+              ],
+              "properties": {
+                "key": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "kind": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "Subject": {
+        "type": "object",
+        "required": [
+          "key",
+          "kind",
+          "name",
+          "unit",
+          "icon"
+        ],
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "kind": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "unit": {
+            "type": "string"
+          },
+          "icon": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "SubjectList": {
+        "type": "object",
+        "required": [
+          "total",
+          "subjects"
+        ],
+        "properties": {
+          "total": {
+            "type": "integer"
+          },
+          "subjects": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Subject"
+            }
+          }
+        }
+      },
+      "SubjectDetail": {
+        "type": "object",
+        "required": [
+          "key",
+          "names",
+          "types"
+        ],
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "names": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Subject"
+            }
+          },
+          "types": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "Leaderboard": {
+        "type": "object",
+        "required": [
+          "metric",
+          "scope",
+          "unit",
+          "total",
+          "entries"
+        ],
+        "properties": {
+          "metric": {
+            "type": "string"
+          },
+          "scope": {
+            "type": "string"
+          },
+          "unit": {
+            "type": "string"
+          },
+          "total": {
+            "type": "integer"
+          },
+          "entries": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "rank",
+                "uuid",
+                "name",
+                "value",
+                "unit",
+                "display"
+              ],
+              "properties": {
+                "rank": {
+                  "type": "integer"
+                },
+                "uuid": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "value": {
+                  "type": "integer"
+                },
+                "unit": {
+                  "type": "string"
+                },
+                "display": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "MiniServers": {
+        "type": "object",
+        "required": [
+          "mini_servers"
+        ],
+        "properties": {
+          "mini_servers": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "id",
+                "display_name",
+                "public",
+                "server",
+                "players",
+                "player_count"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "display_name": {
+                  "type": "string"
+                },
+                "public": {
+                  "type": "boolean"
+                },
+                "server": {
+                  "type": "string"
+                },
+                "players": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "uuid",
+                      "name"
+                    ],
+                    "properties": {
+                      "uuid": {
+                        "type": "string"
+                      },
+                      "name": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                },
+                "player_count": {
+                  "type": "integer"
+                }
+              }
+            }
+          }
+        }
+      },
+      "AnnounceRequest": {
+        "type": "object",
+        "required": [
+          "target",
+          "message"
+        ],
+        "properties": {
+          "target": {
+            "type": "string",
+            "description": "\"global\" or \"server:<id>\""
+          },
+          "message": {
+            "type": "string",
+            "description": "MiniMessage",
+            "maxLength": 4096
+          }
+        }
+      },
+      "AnnounceResponse": {
+        "type": "object",
+        "required": [
+          "target",
+          "reached"
+        ],
+        "properties": {
+          "target": {
+            "type": "string"
+          },
+          "reached": {
+            "type": "integer"
+          }
+        }
+      }
+    }
+  }
+}

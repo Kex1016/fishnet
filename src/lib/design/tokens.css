@@ -1,0 +1,138 @@
+/* fishnet design tokens: a rebuild of the reki look (journey's docs/reki.md, reki's public rules) with
+   the Fishplex skin (PLAN §6, §8.6): warm greys, one sea-blue accent, compact corners, quick motion.
+   Nothing here is copied from reki's files. Dark first; light and system work. Theme comes from
+   data-theme="dark|light" on <html>; no attribute = follow the system. */
+
+:root {
+  /* type */
+  --font-head: "Zen Maru Gothic", "Hiragino Maru Gothic ProN", ui-rounded, system-ui, sans-serif;
+  --font-text: "Zen Kaku Gothic New", "Hiragino Sans", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+
+  /* the 4px grid */
+  --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px; --space-5: 20px; --space-6: 24px;
+  --space-7: 28px; --space-8: 32px; --space-10: 40px; --space-12: 48px; --space-16: 64px; --space-24: 96px;
+
+  --size-page: 1080px;
+  --size-sidebar: 228px;
+  --size-rail: 56px;
+  --size-top: 52px;
+  --size-control: 32px;
+  --size-touch: 44px;
+
+  /* compact corners: controls md, segments sm, rows lg, panels xl, cards 2xl, modal 3xl */
+  --radius-xs: 3px; --radius-sm: 6px; --radius-md: 8px; --radius-lg: 10px; --radius-xl: 12px; --radius-2xl: 14px; --radius-3xl: 18px;
+
+  /* motion: state changes fast/base with ease-soft; things that move slow/enter with ease-glide */
+  --duration-fast: 110ms; --duration-base: 160ms; --duration-slow: 220ms; --duration-enter: 220ms;
+  --duration-switch: 180ms; --duration-stagger: 40ms; --duration-press: 60ms; --duration-spin: 900ms;
+  --ease-soft: cubic-bezier(0.2, 0.6, 0.2, 1);
+  --ease-glide: cubic-bezier(0.3, 0.7, 0.1, 1);
+  --ease-pixel: steps(4, end);
+
+  /* chart marks: columns at most this wide, lines this thick */
+  --chart-column: 24px;
+  --chart-line: 2px;
+
+  /* a drop shadow for icons on artwork; grain is for artwork only */
+  --on-art: #fff;
+  --on-art-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+}
+
+@media (pointer: coarse) {
+  :root { --size-control: var(--size-touch); }
+}
+
+/* ---- dark (default) */
+:root {
+  color-scheme: dark;
+  --bg: #171613;
+  --sunk: #100f0d;
+  --surface: #1f1d1a;
+  --raised: #2a2723;
+  --line: #37332d;
+  --line-soft: #2b2824;
+  --text: #ece7df;
+  --muted: #aaa397;
+  --faint: #867d71;
+
+  /* the one accent: sea blue. acc is the pastel fill, acc-ink the pastel itself in dark */
+  --acc: #7fc4d9;
+  --acc-ink: #8fd0e3;
+  --acc-soft: rgba(127, 196, 217, 0.16);
+  --acc-viz: #6fb9cf;
+  --acc-heat-1: #223f49;
+  --acc-heat-2: #2e6376;
+  --acc-heat-3: #3f8ba3;
+  --acc-heat-4: #7fc4d9;
+  --on-acc: #0d1b20;
+
+  --success: #86c3b2; --success-ink: #9bd3c3; --success-soft: rgba(134, 195, 178, 0.14);
+  --warning: #e2bb6e; --warning-ink: #ebc983; --warning-soft: rgba(226, 187, 110, 0.14);
+  --error: #e08c7c; --error-ink: #ec9f90; --error-soft: rgba(224, 140, 124, 0.14);
+
+  --scrim: rgba(0, 0, 0, 0.5);
+  --credit-chip: rgba(0, 0, 0, 0.45);
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.35), 0 4px 14px rgba(0, 0, 0, 0.22);
+  --shadow-pill: 0 1px 2px rgba(0, 0, 0, 0.35);
+  --shadow-float: 0 6px 24px rgba(0, 0, 0, 0.4);
+  --shadow-modal: 0 16px 48px rgba(0, 0, 0, 0.5);
+  --focus-ring: 0 0 0 2px var(--bg), 0 0 0 4px var(--acc-ink);
+  --hover-tint: rgba(236, 231, 223, 0.09);
+  --press-tint: rgba(236, 231, 223, 0.18);
+  /* Minecraft chat colours, dark ground (segments renderer, allow-listed) */
+  --mc-black: #8a8a8a; --mc-dark_blue: #6b7cff; --mc-dark_green: #4fc24f; --mc-dark_aqua: #3fc6c6; --mc-dark_red: #e05555;
+  --mc-dark_purple: #c75ac7; --mc-gold: #e8b23f; --mc-gray: #b3b3b3; --mc-dark_gray: #8c8c8c; --mc-blue: #7a8cff; --mc-green: #7cf27c;
+  --mc-aqua: #7af2f2; --mc-red: #ff7c7c; --mc-light_purple: #ff8cff; --mc-yellow: #ffe97c; --mc-white: #f2f2f2;
+}
+
+/* ---- light */
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) { --theme-light: 1; }
+}
+:root[data-theme="light"] { --theme-light: 1; }
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    color-scheme: light;
+    --bg: #f5f2ec; --sunk: #ebe7df; --surface: #fffdf9; --raised: #efebe4;
+    --line: #d8d2c7; --line-soft: #e5e0d6;
+    --text: #231f1a; --muted: #5d574e; --faint: #78716a;
+    --acc: #7fc4d9; --acc-ink: #1f6a82; --acc-soft: rgba(31, 106, 130, 0.12); --acc-viz: #3a8aa6;
+    --acc-heat-1: #d3e8ef; --acc-heat-2: #a3cfdd; --acc-heat-3: #5fa9c3; --acc-heat-4: #1f6a82; --on-acc: #0d1b20;
+    --success: #86c3b2; --success-ink: #1f6b5c; --success-soft: rgba(31, 107, 92, 0.12);
+    --warning: #e2bb6e; --warning-ink: #7a5a10; --warning-soft: rgba(122, 90, 16, 0.12);
+    --error: #e08c7c; --error-ink: #a23b2c; --error-soft: rgba(162, 59, 44, 0.12);
+    --scrim: rgba(30, 25, 20, 0.35); --credit-chip: rgba(255, 255, 255, 0.6);
+    --shadow-card: 0 1px 2px rgba(40, 30, 20, 0.08), 0 4px 14px rgba(40, 30, 20, 0.07);
+    --shadow-pill: 0 1px 2px rgba(40, 30, 20, 0.12);
+    --shadow-float: 0 6px 24px rgba(40, 30, 20, 0.16);
+    --shadow-modal: 0 16px 48px rgba(40, 30, 20, 0.22);
+    --focus-ring: 0 0 0 2px var(--bg), 0 0 0 4px var(--acc-ink);
+    --hover-tint: rgba(35, 31, 26, 0.07); --press-tint: rgba(35, 31, 26, 0.14);
+    --mc-black: #000; --mc-dark_blue: #0000aa; --mc-dark_green: #00aa00; --mc-dark_aqua: #00aaaa; --mc-dark_red: #aa0000;
+    --mc-dark_purple: #aa00aa; --mc-gold: #b8860b; --mc-gray: #7a7a7a; --mc-dark_gray: #555; --mc-blue: #3c3cff; --mc-green: #2fa52f;
+    --mc-aqua: #1d9c9c; --mc-red: #d43a3a; --mc-light_purple: #c93cc9; --mc-yellow: #9a8400; --mc-white: #6a6a6a;
+  }
+}
+:root[data-theme="light"] {
+  color-scheme: light;
+  --bg: #f5f2ec; --sunk: #ebe7df; --surface: #fffdf9; --raised: #efebe4;
+  --line: #d8d2c7; --line-soft: #e5e0d6;
+  --text: #231f1a; --muted: #5d574e; --faint: #78716a;
+  --acc: #7fc4d9; --acc-ink: #1f6a82; --acc-soft: rgba(31, 106, 130, 0.12); --acc-viz: #3a8aa6;
+  --acc-heat-1: #d3e8ef; --acc-heat-2: #a3cfdd; --acc-heat-3: #5fa9c3; --acc-heat-4: #1f6a82; --on-acc: #0d1b20;
+  --success: #86c3b2; --success-ink: #1f6b5c; --success-soft: rgba(31, 107, 92, 0.12);
+  --warning: #e2bb6e; --warning-ink: #7a5a10; --warning-soft: rgba(122, 90, 16, 0.12);
+  --error: #e08c7c; --error-ink: #a23b2c; --error-soft: rgba(162, 59, 44, 0.12);
+  --scrim: rgba(30, 25, 20, 0.35); --credit-chip: rgba(255, 255, 255, 0.6);
+  --shadow-card: 0 1px 2px rgba(40, 30, 20, 0.08), 0 4px 14px rgba(40, 30, 20, 0.07);
+  --shadow-pill: 0 1px 2px rgba(40, 30, 20, 0.12);
+  --shadow-float: 0 6px 24px rgba(40, 30, 20, 0.16);
+  --shadow-modal: 0 16px 48px rgba(40, 30, 20, 0.22);
+  --focus-ring: 0 0 0 2px var(--bg), 0 0 0 4px var(--acc-ink);
+  --hover-tint: rgba(35, 31, 26, 0.07); --press-tint: rgba(35, 31, 26, 0.14);
+  --mc-black: #000; --mc-dark_blue: #0000aa; --mc-dark_green: #00aa00; --mc-dark_aqua: #00aaaa; --mc-dark_red: #aa0000;
+  --mc-dark_purple: #aa00aa; --mc-gold: #b8860b; --mc-gray: #7a7a7a; --mc-dark_gray: #555; --mc-blue: #3c3cff; --mc-green: #2fa52f;
+  --mc-aqua: #1d9c9c; --mc-red: #d43a3a; --mc-light_purple: #c93cc9; --mc-yellow: #9a8400; --mc-white: #6a6a6a;
+}

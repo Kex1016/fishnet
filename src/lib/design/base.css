@@ -1,0 +1,58 @@
+/* Reset, grounds and the type roles. Every class is prefixed t- (type) here and fp- in components.css. */
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+html, body { margin: 0; height: 100%; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font: 400 15px/24px var(--font-text);
+  font-feature-settings: "palt";
+  -webkit-font-smoothing: antialiased;
+  overflow-wrap: anywhere;
+}
+h1, h2, h3, h4, p, ul, ol, figure { margin: 0; }
+ul, ol { padding: 0; list-style: none; }
+img, svg { display: block; max-width: 100%; }
+button, input, select { font: inherit; color: inherit; }
+a { color: var(--acc-ink); text-decoration: none; }
+a:hover { text-decoration: underline; text-underline-offset: 3px; }
+:focus-visible { outline: 0; box-shadow: var(--focus-ring); border-radius: var(--radius-sm); }
+::selection { background: var(--acc-soft); }
+hr { border: 0; border-top: 1px solid var(--line-soft); margin: 0; }
+table { border-collapse: collapse; }
+code, kbd { font: 400 13px var(--font-mono); background: var(--sunk); padding: 1px var(--space-1); border-radius: var(--radius-xs); }
+
+/* headings: Zen Maru Gothic 700 */
+.t-hero { font: 700 44px/48px var(--font-head); letter-spacing: -0.01em; }
+.t-display { font: 700 32px/38px var(--font-head); letter-spacing: -0.01em; }
+.t-title-1 { font: 700 26px/32px var(--font-head); }
+.t-title-2 { font: 700 21px/28px var(--font-head); }
+.t-title-3 { font: 700 17px/24px var(--font-head); }
+.t-title-4 { font: 700 15px/20px var(--font-head); }
+@media (max-width: 640px) {
+  .t-hero { font-size: 32px; line-height: 36px; }
+  .t-display { font-size: 26px; line-height: 32px; }
+  .t-title-1 { font-size: 22px; line-height: 28px; }
+}
+/* interface and reading text: Zen Kaku Gothic New */
+.t-ui { font: 500 14px/20px var(--font-text); }
+.t-body { font: 400 15px/24px var(--font-text); }
+.t-body-lg { font: 400 17px/28px var(--font-text); }
+.t-small { font: 400 13px/20px var(--font-text); }
+.t-lead { font: 500 19px/30px var(--font-text); }
+/* numbers, labels and ids: JetBrains Mono with ligatures */
+.t-score, .t-num, .t-caption, .t-kicker, .t-stat { font-family: var(--font-mono); font-feature-settings: "liga", "calt"; }
+.t-score { font-size: 15px; line-height: 20px; font-weight: 600; }
+.t-num { font-size: 14px; line-height: 20px; font-weight: 400; }
+.t-caption { font-size: 12px; line-height: 16px; color: var(--muted); }
+.t-kicker { font-size: 11px; line-height: 16px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--faint); }
+.t-stat { font-size: 28px; line-height: 32px; font-weight: 600; font-variant-numeric: proportional-nums; letter-spacing: -0.01em; }
+.t-tabular { font-variant-numeric: tabular-nums; }
+.t-muted { color: var(--muted); }
+.t-faint { color: var(--faint); }
+.t-acc { color: var(--acc-ink); }
+.t-mono { font-family: var(--font-mono); }
+.t-center { text-align: center; }
+.t-nowrap { white-space: nowrap; }
+.t-truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.visually-hidden { position: absolute !important; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }

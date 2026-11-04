@@ -38,6 +38,7 @@ bun run build                          # vite build + leak check → build/ (ada
 FISHNET_MOCK=busy FISHNET_ALLOW_MOCK=1 PORT=3101 node build/index.js    # the production build on fixtures
 bun run mock [fresh|busy] [port]       # the fixture server over HTTP (token: cu_mock_mock), default :8085
 bun run shots --base http://127.0.0.1:3101 --out docs/screenshots/<unit>/busy / /players  # PR screenshots
+bun run e2e                            # after bun run build: Playwright checks on both scenarios (tests/e2e/); --base <url> for a live site
 bun run fixtures                       # regenerate mock fixtures from the generators (deterministic)
 bun run types                          # regenerate src/lib/api/schema.d.ts from openapi.json
 ```

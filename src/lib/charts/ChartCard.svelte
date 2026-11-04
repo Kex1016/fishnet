@@ -52,3 +52,10 @@
     </footer>
   {/if}
 </section>
+
+<style>
+  /* the readout may carry a time and a second series; it wraps before it squeezes the title */
+  .fp-chart .fp-card__readout { max-width: 55%; }
+  .fp-chart .fp-card__readout span { display: block; white-space: normal; overflow-wrap: anywhere; }
+  .fp-chart .fp-card__head > div:first-child { min-width: 0; }
+</style>

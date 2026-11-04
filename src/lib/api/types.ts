@@ -1,5 +1,5 @@
-// The cakeutils v2 shapes fishnet uses, as aliases over the generated schema (schema.d.ts) plus the
-// milestone shapes from the D-109 brief (PLAN §2.5), hand-written until that branch merges.
+// The cakeutils v2 shapes fishnet uses, as aliases over the generated schema (schema.d.ts) including the
+// milestone shapes (D-109, PLAN §2.5).
 // Frozen by W0: a unit that needs a change asks the coordinator. Pure types: safe to import anywhere.
 import type { components } from "./schema.d.ts";
 
@@ -37,48 +37,33 @@ export type Unit = KnownUnit | (string & {});
 /** Subject kinds the catalogue documents; `null` = a key seen before its definition arrived. */
 export type Kind = "block" | "item" | "entity" | "custom" | "other";
 
-// ---- Milestones (D-109 brief; PLAN §2.5). Additive, feature-detected, every nullable field on purpose.
+// ---- Milestones (D-109, merged in cakeutils; PLAN §2.5). Derived from the generated schema, so a sync
+// (`bun run openapi`) moves them. Feature-detected, every nullable field on purpose.
 
-/** One rung of a stat's ladder. `uuid`/`name`/`reached_at` are null when the first player is unknown. */
-export type MilestoneRow = {
-  threshold: number;
-  /** The threshold formatted in the stat's unit, as the API gives it. */
-  display: string;
-  uuid: string | null;
-  name: string | null;
-  /** epoch ms; null when reached before tracking began */
-  reached_at: number | null;
-  /** true = reached before tracking began (the API found it already passed) */
-  backfilled: boolean;
-};
+type ApiRung = S["StatMilestones"]["milestones"][number];
+type ApiFeedRow = S["MilestoneList"]["milestones"][number];
 
-/** GET /v2/milestones/stats/{type}/{subject}: lowest threshold first, at most 18 rows. */
-export type MilestoneLadder = {
-  metric: string;
-  scope: string;
-  unit: Unit;
-  /** false for time and damage stats: no ladder exists */
-  tracked: boolean;
-  milestones: MilestoneRow[];
-};
+/** One rung of a stat's ladder. `uuid`/`name`/`reached_at` are null when the first player is unknown or it was reached before tracking began. */
+export type MilestoneRow = ApiRung;
 
-/** A feed row: a ladder rung plus which stat it belongs to. `stat_name` may be null (catalogue has no name yet). */
-export type MilestoneFeedRow = MilestoneRow & {
-  metric: string;
-  type: string;
-  subject: string;
-  stat_name: string | null;
-  unit: Unit;
+/** GET /v2/milestones/stats/{type}/{subject}: lowest threshold first, at most 18 rows; `tracked:false` for time and damage stats. */
+export type MilestoneLadder = S["StatMilestones"];
+
+/**
+ * A feed row: a rung plus its stat (`subject` is "*" for a type total; `stat_name` may be null). The feed has `uuid` and
+ * `name` (null when several players were already past a backfilled rung); the player endpoint's rows have neither
+ * (the player is on the envelope), so both are optional here. `icon` and `kind` are never sent by the API: the site
+ * adds them from the catalogue (src/lib/milestones/prepare.server.ts).
+ */
+export type MilestoneFeedRow = Omit<ApiFeedRow, "uuid" | "name"> & {
+  uuid?: string | null;
+  name?: string | null;
   icon?: string | null;
-  scope: string;
+  kind?: string | null;
 };
 
 /** GET /v2/milestones: newest first, backfilled rows last. */
-export type MilestoneFeed = {
-  scope: string;
-  total: number;
-  milestones: MilestoneFeedRow[];
-};
+export type MilestoneFeed = Omit<S["MilestoneList"], "milestones"> & { milestones: MilestoneFeedRow[] };
 
-/** GET /v2/players/{ref}/milestones: what this player was first to reach. Same rows as the feed. */
-export type PlayerMilestones = MilestoneFeed & { uuid: string };
+/** GET /v2/players/{ref}/milestones: what this player was first to reach. */
+export type PlayerMilestones = Omit<S["PlayerMilestoneList"], "milestones"> & { milestones: MilestoneFeedRow[] };

@@ -302,6 +302,66 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v2/milestones/stats/{type}/{subject}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * First player to reach each milestone of a stat (1, 100, 1000, ... for counts; 1 km, 10 km, ... for distances); subject "*" = the type total. tracked is false for time and damage stats, which have none. 404 when nobody has ever recorded the stat or type; 400 mixed_units for custom:*; 400 for a mini: scope.
+         * @description Scopes: one of read, read:stats.
+         */
+        get: operations["statMilestones"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v2/milestones": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Milestones reached in a scope, newest first; ones reached before tracking began (backfilled) come last. 400 for a mini: scope.
+         * @description Scopes: one of read, read:stats.
+         */
+        get: operations["listMilestones"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v2/players/{ref}/milestones": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Milestones this player was the first to reach in a scope, newest first. 400 for a mini: scope.
+         * @description Scopes: one of read, read:players, read:stats.
+         */
+        get: operations["listPlayerMilestones"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v2/mini-servers": {
         parameters: {
             query?: never;
@@ -527,6 +587,60 @@ export interface components {
                 value: number;
                 unit: string;
                 display: string;
+            }[];
+        };
+        StatMilestones: {
+            metric: string;
+            scope: string;
+            unit: string;
+            /** @description false for stats that keep no milestones (time, damage) */
+            tracked: boolean;
+            milestones: {
+                threshold: number;
+                display: string;
+                uuid: string | null;
+                name: string | null;
+                reached_at: number | null;
+                backfilled: boolean;
+            }[];
+        };
+        MilestoneList: {
+            scope: string;
+            total: number;
+            milestones: {
+                metric: string;
+                type: string;
+                /** @description "*" for a type total */
+                subject: string;
+                stat_name: string | null;
+                threshold: number;
+                unit: string;
+                display: string;
+                /** @description epoch ms; null when reached before tracking began (backfilled) */
+                reached_at: number | null;
+                backfilled: boolean;
+                /** @description null when backfilled and several players were already past it */
+                uuid: string | null;
+                name: string | null;
+            }[];
+        };
+        PlayerMilestoneList: {
+            uuid: string;
+            name: string;
+            scope: string;
+            total: number;
+            milestones: {
+                metric: string;
+                type: string;
+                /** @description "*" for a type total */
+                subject: string;
+                stat_name: string | null;
+                threshold: number;
+                unit: string;
+                display: string;
+                /** @description epoch ms; null when reached before tracking began (backfilled) */
+                reached_at: number | null;
+                backfilled: boolean;
             }[];
         };
         MiniServers: {
@@ -1210,6 +1324,136 @@ export interface operations {
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    statMilestones: {
+        parameters: {
+            query?: {
+                /** @description network (default), server:<id> or mini:<server-id>/<mini-id>. A private mini-server (public:false) answers exactly like one that was never seen, for every token. */
+                scope?: string;
+            };
+            header?: never;
+            path: {
+                /** @description Stat type key, e.g. minecraft:mined (the minecraft: namespace may be omitted). */
+                type: string;
+                /** @description Subject key, e.g. minecraft:stone. */
+                subject: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    ETag?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StatMilestones"];
+                };
+            };
+            /** @description Not modified (If-None-Match matched the ETag) */
+            304: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    listMilestones: {
+        parameters: {
+            query?: {
+                /** @description network (default), server:<id> or mini:<server-id>/<mini-id>. A private mini-server (public:false) answers exactly like one that was never seen, for every token. */
+                scope?: string;
+                /** @description Only this stat type's milestones, its stats and its total (minecraft: may be omitted). */
+                type?: string;
+                /** @description Page size. */
+                limit?: number;
+                /** @description Rows to skip. */
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    ETag?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MilestoneList"];
+                };
+            };
+            /** @description Not modified (If-None-Match matched the ETag) */
+            304: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    listPlayerMilestones: {
+        parameters: {
+            query?: {
+                /** @description network (default), server:<id> or mini:<server-id>/<mini-id>. A private mini-server (public:false) answers exactly like one that was never seen, for every token. */
+                scope?: string;
+                /** @description Only this stat type's milestones, its stats and its total (minecraft: may be omitted). */
+                type?: string;
+                /** @description Page size. */
+                limit?: number;
+                /** @description Rows to skip. */
+                offset?: number;
+            };
+            header?: never;
+            path: {
+                /** @description Player UUID (dashed or undashed) or exact name (case-insensitive). */
+                ref: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    ETag?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlayerMilestoneList"];
+                };
+            };
+            /** @description Not modified (If-None-Match matched the ETag) */
+            304: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
             429: components["responses"]["TooManyRequests"];
             500: components["responses"]["InternalError"];
         };

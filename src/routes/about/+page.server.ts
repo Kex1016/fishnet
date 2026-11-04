@@ -5,5 +5,12 @@ import { history } from "#lib/server/history.ts";
 
 export const load: PageServerLoad = async () => {
   const [health, milestones, since] = await Promise.all([api().health(), api().milestonesEnabled(), history().recordingSince()]);
-  return { title: "About", crumbs: [{ label: "About", href: "/about" }], reachable: health.ok, milestones, since };
+  return {
+    title: "About",
+    crumbs: [{ label: "About", href: "/about" }],
+    reachable: health.ok,
+    checkedAt: health.asOf ?? null,
+    milestones,
+    since
+  };
 };

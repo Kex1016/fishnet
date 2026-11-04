@@ -1,11 +1,20 @@
-// W0 stub of the icon proxy (W8 adds the disk cache and the fallback): the API's PNG, immutable.
+// Icon proxy (W8): cakeutils' PNG by sha256, kept on disk, immutable for visitors.
 import { error } from "@sveltejs/kit";
 import type { RequestHandler } from "./$types";
-import { api } from "#lib/server/cakeutils/client.ts";
+import { iconService } from "#lib/server/images/index.ts";
 
-export const GET: RequestHandler = async ({ params, setHeaders }) => {
-  const r = await api().icon(params.sha);
-  if (!r.ok) error(r.kind === "not_found" ? 404 : 503, r.kind === "not_found" ? "No such icon" : "Icons are unavailable");
-  setHeaders({ "content-type": "image/png", "cache-control": "public, max-age=31536000, immutable", etag: `"${params.sha}"` });
-  return new Response(r.data.png as BodyInit);
+export const GET: RequestHandler = async ({ params, request, setHeaders }) => {
+  const etag = `"${params.sha}"`;
+  const immutable = { "cache-control": "public, max-age=31536000, immutable", etag };
+  if (request.headers.get("if-none-match") === etag) return new Response(null, { status: 304, headers: immutable });
+  const r = await iconService().icon(params.sha);
+  if (r.kind === "missing") {
+    setHeaders({ "cache-control": "public, max-age=3600" });
+    error(404, "No such icon");
+  }
+  if (r.kind === "unavailable") {
+    setHeaders({ "cache-control": "no-store" });
+    error(503, "Icons are unavailable");
+  }
+  return new Response(r.png as BodyInit, { headers: { ...immutable, "content-type": "image/png" } });
 };

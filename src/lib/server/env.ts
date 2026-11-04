@@ -2,10 +2,12 @@
 // nothing baked into the build. The token is never logged or exported: only its public id
 // (`cu_<id>`) leaves this module.
 import {
-  CAKEUTILS_API_TOKEN, CAKEUTILS_API_URL, CAKEUTILS_RATE, FISHNET_ALLOW_MOCK, FISHNET_DATA_DIR, FISHNET_MOCK, HIDDEN_PLAYERS_FILE, NODE_ENV, ORIGIN
+  CAKEUTILS_API_TOKEN, CAKEUTILS_API_URL, CAKEUTILS_BURST, CAKEUTILS_RATE, FISHNET_ALLOW_MOCK, FISHNET_DATA_DIR, FISHNET_MOCK, HIDDEN_PLAYERS_FILE, NODE_ENV, ORIGIN
 } from "$app/env/private";
 import { building, dev } from "$app/env";
 import type { Scenario } from "./cakeutils/mock/index.ts";
+
+export { displayUrl, tokenId } from "./cakeutils/redact.ts";
 
 export type Config = {
   apiUrl: string;
@@ -13,6 +15,8 @@ export type Config = {
   mock: Scenario | null;
   /** requests per minute the site allows itself, below the token's own limit */
   ratePerMinute: number;
+  /** how many requests may go out back to back (the bucket's size), below the token's burst */
+  burst: number;
   origin: string;
   dataDir: string;
   hiddenPlayersFile: string;
@@ -30,6 +34,7 @@ export function config(): Config {
     apiUrl: CAKEUTILS_API_URL.replace(/\/+$/, ""),
     mock: FISHNET_MOCK,
     ratePerMinute: CAKEUTILS_RATE,
+    burst: CAKEUTILS_BURST,
     origin: ORIGIN,
     dataDir: FISHNET_DATA_DIR,
     hiddenPlayersFile: HIDDEN_PLAYERS_FILE,
@@ -41,20 +46,4 @@ export function config(): Config {
 /** The bearer token, only for the client. Empty in mock mode is fine. */
 export function apiToken(): string {
   return CAKEUTILS_API_TOKEN;
-}
-
-/** `cu_<id>` of a token, the only form that may appear in logs. */
-export function tokenId(token: string): string {
-  const m = /^(cu_[A-Za-z0-9]+)_/.exec(token);
-  return m ? m[1] : token ? "cu_?" : "(none)";
-}
-
-/** `scheme://host:port` of a URL, for logs (never a path or query). */
-export function displayUrl(u: string): string {
-  try {
-    const x = new URL(u);
-    return `${x.protocol}//${x.host}`;
-  } catch {
-    return "(bad url)";
-  }
 }

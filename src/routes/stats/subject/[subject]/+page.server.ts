@@ -7,6 +7,7 @@ import { fullType } from "#lib/api/metric.ts";
 import { scopeParam } from "#lib/api/scope.ts";
 import { subjectName, titleCase } from "#lib/players/names.ts";
 import { withoutHidden } from "#lib/server/hidden.ts";
+import { hideFromLadder } from "#lib/milestones/prepare.server.ts";
 import { scopeLabel, scopeMinis } from "../../../leaderboards/board.ts";
 
 export const load: PageServerLoad = async ({ params, url }) => {
@@ -58,6 +59,6 @@ export const load: PageServerLoad = async ({ params, url }) => {
     firstType: firstType ?? null,
     firstTypeName: firstType ? typeName(firstType) : null,
     miniScope,
-    ladder
+    ladder: ladder ? hideFromLadder(ladder) : null
   };
 };

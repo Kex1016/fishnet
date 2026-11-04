@@ -1,5 +1,6 @@
 // Screenshots for a unit's PR (PLAN §7 "Done means"): 390 px and 1440 px, dark and light, full page,
-// against a running site. Needs Playwright with Chromium on the machine (the cloud container has it).
+// against a running site. Needs Playwright with Chromium on the machine (the cloud container has it; it is not a dependency,
+// so `bun run check` does not resolve it).
 //   bun run shots --base http://127.0.0.1:3101 --out docs/screenshots/w0/busy / /players /design
 // Themes come from the theme cookie, so the server renders each one. Output: WebP, one file per
 // page × width × theme, e.g. home-390-dark.webp.
@@ -17,7 +18,9 @@ const scale = Number(opt("scale", "1"));
 const pages = args.filter((a, i) => a.startsWith("/") && !(i > 0 && args[i - 1].startsWith("--")));
 if (!pages.length) pages.push("/");
 
-const { chromium } = await import("playwright");
+// Resolved at run time, not by svelte-check: Playwright is not a dependency of the site.
+const playwright = "playwright";
+const { chromium } = (await import(playwright)) as { chromium: { launch(): Promise<any> } };
 const sharp = (await import("sharp")).default;
 mkdirSync(out, { recursive: true });
 const browser = await chromium.launch();

@@ -39,6 +39,15 @@ test("cakeutils' RateLimit-Remaining pauses background for a while", () => {
   expect(b.tryTake("background")).toBe(true);
 });
 
+test("a large CAKEUTILS_BURST does not pause background while cakeutils has room", () => {
+  let t = 0;
+  const b = new TokenBucket({ ratePerMinute: 6000, burst: 1000, now: () => t });
+  b.observeRemaining(50);
+  expect(b.tryTake("background")).toBe(true);
+  b.observeRemaining(5);
+  expect(b.tryTake("background")).toBe(false);
+});
+
 test("policies and Cache-Control", () => {
   expect(maxAgeMs("private, max-age=5")).toBe(5_000);
   expect(maxAgeMs("no-store")).toBe(0);

@@ -15,6 +15,9 @@ export type BucketOptions = {
   sleep?: (ms: number) => Promise<void>;
 };
 
+/** cakeutils' remaining burst at or below which background pauses (its default burst is 60). */
+export const LOW_REMAINING = 5;
+
 export class TokenBucket {
   private tokens: number;
   private last: number;
@@ -79,10 +82,14 @@ export class TokenBucket {
     }
   }
 
-  /** cakeutils' `RateLimit-Remaining`: when its own bucket runs low, background steps back for a while. */
+  /**
+   * cakeutils' `RateLimit-Remaining` (tokens left in the token's own burst bucket): when it runs low,
+   * background steps back for a while. A fixed threshold, not a share of this bucket: the site's
+   * CAKEUTILS_BURST says nothing about the token's burst, and a large one would pause every call.
+   */
   observeRemaining(remaining: number | null): void {
     if (remaining === null || !Number.isFinite(remaining)) return;
-    if (remaining <= Math.max(2, Math.floor(this.capacity / 10))) this.backgroundPausedUntil = this.now() + 10_000;
+    if (remaining <= LOW_REMAINING) this.backgroundPausedUntil = this.now() + 10_000;
   }
 
   /** Tokens left right now (rounded down), for status. */

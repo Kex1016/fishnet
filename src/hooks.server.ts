@@ -4,11 +4,13 @@
 import type { Handle, ServerInit } from "@sveltejs/kit/hooks";
 import { config, displayUrl, tokenId } from "#lib/server/env.ts";
 import { apiToken } from "#lib/server/env.ts";
+import { startRecorder } from "#lib/server/recorder/index.ts";
 
 export const init: ServerInit = async () => {
   const c = config(); // throws (fishnet is NOT running: ...) when FISHNET_MOCK is set on a production build
   if (c.mock) console.info(`fishnet: mock mode "${c.mock}", no cakeutils calls`);
   else console.info(`fishnet: cakeutils at ${displayUrl(c.apiUrl)} as ${tokenId(apiToken())}`);
+  startRecorder(); // W2: the recorder's scheduler (PLAN §3.3)
 };
 
 export const handle: Handle = async ({ event, resolve }) => {

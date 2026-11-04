@@ -61,6 +61,25 @@ export function barRows(entries: LeaderboardEntry[], limit = 5) {
   return entries.slice(0, limit).map((e) => ({ rank: e.rank, key: e.uuid, uuid: e.uuid, label: e.name, v: e.value, display: e.display, href: `/players/${encodeURIComponent(e.name)}` }));
 }
 
+/** UTC hours "00".."23": the columns of the busiest-hours heatmap. */
+export const HOURS = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, "0"));
+const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+
+/**
+ * Heatmap rows from History.activityByHour: `cells[d][h]` (d = 0 Monday, h = UTC hour, null = no
+ * samples) → one row per weekday with 24 cells. Nothing recorded (`cells: []`) → no rows, so the
+ * chart shows its empty state.
+ */
+export function activityGrid(cells: (number | null)[][]): { label: string; cells: (number | null)[] }[] {
+  if (!cells.length) return [];
+  return WEEKDAYS.map((label, d) => ({ label, cells: HOURS.map((_, h) => cells[d]?.[h] ?? null) }));
+}
+
+/** A mean number of players for a readout: whole numbers plain, otherwise one decimal. */
+export function meanPlayers(v: number): string {
+  return Number.isInteger(v) ? String(v) : v.toFixed(1);
+}
+
 /** A failure the page should say out loud (cakeutils unreachable or throttled), not hide as "nothing yet". */
 export function isOutage<T>(r: Result<T>): boolean {
   return !r.ok && (r.kind === "down" || r.kind === "rate_limited");

@@ -5,7 +5,8 @@
   import EmptyState from "#lib/design/EmptyState.svelte";
   import Face from "#lib/design/Face.svelte";
   import Notice from "#lib/design/Notice.svelte";
-  import { BarList, ColumnChart, LineChart, StatTile, ViewSwitch, viewParam } from "#lib/charts/index.ts";
+  import { BarList, ColumnChart, Heatmap, LineChart, StatTile, ViewSwitch, viewParam } from "#lib/charts/index.ts";
+  import { HOURS, meanPlayers } from "./servers/boards.ts";
   import { MilestoneFeed } from "#lib/milestones/index.ts";
   import { boardHref, PLAYTIME } from "#lib/api/metric.ts";
   import { titleCase } from "#lib/players/names.ts";
@@ -124,6 +125,18 @@
       points={data.joins.points}
       emptyTitle="Not enough weeks yet"
       emptyLine="New players are counted by the week they first logged in."
+    />
+    <Heatmap
+      title="Busiest hours"
+      sub="network · mean players online · last 30 days · UTC"
+      since={data.busiestHours.since ?? data.since}
+      {view}
+      rows={data.busiestHours.rows}
+      columns={HOURS}
+      format={meanPlayers}
+      cellLabel={(r, c) => `${r} ${c}:00`}
+      emptyTitle="No history yet"
+      emptyLine="The busiest hours show up after a few days of recording."
     />
   </div>
 

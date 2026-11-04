@@ -1,0 +1,13 @@
+Goal for the fishnet repo: build and deploy the Fishplex network website on https://fishnet.haiiro.moe, following `docs/PLAN.md` in `Kex1016/fishnet` (read it first; it is the spec).
+
+What it is: a public, read-only, server-rendered SvelteKit site for the cakeutils v2 API (token only). The token stays on the server: every API call happens in server code, there is no pass-through to `/v2`, and a build check fails if a token reaches the client bundle. Real data everywhere: every number comes from the API or from the site's own recorder (periodic snapshots in its own SQLite), never from made-up data. Plan for things that have not happened yet: 404 stats, empty scopes, null milestone fields, `tracked:false`, milestones switched off (404 on `/v2/milestones`), cakeutils down (serve last good data with an "as of" time). Charts follow reki's chart rules, and history-based charts say "recording since".
+
+Look: inspired by reki.dev, endfield.reki.dev and minecraft.reki.dev (code in `anzuftnw/journey` `site/`, rules in its `docs/reki.md` and `site/design/reki/README.md`). Rebuild the look in fishnet; do not copy reki's design files unless David says anzu agreed.
+
+Milestones: build against the shapes in PLAN §2.5 (cakeutils D-109, branch `claude/project-thread-k4b1ut`, not merged yet), feature-detected, thresholds as data.
+
+Deploy: Docker (`Dockerfile`, `compose.yml`, bound to 127.0.0.1:3000) behind David's own Caddy, `deploy/deploy.sh` with health check and rollback, and `deploy/watch.sh` with a systemd timer that redeploys whenever `main` of fishnet changes.
+
+How to run it: W0 (scaffold, design, contracts, mocks) alone first and merged; then W1–W9b in parallel threads, each owning only its directories as listed in PLAN §7; then W10 integration and go-live. Use the model and effort level PLAN §7 gives each unit: Claude Fable 5.1 (`claude-fable-5-1`) at high for W0, W5 and W10 and at medium for W3; Opus 5.5 (`claude-opus-5-5`) at high for W1 and W2; Sonnet 5.5 (`claude-sonnet-5-5`) at high for W4, W6 and W7 and at medium for W8 and W9; Haiku 5.5 (`claude-haiku-5-5`) at low for W9b. Every unit opens a PR to fishnet `main` with screenshots (390 px and 1440 px, dark and light) and passes `bun run check`, `bun test`, `bun run build` and the token leak check, in both mock scenarios (`fresh` and `busy`).
+
+Open questions with defaults (PLAN §8): reki files [rebuild], token `read:players read:stats --rate 600/120` [yes], repo private so the watcher needs a deploy key [assume yes], Caddy on the host [yes], player opt-out list [yes], name "Fishplex" with a sea-blue accent [yes]. Work on the defaults; ask David only where a default changes behaviour he would notice.

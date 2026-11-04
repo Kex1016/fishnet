@@ -2,8 +2,10 @@ node_modules
 build
 .svelte-kit
 data
+.deploy
 .env
 .env.*
 !.env.example
 tests/shots
+docs/screenshots
 .git

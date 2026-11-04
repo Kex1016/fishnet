@@ -61,7 +61,9 @@ chmod 600 .env
 $EDITOR .env    # CAKEUTILS_API_URL, CAKEUTILS_API_TOKEN; leave FISHNET_MOCK unset
 ```
 
-`ORIGIN` stays `https://fishnet.haiiro.moe`. The token lives only in `.env` on the host and in the
+`ORIGIN` stays `https://fishnet.haiiro.moe`. `CAKEUTILS_RATE` (requests per minute, default 400) and
+`CAKEUTILS_BURST` (requests back to back, default 60) are the site's own limits; keep both below the
+token's `--rate 600/120`. The token lives only in `.env` on the host and in the
 container's environment; it is never in the image, the repo or the logs.
 
 **First deploy**, by hand so you see the output:

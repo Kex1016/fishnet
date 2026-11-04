@@ -1,12 +1,11 @@
 <script lang="ts">
   // Internal: one feed row. The stat (icon, threshold, name), the player, and when. Every null has words.
-  import type { MilestoneFeedRow } from "#lib/api/types.ts";
+  import type { Kind, MilestoneFeedRow } from "#lib/api/types.ts";
   import PlayerName from "#lib/design/PlayerName.svelte";
   import Slot from "#lib/design/Slot.svelte";
   import { dateTime, ago, iso } from "#lib/format/dates.ts";
-  import { statHref, statLabel, whenOf, whoOf, type RowExtras } from "./helpers.ts";
+  import { statHref, statLabel, whenOf, whoOf } from "./helpers.ts";
   let { m, showStat = true, showPlayer = true, scope }: { m: MilestoneFeedRow; showStat?: boolean; showPlayer?: boolean; scope?: string } = $props();
-  const extras = $derived(m as MilestoneFeedRow & RowExtras);
   const who = $derived(whoOf(m));
   const when = $derived(whenOf(m));
   const name = $derived(statLabel(m));
@@ -14,7 +13,7 @@
 </script>
 
 <li class="fp-ms">
-  {#if showStat}<Slot icon={extras.icon} kind={(extras.kind as never) ?? (m.subject === "*" ? "custom" : null)} {name} />{/if}
+  {#if showStat}<Slot icon={m.icon} kind={(m.kind as Kind | null | undefined) ?? (m.subject === "*" ? "custom" : null)} {name} />{/if}
   <div class="fp-ms__main">
     <div class="fp-ms__what">
       <span class="fp-ms__thr">{m.display}</span>

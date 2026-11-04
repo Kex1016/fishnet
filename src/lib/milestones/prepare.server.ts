@@ -7,7 +7,6 @@ import type { Result } from "#lib/api/result.ts";
 import type { MilestoneFeedRow, MilestoneLadder } from "#lib/api/types.ts";
 import { api } from "#lib/server/cakeutils/client.ts";
 import { isHiddenPlayer } from "#lib/server/hidden.ts";
-import type { RowExtras } from "./helpers.ts";
 
 type Rows = { milestones: MilestoneFeedRow[]; total: number };
 
@@ -31,7 +30,7 @@ export function hideFromLadder(r: Result<MilestoneLadder>): Result<MilestoneLadd
 export async function withIcons<T extends Rows>(r: Result<T>, max = 24): Promise<Result<T>> {
   if (!r.ok || r.data.milestones.length === 0) return r;
   const keys = [...new Set(r.data.milestones.map((m) => m.subject).filter((s) => s && s !== "*"))].slice(0, max);
-  const found = new Map<string, RowExtras>();
+  const found = new Map<string, Pick<MilestoneFeedRow, "icon" | "kind">>();
   await Promise.all(
     keys.map(async (key) => {
       const d = await api().subject(key);

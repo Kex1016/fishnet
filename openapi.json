@@ -16,6 +16,9 @@
       "name": "meta"
     },
     {
+      "name": "milestones"
+    },
+    {
       "name": "network"
     },
     {
@@ -1182,6 +1185,298 @@
         }
       }
     },
+    "/v2/milestones/stats/{type}/{subject}": {
+      "get": {
+        "operationId": "statMilestones",
+        "tags": [
+          "milestones"
+        ],
+        "summary": "First player to reach each milestone of a stat (1, 100, 1000, ... for counts; 1 km, 10 km, ... for distances); subject \"*\" = the type total. tracked is false for time and damage stats, which have none. 404 when nobody has ever recorded the stat or type; 400 mixed_units for custom:*; 400 for a mini: scope.",
+        "description": "Scopes: one of read, read:stats.",
+        "x-cakeutils-scopes": [
+          "read",
+          "read:stats"
+        ],
+        "parameters": [
+          {
+            "name": "type",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Stat type key, e.g. minecraft:mined (the minecraft: namespace may be omitted)."
+          },
+          {
+            "name": "subject",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Subject key, e.g. minecraft:stone."
+          },
+          {
+            "name": "scope",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "network",
+              "pattern": "^(network|server:[A-Za-z0-9._-]{1,64}|mini:[A-Za-z0-9._-]{1,64}/[^/]{1,64})$"
+            },
+            "description": "network (default), server:<id> or mini:<server-id>/<mini-id>. A private mini-server (public:false) answers exactly like one that was never seen, for every token."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "headers": {
+              "ETag": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatMilestones"
+                }
+              }
+            }
+          },
+          "304": {
+            "description": "Not modified (If-None-Match matched the ETag)"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/v2/milestones": {
+      "get": {
+        "operationId": "listMilestones",
+        "tags": [
+          "milestones"
+        ],
+        "summary": "Milestones reached in a scope, newest first; ones reached before tracking began (backfilled) come last. 400 for a mini: scope.",
+        "description": "Scopes: one of read, read:stats.",
+        "x-cakeutils-scopes": [
+          "read",
+          "read:stats"
+        ],
+        "parameters": [
+          {
+            "name": "scope",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "network",
+              "pattern": "^(network|server:[A-Za-z0-9._-]{1,64}|mini:[A-Za-z0-9._-]{1,64}/[^/]{1,64})$"
+            },
+            "description": "network (default), server:<id> or mini:<server-id>/<mini-id>. A private mini-server (public:false) answers exactly like one that was never seen, for every token."
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Only this stat type's milestones, its stats and its total (minecraft: may be omitted)."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 10
+            },
+            "description": "Page size."
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 1000000,
+              "default": 0
+            },
+            "description": "Rows to skip."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "headers": {
+              "ETag": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MilestoneList"
+                }
+              }
+            }
+          },
+          "304": {
+            "description": "Not modified (If-None-Match matched the ETag)"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/v2/players/{ref}/milestones": {
+      "get": {
+        "operationId": "listPlayerMilestones",
+        "tags": [
+          "milestones"
+        ],
+        "summary": "Milestones this player was the first to reach in a scope, newest first. 400 for a mini: scope.",
+        "description": "Scopes: one of read, read:players, read:stats.",
+        "x-cakeutils-scopes": [
+          "read",
+          "read:players",
+          "read:stats"
+        ],
+        "parameters": [
+          {
+            "name": "ref",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Player UUID (dashed or undashed) or exact name (case-insensitive)."
+          },
+          {
+            "name": "scope",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "network",
+              "pattern": "^(network|server:[A-Za-z0-9._-]{1,64}|mini:[A-Za-z0-9._-]{1,64}/[^/]{1,64})$"
+            },
+            "description": "network (default), server:<id> or mini:<server-id>/<mini-id>. A private mini-server (public:false) answers exactly like one that was never seen, for every token."
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Only this stat type's milestones, its stats and its total (minecraft: may be omitted)."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 10
+            },
+            "description": "Page size."
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 1000000,
+              "default": 0
+            },
+            "description": "Rows to skip."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "headers": {
+              "ETag": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlayerMilestoneList"
+                }
+              }
+            }
+          },
+          "304": {
+            "description": "Not modified (If-None-Match matched the ETag)"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
     "/v2/mini-servers": {
       "get": {
         "operationId": "listMiniServers",
@@ -2142,6 +2437,237 @@
                 },
                 "display": {
                   "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "StatMilestones": {
+        "type": "object",
+        "required": [
+          "metric",
+          "scope",
+          "unit",
+          "tracked",
+          "milestones"
+        ],
+        "properties": {
+          "metric": {
+            "type": "string"
+          },
+          "scope": {
+            "type": "string"
+          },
+          "unit": {
+            "type": "string"
+          },
+          "tracked": {
+            "type": "boolean",
+            "description": "false for stats that keep no milestones (time, damage)"
+          },
+          "milestones": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "threshold",
+                "display",
+                "uuid",
+                "name",
+                "reached_at",
+                "backfilled"
+              ],
+              "properties": {
+                "threshold": {
+                  "type": "integer"
+                },
+                "display": {
+                  "type": "string"
+                },
+                "uuid": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "name": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "reached_at": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ]
+                },
+                "backfilled": {
+                  "type": "boolean"
+                }
+              }
+            }
+          }
+        }
+      },
+      "MilestoneList": {
+        "type": "object",
+        "required": [
+          "scope",
+          "total",
+          "milestones"
+        ],
+        "properties": {
+          "scope": {
+            "type": "string"
+          },
+          "total": {
+            "type": "integer"
+          },
+          "milestones": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "metric",
+                "type",
+                "subject",
+                "stat_name",
+                "threshold",
+                "unit",
+                "display",
+                "reached_at",
+                "backfilled",
+                "uuid",
+                "name"
+              ],
+              "properties": {
+                "metric": {
+                  "type": "string"
+                },
+                "type": {
+                  "type": "string"
+                },
+                "subject": {
+                  "type": "string",
+                  "description": "\"*\" for a type total"
+                },
+                "stat_name": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "threshold": {
+                  "type": "integer"
+                },
+                "unit": {
+                  "type": "string"
+                },
+                "display": {
+                  "type": "string"
+                },
+                "reached_at": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "description": "epoch ms; null when reached before tracking began (backfilled)"
+                },
+                "backfilled": {
+                  "type": "boolean"
+                },
+                "uuid": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "null when backfilled and several players were already past it"
+                },
+                "name": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "PlayerMilestoneList": {
+        "type": "object",
+        "required": [
+          "uuid",
+          "name",
+          "scope",
+          "total",
+          "milestones"
+        ],
+        "properties": {
+          "uuid": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "scope": {
+            "type": "string"
+          },
+          "total": {
+            "type": "integer"
+          },
+          "milestones": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "metric",
+                "type",
+                "subject",
+                "stat_name",
+                "threshold",
+                "unit",
+                "display",
+                "reached_at",
+                "backfilled"
+              ],
+              "properties": {
+                "metric": {
+                  "type": "string"
+                },
+                "type": {
+                  "type": "string"
+                },
+                "subject": {
+                  "type": "string",
+                  "description": "\"*\" for a type total"
+                },
+                "stat_name": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "threshold": {
+                  "type": "integer"
+                },
+                "unit": {
+                  "type": "string"
+                },
+                "display": {
+                  "type": "string"
+                },
+                "reached_at": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "description": "epoch ms; null when reached before tracking began (backfilled)"
+                },
+                "backfilled": {
+                  "type": "boolean"
                 }
               }
             }

@@ -4,9 +4,6 @@ import type { MilestoneRow, MilestoneFeedRow } from "#lib/api/types.ts";
 import { parseMetric, boardHref } from "#lib/api/metric.ts";
 import { titleCase } from "#lib/players/names.ts";
 
-/** The extra fields the page's enrichment may add to a feed row (the API itself sends neither; a `kind` may come later). */
-export type RowExtras = { icon?: string | null; kind?: string | null };
-
 /** What a rung says about its time: exact, before tracking, or not reached. */
 export type When = { state: "at"; at: number } | { state: "before" } | { state: "none" };
 

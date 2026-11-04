@@ -260,7 +260,7 @@ function feedRows(world: World, scope: ScopeInfo, typeFilter: string | null): Mi
       const s = subjectRow(world, subject, kind);
       for (const m of l.milestones) {
         if (!m.backfilled && m.reached_at === null) continue;
-        out.push({ ...m, metric: l.metric, type, subject, stat_name: s?.name ?? null, unit: l.unit, icon: iconUrl(s), scope: scope.scope });
+        out.push({ ...m, metric: l.metric, type, subject, stat_name: s?.name ?? null, unit: l.unit });
       }
     }
   }
@@ -441,8 +441,11 @@ export async function handleMock(world: World, req: Request): Promise<Response> 
       if (scope.mini) return problem(400, "bad_request", "milestones have no mini-server scope");
       const pg = paging(url);
       if (pg instanceof Response) return pg;
-      const rows = feedRows(world, scope, url.searchParams.get("type")).filter((m) => m.uuid === p.uuid);
-      const data: PlayerMilestones = { uuid: p.uuid, scope: scope.scope, total: rows.length, milestones: rows.slice(pg.offset, pg.offset + pg.limit) };
+      // the player endpoint's rows carry neither uuid nor name: the player is on the envelope (openapi PlayerMilestoneList)
+      const rows = feedRows(world, scope, url.searchParams.get("type"))
+        .filter((m) => m.uuid === p.uuid)
+        .map(({ uuid: _u, name: _n, ...row }) => row);
+      const data: PlayerMilestones = { uuid: p.uuid, name: p.name, scope: scope.scope, total: rows.length, milestones: rows.slice(pg.offset, pg.offset + pg.limit) };
       return json(req, data);
     }
     return problem(404, "not_found", "no such route");

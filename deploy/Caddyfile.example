@@ -1,0 +1,9 @@
+# Add to the host's Caddyfile (or drop into a file it imports), then `caddy reload`.
+fishnet.haiiro.moe {
+	encode zstd gzip
+	reverse_proxy 127.0.0.1:3000
+}
+
+# If Caddy runs in Docker instead: put it and fishnet on one network and use
+#   reverse_proxy fishnet:3000
+# (and remove the `ports:` line in compose.yml if nothing else on the host needs it).

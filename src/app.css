@@ -1,0 +1,3 @@
+/* Site-wide bits outside the design system. Page-specific styles live in their routes. */
+.fp-shell__scroll { scroll-behavior: smooth; }
+@media (prefers-reduced-motion: reduce) { .fp-shell__scroll { scroll-behavior: auto; } }

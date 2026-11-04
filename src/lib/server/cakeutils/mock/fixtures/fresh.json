@@ -1,0 +1,32 @@
+{
+ "scenario": "fresh",
+ "milestones": false,
+ "milestones_since_ago_ms": 0,
+ "servers": [
+  {
+   "id": "lobby",
+   "display_name": "Lobby",
+   "mc_version": "26.3",
+   "platform": "paper",
+   "waiting": 0
+  },
+  {
+   "id": "survival",
+   "display_name": "Survival",
+   "mc_version": "26.3",
+   "platform": "paper",
+   "waiting": 0
+  },
+  {
+   "id": "creative",
+   "display_name": "Creative",
+   "mc_version": null,
+   "platform": null,
+   "waiting": 0
+  }
+ ],
+ "minis": [],
+ "types": [],
+ "subjects": [],
+ "players": []
+}

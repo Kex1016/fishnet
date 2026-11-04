@@ -72,8 +72,13 @@ container's environment; it is never in the image, the repo or the logs.
 deploy/deploy.sh
 # deploy: building 3a90a9f95e14
 # deploy: OK deployed 3a90a9f95e14 (was none) in 71s
-curl -s http://127.0.0.1:3000/healthz        # {"status":"ok"}
+curl -s http://127.0.0.1:3000/healthz        # {"status":"ok","cakeutils":{"reachable":true,...},"recordingSince":...}
 ```
+
+`/healthz` answers 200 whenever the site runs (the health check must not flap with cakeutils); the
+body says whether cakeutils is reachable, since when it is not, when it rate-limited the site, and when
+the recorder started. Once Caddy is in front, the browser checks in `tests/e2e/` run against the live
+site from any machine with Bun and Playwright: `bun run e2e --base https://fishnet.haiiro.moe`.
 
 `./data` (the recorder's SQLite and the player opt-out list `data/hidden-players.txt`) is created
 next to the checkout and owned by the deploy user. Back it up if you care about the history; the

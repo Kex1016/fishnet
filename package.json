@@ -14,7 +14,8 @@
     "fixtures": "bun scripts/mock-fixtures.ts",
     "types": "bun scripts/gen-types.ts",
     "shots": "bun scripts/screenshots.ts",
-    "leakcheck": "bun scripts/leakcheck.ts"
+    "leakcheck": "bun scripts/leakcheck.ts",
+    "openapi": "bun scripts/sync-openapi.ts"
   },
   "devDependencies": {
     "@fontsource/jetbrains-mono": "^5.2.0",

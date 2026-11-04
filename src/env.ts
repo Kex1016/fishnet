@@ -15,6 +15,14 @@ export const variables = defineEnvVars({
     },
     description: "Requests per minute the site allows itself"
   },
+  CAKEUTILS_BURST: {
+    schema: (v) => {
+      const n = v ? Number(v) : 60;
+      if (!Number.isInteger(n) || n < 1) throw new Error("CAKEUTILS_BURST must be a positive integer (requests)");
+      return n;
+    },
+    description: "Requests the site may send back to back, below the token's burst"
+  },
   ORIGIN: { schema: str("http://localhost:3000"), description: "Public origin" },
   FISHNET_DATA_DIR: { schema: str("data"), description: "Recorder SQLite file and caches" },
   HIDDEN_PLAYERS_FILE: { schema: str("data/hidden-players.txt"), description: "Opted-out players, one per line" },

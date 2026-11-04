@@ -44,5 +44,6 @@
   a.fp-ms__stat:hover { color: var(--acc-ink); text-decoration: none; }
   .fp-ms__who { font: 400 13px/20px var(--font-text); min-width: 0; }
   .fp-ms__when { font: 400 12px/16px var(--font-mono); color: var(--faint); text-align: right; max-width: 150px; }
+  .fp-ms__when :global(.fp-tag) { height: auto; min-height: 20px; padding-top: 2px; padding-bottom: 2px; white-space: normal; text-align: left; line-height: 14px; }
   @media (max-width: 640px) { .fp-ms__when { max-width: 110px; } }
 </style>

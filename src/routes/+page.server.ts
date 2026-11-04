@@ -12,7 +12,7 @@ import { formatStat, group } from "#lib/format/stat-display.ts";
 import { day } from "#lib/format/dates.ts";
 import type { TimePoint } from "#lib/charts/index.ts";
 import { prepareFeed } from "#lib/milestones/prepare.server.ts";
-import { barRows, boardSum, isOutage, type BoardSum } from "./servers/boards.ts";
+import { activityGrid, barRows, boardSum, isOutage, type BoardSum } from "./servers/boards.ts";
 
 type Tile = { key: string; label: string; value: string; note?: string; href?: string; spark?: TimePoint[] };
 
@@ -30,7 +30,7 @@ export const load: PageServerLoad = async () => {
   const featured = FEATURED.filter((b) => b.metric.kind === "stat");
   const boards = [{ id: "playtime", label: "Time played", metric: PLAYTIME }, ...featured];
 
-  const [network, online, seen, sums, milestones, onlineWeek, onlineRecent, joins, since, series] = await Promise.all([
+  const [network, online, seen, sums, milestones, onlineWeek, onlineRecent, joins, since, series, hours] = await Promise.all([
     c.network(),
     c.players({ online: true, limit: 100 }),
     c.players({ limit: 1 }),
@@ -40,7 +40,8 @@ export const load: PageServerLoad = async () => {
     h.onlineRecent("network"),
     h.joinsPerWeek("month"),
     h.recordingSince(),
-    Promise.all(boards.map((b) => h.networkTotal(metricKey(b.metric), "network", "month")))
+    Promise.all(boards.map((b) => h.networkTotal(metricKey(b.metric), "network", "month"))),
+    h.activityByHour("network", "month")
   ]);
   if (online.ok) online.data.players = withoutHidden(online.data.players);
 
@@ -77,5 +78,5 @@ export const load: PageServerLoad = async () => {
   }
 
   const top = playtime.ok ? { ok: true as const, rows: barRows(playtime.data.top), asOf: playtime.asOf, stale: playtime.stale } : { ok: false as const, rows: [], asOf: undefined, stale: false };
-  return { title: undefined, crumbs: [], network, online, onlineRecent, totals, top, milestones, onlineWeek, joins, since };
+  return { title: undefined, crumbs: [], network, online, onlineRecent, totals, top, milestones, onlineWeek, joins, since, busiestHours: { since: hours.since, rows: activityGrid(hours.cells) } };
 };

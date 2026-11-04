@@ -12,7 +12,7 @@ import { parseScope, type Scope } from "#lib/api/scope.ts";
 import { formatStat, group } from "#lib/format/stat-display.ts";
 import type { TimePoint } from "#lib/charts/index.ts";
 import { prepareFeed } from "#lib/milestones/prepare.server.ts";
-import { barRows, boardSum, isOutage } from "../boards.ts";
+import { activityGrid, barRows, boardSum, isOutage } from "../boards.ts";
 
 export const load: PageServerLoad = async ({ params }) => {
   const id = params.id;
@@ -22,7 +22,7 @@ export const load: PageServerLoad = async ({ params }) => {
   const h = history();
   const featured = FEATURED.filter((b) => b.metric.kind === "stat");
 
-  const [network, minis, online, playtime, stats, milestones, hist, onlineWeek, onlineRecent, presence] = await Promise.all([
+  const [network, minis, online, playtime, stats, milestones, hist, onlineWeek, onlineRecent, presence, hours] = await Promise.all([
     c.network(),
     c.miniServers(),
     c.players({ online: true, limit: 100 }),
@@ -32,7 +32,8 @@ export const load: PageServerLoad = async ({ params }) => {
     h.server(id, "week"),
     h.online(scope, "week"),
     h.onlineRecent(scope),
-    h.miniPresence(id, "week")
+    h.miniPresence(id, "week"),
+    h.activityByHour(scope, "month")
   ]);
   const server = network.ok ? network.data.servers.find((s) => s.id === id) : undefined;
   if (network.ok && !server) error(404, "No such server");
@@ -80,6 +81,7 @@ export const load: PageServerLoad = async ({ params }) => {
     onlineRecent,
     waiting: waitingLine.length >= 2 ? waitingLine : [],
     samples: hist.samples,
-    since: hist.since
+    since: hist.since,
+    busiestHours: { since: hours.since, rows: activityGrid(hours.cells) }
   };
 };

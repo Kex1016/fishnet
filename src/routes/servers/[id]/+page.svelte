@@ -4,11 +4,12 @@
   import EmptyState from "#lib/design/EmptyState.svelte";
   import Face from "#lib/design/Face.svelte";
   import Notice from "#lib/design/Notice.svelte";
-  import { BarList, LineChart, StatTile, UptimeStrip, ViewSwitch, viewParam } from "#lib/charts/index.ts";
+  import { BarList, Heatmap, LineChart, StatTile, UptimeStrip, ViewSwitch, viewParam } from "#lib/charts/index.ts";
   import { MilestoneFeed } from "#lib/milestones/index.ts";
   import { boardHref, PLAYTIME } from "#lib/api/metric.ts";
   import { group } from "#lib/format/stat-display.ts";
   import { titleCase } from "#lib/players/names.ts";
+  import { HOURS, meanPlayers } from "../boards.ts";
   let { data } = $props();
   const view = $derived(viewParam(page.url));
   const s = $derived(data.server);
@@ -77,6 +78,18 @@
       {view}
       emptyTitle="No history yet"
       emptyLine="Whether the server was linked is recorded every minute once the site is live."
+    />
+    <Heatmap
+      title="Busiest hours"
+      sub="{data.name} · mean players online · last 30 days · UTC"
+      since={data.busiestHours.since ?? data.since}
+      {view}
+      rows={data.busiestHours.rows}
+      columns={HOURS}
+      format={meanPlayers}
+      cellLabel={(r, c) => `${r} ${c}:00`}
+      emptyTitle="No history yet"
+      emptyLine="The busiest hours show up after a few days of recording."
     />
   </div>
 

@@ -6,11 +6,11 @@ export const HOUR = 60 * MINUTE;
 export const DAY = 24 * HOUR;
 export const WEEK = 7 * DAY;
 
-/** How far back each range reaches. */
-export const RANGE_MS: Record<Range, number> = { day: DAY, week: WEEK, month: 30 * DAY };
+/** How far back each range reaches. A quarter is 13 whole weeks, the width of the per-day heatmaps. */
+export const RANGE_MS: Record<Range, number> = { day: DAY, week: WEEK, month: 30 * DAY, quarter: 13 * WEEK };
 
-/** The bucket width of a range's online series: day 5 min (288 points), week 1 h (168), month 6 h (120). */
-export const RANGE_BUCKET: Record<Range, number> = { day: 5 * MINUTE, week: HOUR, month: 6 * HOUR };
+/** The bucket width of a range's online series: day 5 min (288 points), week 1 h (168), month 6 h (120), quarter 6 h (364). */
+export const RANGE_BUCKET: Record<Range, number> = { day: 5 * MINUTE, week: HOUR, month: 6 * HOUR, quarter: 6 * HOUR };
 
 /** Retention (PLAN §3.3): minute rows 30 days, hourly roll-ups and everything else two years. */
 export const KEEP_MINUTES = 30 * DAY;
@@ -35,5 +35,5 @@ export function weekday(t: number): number {
 }
 
 export function isRange(r: string): r is Range {
-  return r === "day" || r === "week" || r === "month";
+  return r === "day" || r === "week" || r === "month" || r === "quarter";
 }

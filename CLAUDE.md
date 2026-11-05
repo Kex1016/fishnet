@@ -94,7 +94,7 @@ skeletons carry a `<Stub unit="W4" .../>` line: remove it with the unit's PR.
   `Metric` (`metric.ts`): `{kind:"playtime"} | {kind:"stat", type, subject}`; criterion form
   `mined:minecraft:stone`, `mined:*`; `parseMetric`, `metricKey`, `boardHref`.
 - `History` (`history.ts`): `recordingSince, online, onlineRecent, server, activityByHour, miniPresence,
-  networkTotal, rankMoves, milestonesPerDay, joinsPerWeek`; every answer carries `since`.
+  networkTotal, rankMoves, milestonesPerDay, advancementsPerDay, joinsPerWeek`; every answer carries `since`.
 - Charts (`charts/types.ts`): `ChartFrame` (`title, href, sub, since, asOf, stale, view, emptyTitle,
   emptyLine`) + `ColumnChart, LineChart, Sparkline, Heatmap, StatTile, BarList, UptimeStrip, DataTable,
   ViewSwitch`; `viewParam(url)` reads the page's one `?view=tables` switch.

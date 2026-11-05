@@ -132,7 +132,10 @@ list route):
 Pages: `/advancements` (feed, "Most firsts", "Most completed"), `/advancements/<id>` (first in the
 network and on each server, with how many players have it there, never summed across servers), the
 profile's "First to complete", and five-row feeds on the home and server pages. `earners` is per scope
-(network = distinct players) and is shown as "first of n".
+(network = distinct players) and is shown as "first of n". The recorder stores each scope's feed
+(`advancement_first`, replaced on every read because an import can move a first earlier) and
+`History.advancementsPerDay` feeds the "Firsts per day" heatmap on `/advancements`; imported firsts
+count on their real day, so the grid can reach back before recording began.
 
 ## 3. Architecture
 

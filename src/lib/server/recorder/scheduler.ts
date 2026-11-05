@@ -5,8 +5,8 @@
 import { asRecorder } from "./context.ts";
 import { getMetaNumber, setMeta } from "./db.ts";
 import {
-  maintain, recordBoards, recordMilestones, recordMinis, recordNetwork, recordPlayers, recordServerMilestones, recordTotals,
-  type Outcome, type RecorderDeps
+  maintain, recordAdvancements, recordBoards, recordMilestones, recordMinis, recordNetwork, recordPlayers, recordServerAdvancements,
+  recordServerMilestones, recordTotals, type Outcome, type RecorderDeps
 } from "./jobs.ts";
 import { HOUR, MINUTE } from "./time.ts";
 
@@ -17,8 +17,10 @@ export const JOBS: readonly Job[] = [
   { name: "minis", every: 10 * MINUTE, run: recordMinis },
   { name: "players", every: 10 * MINUTE, run: recordPlayers },
   { name: "milestones", every: 10 * MINUTE, run: (d) => recordMilestones(d, "network") },
+  { name: "advancements", every: 10 * MINUTE, run: (d) => recordAdvancements(d, "network") },
   { name: "boards", every: HOUR, run: recordBoards },
   { name: "milestones-servers", every: HOUR, run: recordServerMilestones },
+  { name: "advancements-servers", every: HOUR, run: recordServerAdvancements },
   { name: "maintenance", every: HOUR, run: maintain },
   { name: "totals", every: 6 * HOUR, run: recordTotals }
 ];

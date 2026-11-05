@@ -10,7 +10,10 @@
 //          and never touches data/fishnet.db.
 import type { Scenario } from "../cakeutils/mock/index.ts";
 import { type Db, getMetaNumber, setMeta, tx } from "./db.ts";
-import { knownServers, recordBoards, recordMilestones, recordMinis, recordNetwork, recordPlayers, recordServerMilestones, recordTotals, type RecorderDeps } from "./jobs.ts";
+import {
+  knownServers, recordAdvancements, recordBoards, recordMilestones, recordMinis, recordNetwork, recordPlayers, recordServerAdvancements,
+  recordServerMilestones, recordTotals, type RecorderDeps
+} from "./jobs.ts";
 import { DAY, HOUR, MINUTE, floorTo, weekday } from "./time.ts";
 
 export async function seedMock(d: RecorderDeps, scenario: Scenario): Promise<void> {
@@ -21,6 +24,8 @@ export async function seedMock(d: RecorderDeps, scenario: Scenario): Promise<voi
   await recordTotals(d);
   await recordMilestones(d, "network");
   await recordServerMilestones(d);
+  await recordAdvancements(d, "network");
+  await recordServerAdvancements(d);
   if (scenario === "busy") synthesize(d.db, d.now());
 }
 

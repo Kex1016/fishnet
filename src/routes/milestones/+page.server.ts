@@ -27,7 +27,7 @@ export const load: PageServerLoad = async ({ url }) => {
     api().statTypes(),
     api().milestones({ ...filter, limit: PAGE, offset }),
     api().milestones({ ...filter, limit: 100, offset: 0 }),
-    history().milestonesPerDay(scope, "month")
+    history().milestonesPerDay(scope, "quarter")
   ]);
   if (!rawFeed.ok && rawFeed.kind === "off") error(404, "This proxy has no milestones");
 

@@ -4,11 +4,12 @@ import type { Client } from "#lib/server/cakeutils/client.ts";
 import { fail, ok, type Result } from "#lib/api/result.ts";
 import { metricKey, type Metric } from "#lib/api/metric.ts";
 import type { FeaturedBoard } from "#lib/boards.ts";
-import type { LeaderboardEntry, MilestoneFeedRow, Network } from "#lib/api/types.ts";
+import type { AdvancementRow, LeaderboardEntry, MilestoneFeedRow, Network } from "#lib/api/types.ts";
 import { getMetaNumber, migrate, openDb, schemaVersion, seriesSince } from "#lib/server/recorder/db.ts";
 import { MIGRATIONS } from "#lib/server/recorder/schema.ts";
 import {
-  applyRetention, purgeHidden, recordBoards, recordMilestones, recordMinis, recordNetwork, recordPlayers, recordTotals, rollUp, type RecorderDeps
+  applyRetention, purgeHidden, recordAdvancements, recordBoards, recordMilestones, recordMinis, recordNetwork, recordPlayers, recordServerAdvancements,
+  recordTotals, rollUp, type RecorderDeps
 } from "#lib/server/recorder/jobs.ts";
 import { createSqliteHistory } from "#lib/server/recorder/queries.ts";
 import { JOBS, firstRun, nextRun, startScheduler } from "#lib/server/recorder/scheduler.ts";
@@ -30,6 +31,9 @@ type Fake = {
   milestonesOn: boolean;
   /** feed rows, each tagged with the scope whose feed lists it */
   feed: (MilestoneFeedRow & { scope: string })[];
+  advancementsOn: boolean;
+  /** advancement firsts, each tagged with its scope */
+  advFeed: (AdvancementRow & { scope: string })[];
   calls: string[];
 };
 
@@ -51,6 +55,8 @@ function fake(): Fake {
     types: ["minecraft:mined", "minecraft:custom"],
     milestonesOn: true,
     feed: [],
+    advancementsOn: true,
+    advFeed: [],
     calls: []
   };
 }
@@ -96,6 +102,15 @@ function clientOf(f: Fake): Client {
       return answer("milestones", () => {
         const off = q.offset ?? 0;
         const rows = f.feed.filter((r) => r.scope === (q.scope ?? "network"));
+        return { scope: q.scope ?? "network", total: rows.length, milestones: rows.slice(off, off + (q.limit ?? 10)) };
+      });
+    },
+    advancementsEnabled: async () => f.advancementsOn,
+    advancements: (q = {}) => {
+      if (!f.advancementsOn) return Promise.resolve(fail("off"));
+      return answer("advancements", () => {
+        const off = q.offset ?? 0;
+        const rows = f.advFeed.filter((r) => r.scope === (q.scope ?? "network")).sort((a, b) => b.earned_at - a.earned_at);
         return { scope: q.scope ?? "network", total: rows.length, milestones: rows.slice(off, off + (q.limit ?? 10)) };
       });
     }
@@ -390,6 +405,74 @@ describe("milestones", () => {
     const s = setup();
     await recordMilestones(s.d, "network");
     expect(await s.h.milestonesPerDay("network", "month")).toEqual({ since: T0, days: [{ day: Date.UTC(2026, 10, 4), v: 0 }] });
+  });
+});
+
+const adv = (advancement: string, earned_at: number, extra: Partial<AdvancementRow & { scope: string }> = {}): AdvancementRow & { scope: string } => ({
+  advancement,
+  title: advancement,
+  uuid: "u-a",
+  name: "Ann",
+  server: "survival",
+  earned_at,
+  imported: false,
+  earners: 1,
+  scope: "network",
+  ...extra
+});
+
+describe("advancement firsts (D-111)", () => {
+  test("stores every row, replaces a first that moved earlier, drops opted-out players", async () => {
+    const s = setup({ hidden: ["Hid"] });
+    s.f.advFeed = [adv("minecraft:story/root", T0 - DAY), adv("minecraft:story/mine_diamond", T0 - 3 * DAY), adv("minecraft:nether/root", T0 - HOUR, { uuid: "u-h", name: "Hid" })];
+    expect(await recordAdvancements(s.d, "network")).toBe("ok");
+    expect(s.db.prepare("SELECT count(*) AS n FROM advancement_first").get()).toEqual({ n: 2 });
+    // an import found an earlier completion by someone else: the row is replaced, not duplicated
+    s.f.advFeed[1] = adv("minecraft:story/mine_diamond", T0 - 10 * DAY, { uuid: "u-b", name: "Bea", imported: true });
+    s.f.calls = [];
+    await recordAdvancements(s.d, "network");
+    expect(s.f.calls.length).toBe(1); // one page covers the feed
+    const row = s.db.prepare("SELECT name, earned_at, imported FROM advancement_first WHERE advancement = 'minecraft:story/mine_diamond'").get();
+    expect(row).toEqual({ name: "Bea", earned_at: T0 - 10 * DAY, imported: 1 });
+    const g = await s.h.advancementsPerDay("network", "week");
+    expect(g.since).toBe(T0 - 10 * DAY); // reaches back to the imported first
+    expect(g.days.map((x) => x.v)).toEqual([0, 0, 0, 0, 0, 1, 0]); // the last 7 days: root yesterday, diamond 10 days back is outside the week
+    expect(g.days[6].day).toBe(Date.UTC(2026, 10, 4));
+    expect((await s.h.advancementsPerDay("network", "month")).days.find((x) => x.day === Date.UTC(2026, 9, 25))?.v).toBe(1);
+    const q = await s.h.advancementsPerDay("network", "quarter"); // the heatmap's range: every day since the earliest first
+    expect(q.days.length).toBe(11);
+    expect(q.days[0]).toEqual({ day: Date.UTC(2026, 9, 25), v: 1 });
+  });
+
+  test("purge removes a player who opted out after being recorded", async () => {
+    const s = setup();
+    s.f.advFeed = [adv("minecraft:story/root", T0 - DAY, { uuid: "u-x", name: "Xan" })];
+    await recordAdvancements(s.d, "network");
+    const hidden = (p: { uuid: string; name: string }) => p.uuid === "u-x";
+    purgeHidden(s.db, hidden);
+    expect(s.db.prepare("SELECT count(*) AS n FROM advancement_first").get()).toEqual({ n: 0 });
+  });
+
+  test("off (a proxy without D-111): skipped without a request, since null, servers too", async () => {
+    const s = setup();
+    s.f.advancementsOn = false;
+    expect(await recordAdvancements(s.d, "network")).toBe("skipped");
+    expect(await recordServerAdvancements(s.d)).toBe("skipped");
+    expect(s.f.calls).toEqual([]);
+    expect(await s.h.advancementsPerDay("network", "month")).toEqual({ since: null, days: [] });
+  });
+
+  test("on with nothing completed: zero days from the first run; servers after a network sample", async () => {
+    const s = setup();
+    await recordAdvancements(s.d, "network");
+    expect(await s.h.advancementsPerDay("network", "month")).toEqual({ since: T0, days: [{ day: Date.UTC(2026, 10, 4), v: 0 }] });
+    expect(await recordServerAdvancements(s.d)).toBe("down"); // no network sample yet
+    await recordNetwork(s.d);
+    s.f.advFeed = [adv("minecraft:story/root", T0 - HOUR, { scope: "server:survival" })];
+    expect(await recordServerAdvancements(s.d)).toBe("ok");
+    expect((await s.h.advancementsPerDay("server:survival", "week")).days.at(-1)?.v).toBe(1);
+    expect((await s.h.advancementsPerDay("server:lobby", "week")).days.at(-1)?.v).toBe(0);
+    expect((await s.h.advancementsPerDay("network", "week")).days.at(-1)?.v).toBe(0); // never added across scopes
   });
 });
 

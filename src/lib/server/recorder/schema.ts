@@ -111,5 +111,22 @@ export const MIGRATIONS: readonly string[] = [
     seen_at INTEGER NOT NULL
   ) WITHOUT ROWID;
   CREATE INDEX player_first_seen ON player (first_seen);
+  `,
+  // 2: advancement firsts (cakeutils D-111): who completed each advancement first in a scope, as the
+  // feed lists it. "First" can move to an earlier time when the operator imports old completions, so
+  // rows are replaced on every read, never only appended. earned_at is the backend's completion time.
+  `
+  CREATE TABLE advancement_first (
+    scope TEXT NOT NULL,
+    advancement TEXT NOT NULL,
+    uuid TEXT,
+    name TEXT,
+    server TEXT NOT NULL,
+    earned_at INTEGER NOT NULL,
+    imported INTEGER NOT NULL,
+    seen_at INTEGER NOT NULL,
+    PRIMARY KEY (scope, advancement)
+  ) WITHOUT ROWID;
+  CREATE INDEX advancement_first_earned ON advancement_first (scope, earned_at);
   `
 ];

@@ -35,6 +35,25 @@ Copy `.env.example` to `.env` and set the values. `.env` is never committed.
 | `ORIGIN` | The public origin, for absolute links and the origin check | `http://localhost:3000` |
 | `FISHNET_DATA_DIR` | Recorder database and caches | `data` |
 | `HIDDEN_PLAYERS_FILE` | Players who opted out, one UUID or name per line | `data/hidden-players.txt` |
+| `HIDDEN_SERVERS_FILE` | Servers the site never shows, one cakeutils server id per line (below) | `data/hidden-servers.txt` |
+
+### Hiding a server
+
+Put the server's id (its `velocity.toml` key, as cakeutils names it) on its own line in
+`data/hidden-servers.txt`; `#` starts a comment. Within a minute, without a restart, the server leaves
+every page, scope switch, feed, board and the recorder, `/servers/<id>` and `?scope=server:<id>` answer
+404, and players on it read as offline. Network totals leave it out too: the site asks cakeutils for
+network figures with `exclude=<ids>` (cakeutils D-113), which subtracts that server's own figures from
+the network's (exact, never a sum of the other servers). Two things cannot leave it out, and the site
+says so where they show:
+
+- network milestones (first to a stat threshold) are recorded when they happen, across every server;
+  their sections carry a line saying they count every server;
+- a cakeutils older than D-113 ignores `exclude`; every page then shows a notice that network totals
+  still include unlisted servers (playtime is corrected on the site, stats cannot be).
+
+History the recorder took before the server was hidden is kept but no longer shown for that server;
+network charts from before then still count its players.
 
 Create the token on the proxy with the read scopes and the rate the site uses:
 

@@ -205,7 +205,9 @@ Featured boards and composite boards ("Travel" = the distance stats summed per p
 hidden until it exists; composites sum players' values inside one scope only.
 
 A `hidden-players.txt` (UUID or name per line, mounted at runtime) drops opted-out players from every
-page and from the recorder, as journey does.
+page and from the recorder, as journey does. A `hidden-servers.txt` (server id per line, added 5 Nov
+2026) drops whole servers the same way, and network figures are asked of cakeutils without them
+(`exclude=`, cakeutils D-113); network milestones cannot leave a server out and say so (README).
 
 ### 3.5 Empty, missing and down: the rules every unit follows
 

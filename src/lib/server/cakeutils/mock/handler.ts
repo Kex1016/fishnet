@@ -153,27 +153,27 @@ function valuesIn(world: World, p: WorldPlayer, scope: ScopeInfo): Values {
   return rollup(world).byPlayer.get(p.uuid)?.get(scope.scope) ?? new Map();
 }
 
-function playtimeOf(world: World, p: WorldPlayer, scope: ScopeInfo): Playtime {
+function playtimeOf(world: World, p: WorldPlayer, scope: ScopeInfo, excluded: string[] = []): Playtime {
   const publicMini = (k: string) => world.minis.some((m) => `${m.server}/${m.id}` === k && m.public);
   if (scope.mini) {
     const v = scope.seen ? (p.playtime.by_mini[`${scope.server}/${scope.mini}`] ?? 0) : 0;
-    return { scope: scope.scope, total_ms: v, by_server: {}, by_mini: v ? { [`${scope.server}/${scope.mini}`]: v } : {} };
+    return { scope: scope.scope, excluded: [], total_ms: v, by_server: {}, by_mini: v ? { [`${scope.server}/${scope.mini}`]: v } : {} };
   }
   if (scope.server) {
     const v = scope.seen ? (p.playtime.by_server[scope.server] ?? 0) : 0;
     const by_mini: Record<string, number> = {};
     for (const [k, ms] of Object.entries(p.playtime.by_mini)) if (k.startsWith(`${scope.server}/`) && publicMini(k)) by_mini[k] = ms;
-    return { scope: scope.scope, total_ms: v, by_server: v ? { [scope.server]: v } : {}, by_mini: scope.seen ? by_mini : {} };
+    return { scope: scope.scope, excluded: [], total_ms: v, by_server: v ? { [scope.server]: v } : {}, by_mini: scope.seen ? by_mini : {} };
   }
   const total = Object.values(p.playtime.by_server).reduce((a, b) => a + b, 0) + p.playtime.between_ms;
   const by_mini: Record<string, number> = {};
   for (const [k, ms] of Object.entries(p.playtime.by_mini)) if (publicMini(k)) by_mini[k] = ms;
-  return { scope: "network", total_ms: total, by_server: { ...p.playtime.by_server }, by_mini };
+  return { scope: "network", excluded, total_ms: total, by_server: { ...p.playtime.by_server }, by_mini };
 }
 
 const now = () => Date.now();
 
-function profile(world: World, p: WorldPlayer): PlayerProfile {
+function profile(world: World, p: WorldPlayer, excluded: string[] = []): PlayerProfile {
   const t = now();
   return {
     uuid: p.uuid,
@@ -185,7 +185,7 @@ function profile(world: World, p: WorldPlayer): PlayerProfile {
     skin: p.online ? p.skin : null,
     prefix: p.online ? p.prefix : [],
     suffix: p.online ? p.suffix : [],
-    playtime: playtimeOf(world, p, { scope: "network", seen: true })
+    playtime: playtimeOf(world, p, { scope: "network", seen: true }, excluded)
   };
 }
 
@@ -359,8 +359,57 @@ async function iconPng(sha: string): Promise<Uint8Array> {
 
 // ---- the router
 
+// ---- exclude= (cakeutils D-113): network figures without some servers. The world without those servers'
+// stats, playtime and advancements rolls up to exactly "network minus them", like the proxy's subtraction.
+
+const withoutCache = new WeakMap<World, Map<string, World>>();
+
+function worldWithout(world: World, ex: string[]): World {
+  if (!ex.length) return world;
+  const key = ex.join(",");
+  let byKey = withoutCache.get(world);
+  if (!byKey) withoutCache.set(world, (byKey = new Map()));
+  const hit = byKey.get(key);
+  if (hit) return hit;
+  const gone = new Set(ex);
+  const onGone = (leaf: string) => {
+    const m = /^(?:server:([^/]+)|mini:([^/]+)\/.+)$/.exec(leaf);
+    return !!m && gone.has(m[1] ?? m[2]);
+  };
+  const w: World = {
+    ...world,
+    players: world.players.map((p) => {
+      const by_server = Object.fromEntries(Object.entries(p.playtime.by_server).filter(([id]) => !gone.has(id)));
+      const hadGone = Object.keys(p.playtime.by_server).some((id) => gone.has(id));
+      return {
+        ...p,
+        stats: Object.fromEntries(Object.entries(p.stats).filter(([leaf]) => !onGone(leaf))),
+        playtime: {
+          by_server,
+          by_mini: Object.fromEntries(Object.entries(p.playtime.by_mini).filter(([k]) => !gone.has(k.split("/")[0]))),
+          // a player with time only on excluded servers leaves the network board, as on the proxy
+          between_ms: hadGone && Object.keys(by_server).length === 0 ? 0 : p.playtime.between_ms
+        },
+        advancements: p.advancements ? Object.fromEntries(Object.entries(p.advancements).filter(([sv]) => !gone.has(sv))) : p.advancements
+      };
+    })
+  };
+  byKey.set(key, w);
+  return w;
+}
+
+const EXCLUDE_RE = /^[A-Za-z0-9._-]{1,64}(,[A-Za-z0-9._-]{1,64}){0,31}$/;
+
 export async function handleMock(world: World, req: Request): Promise<Response> {
   const url = new URL(req.url);
+  const exRaw = url.searchParams.get("exclude");
+  if (exRaw !== null && !EXCLUDE_RE.test(exRaw)) return problem(400, "bad_request", "'exclude' must be server ids separated by commas");
+  const ex = exRaw ? [...new Set(exRaw.split(","))].sort() : [];
+  /** the world a network-scope read sees, and what it echoes in `excluded` */
+  const networkScope = (url.searchParams.get("scope") ?? "network") === "network";
+  const excluded = networkScope ? ex : [];
+  const all = world;
+  if (networkScope) world = worldWithout(world, ex);
   const path = url.pathname.replace(/\/+$/, "") || "/";
   if (path === "/v2/health") return json(req, { status: "ok" });
   if (!path.startsWith("/v2")) return problem(404, "not_found", "no such route");
@@ -378,6 +427,7 @@ export async function handleMock(world: World, req: Request): Promise<Response> 
   }
 
   if (seg[0] === "network" && seg.length === 1) {
+    world = all;
     const servers = world.servers.map((s) => ({
       id: s.id,
       display_name: s.display_name,
@@ -391,6 +441,7 @@ export async function handleMock(world: World, req: Request): Promise<Response> 
   }
 
   if (seg[0] === "mini-servers" && seg.length === 1) {
+    world = all;
     const data: MiniServers = {
       mini_servers: world.minis
         .filter((m) => m.public)
@@ -427,7 +478,7 @@ export async function handleMock(world: World, req: Request): Promise<Response> 
       const row: BatchResponse["players"][number] = { ref, uuid: p.uuid, name: p.name, online: p.online, server: p.online ? p.server : null };
       const vals = valuesIn(world, p, scope);
       for (const inc of include) {
-        if (inc === "playtime") row.playtime = playtimeOf(world, p, scope);
+        if (inc === "playtime") row.playtime = playtimeOf(worldWithout(all, ex), p, { scope: "network", seen: true }, ex);
         else if (inc.startsWith("stats:")) {
           const parts = inc.slice(6).split(":");
           if (parts.length < 2) return problem(400, "bad_request", `bad include ${inc}`);
@@ -440,12 +491,13 @@ export async function handleMock(world: World, req: Request): Promise<Response> 
       }
       players.push(row);
     }
-    const data: BatchResponse = { scope: scope.scope, players, not_found };
+    const data: BatchResponse = { scope: scope.scope, excluded, players, not_found };
     return json(req, data);
   }
 
   if (seg[0] === "players") {
     if (seg.length === 1) {
+      world = all;
       const pg = paging(url);
       if (pg instanceof Response) return pg;
       const online = url.searchParams.get("online");
@@ -463,10 +515,10 @@ export async function handleMock(world: World, req: Request): Promise<Response> 
     }
     const p = findPlayer(world, seg[1]);
     if (!p) return problem(404, "not_found", "no such player");
-    if (seg.length === 2) return json(req, profile(world, p));
+    if (seg.length === 2) return json(req, profile(worldWithout(all, ex), p, ex));
     const scope = scopeOf(world, url);
     if (scope instanceof Response) return scope;
-    if (seg[2] === "playtime" && seg.length === 3) return json(req, playtimeOf(world, p, scope));
+    if (seg[2] === "playtime" && seg.length === 3) return json(req, playtimeOf(world, p, scope, excluded));
     if (seg[2] === "relations" && seg.length === 3) return problem(403, "forbidden", "token lacks read:relations");
     if (seg[2] === "stats" && seg.length === 3) {
       const pg = paging(url);
@@ -482,7 +534,7 @@ export async function handleMock(world: World, req: Request): Promise<Response> 
         rows.push(sv);
       }
       rows.sort((a, b) => (a.type < b.type ? -1 : a.type > b.type ? 1 : a.subject < b.subject ? -1 : a.subject > b.subject ? 1 : 0));
-      const data: StatList = { uuid: p.uuid, scope: scope.scope, total: rows.length, stats: rows.slice(pg.offset, pg.offset + pg.limit) };
+      const data: StatList = { uuid: p.uuid, scope: scope.scope, excluded, total: rows.length, stats: rows.slice(pg.offset, pg.offset + pg.limit) };
       return json(req, data);
     }
     if (seg[2] === "stats" && seg.length === 5) {
@@ -490,7 +542,7 @@ export async function handleMock(world: World, req: Request): Promise<Response> 
       const subject = seg[4];
       if (!rollup(world).recorded.has(`${type}|${subject}`)) return problem(404, "not_found", "nobody has recorded this stat");
       const v = valuesIn(world, p, scope).get(`${type}|${subject}`) ?? 0;
-      const data: StatRow = { uuid: p.uuid, scope: scope.scope, ...statValue(world, type, subject, v) };
+      const data: StatRow = { uuid: p.uuid, scope: scope.scope, excluded, ...statValue(world, type, subject, v) };
       return json(req, data);
     }
     if (seg[2] === "advancement-milestones" && seg.length === 3) {
@@ -502,10 +554,11 @@ export async function handleMock(world: World, req: Request): Promise<Response> 
       const rows = advRows(world, scope)
         .filter((m) => m.uuid === p.uuid)
         .map(({ uuid: _u, name: _n, ...row }) => row);
-      const data: PlayerAdvancements = { uuid: p.uuid, name: p.name, scope: scope.scope, total: rows.length, milestones: rows.slice(pg.offset, pg.offset + pg.limit) };
+      const data: PlayerAdvancements = { uuid: p.uuid, name: p.name, scope: scope.scope, excluded, total: rows.length, milestones: rows.slice(pg.offset, pg.offset + pg.limit) };
       return json(req, data);
     }
     if (seg[2] === "milestones" && seg.length === 3) {
+      world = all;
       if (!world.milestones) return problem(404, "not_found", "no such route");
       if (scope.mini) return problem(400, "bad_request", "milestones have no mini-server scope");
       const pg = paging(url);
@@ -571,6 +624,7 @@ export async function handleMock(world: World, req: Request): Promise<Response> 
       const data: Leaderboard = {
         metric: "playtime",
         scope: scope.scope,
+        excluded,
         unit: "ms",
         total: rows.length,
         entries: rows.slice(pg.offset, pg.offset + pg.limit).map((x, i) => ({ rank: pg.offset + i + 1, uuid: x.p.uuid, name: x.p.name, value: x.value, unit: "ms", display: durationMs(x.value) }))
@@ -586,6 +640,7 @@ export async function handleMock(world: World, req: Request): Promise<Response> 
       const data: Leaderboard = {
         metric: `${shortType(type)}:${subject}`,
         scope: scope.scope,
+        excluded,
         unit: b.unit,
         total: b.rows.length,
         entries: b.rows.slice(pg.offset, pg.offset + pg.limit).map((x, i) => ({ rank: pg.offset + i + 1, uuid: x.p.uuid, name: x.p.name, value: x.value, unit: b.unit, display: formatStat(b.unit, x.value) }))
@@ -604,21 +659,23 @@ export async function handleMock(world: World, req: Request): Promise<Response> 
       const pg = paging(url);
       if (pg instanceof Response) return pg;
       const rows = advRows(world, scope);
-      const data: AdvancementFeed = { scope: scope.scope, total: rows.length, milestones: rows.slice(pg.offset, pg.offset + pg.limit) };
+      const data: AdvancementFeed = { scope: scope.scope, excluded, total: rows.length, milestones: rows.slice(pg.offset, pg.offset + pg.limit) };
       return json(req, data);
     }
     const raw = url.searchParams.get("id");
     if (!raw || !raw.trim()) return problem(400, "bad_request", "'id' is required");
     const id = fullAdvId(raw.trim());
-    const rows = advIndex(world).get(id);
-    if (!rows) return problem(404, "not_found", `no advancement ${id}`);
-    const network = advFirst(world, rows, null);
-    const servers = [...new Set(rows.map((r) => r.server))].sort().map((sv) => advFirst(world, rows, sv)!);
-    const data: AdvancementDetail = { advancement: id, title: network ? advTitle(world, id) : null, network, servers };
+    if (!advIndex(all).get(id)) return problem(404, "not_found", `no advancement ${id}`);
+    const w = worldWithout(all, ex);
+    const rows = advIndex(w).get(id) ?? [];
+    const network = advFirst(w, rows, null);
+    const servers = [...new Set(rows.map((r) => r.server))].sort().map((sv) => advFirst(w, rows, sv)!);
+    const data: AdvancementDetail = { advancement: id, title: advTitle(all, id) || null, excluded: ex, network, servers };
     return json(req, data);
   }
 
   if (seg[0] === "milestones") {
+    world = all;
     if (!world.milestones) return problem(404, "not_found", "no such route");
     const scope = scopeOf(world, url);
     if (scope instanceof Response) return scope;

@@ -58,6 +58,7 @@ container for `bun run shots`; they are not a dependency.
 | `src/lib/server/history.ts` | the `History` interface; `emptyHistory` until W2 | W2 |
 | `src/lib/server/recorder/` | scheduler + SQLite (`data/fishnet.db`) | W2 |
 | `src/lib/server/hidden.ts` | opted-out players (`HIDDEN_PLAYERS_FILE`) | W5 |
+| `src/lib/server/hidden-servers.ts`, `src/lib/server/cakeutils/hide.ts` | hidden servers (`HIDDEN_SERVERS_FILE`): the client wrapper drops them from every answer and asks cakeutils for network figures with `exclude=` (D-113) | post-W10 |
 | `src/lib/format/` | `stat-display.ts` (StatDisplay port, cakeutils' tests), `dates.ts` | W1 |
 | `src/lib/charts/` | `types.ts` (props, frozen) + components, stubbed | W3 |
 | `src/lib/design/` | tokens, base, `fp-` classes, Shell parts, EmptyState, Notice, Slot, Face, Pager, ScopeSwitch, ... | W0 (ask for additions) |

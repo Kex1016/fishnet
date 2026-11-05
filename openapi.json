@@ -237,6 +237,16 @@
               "type": "string"
             },
             "description": "Player UUID (dashed or undashed) or exact name (case-insensitive)."
+          },
+          {
+            "name": "exclude",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9._-]{1,64}(,[A-Za-z0-9._-]{1,64}){0,31}$"
+            },
+            "description": "Server ids, comma-separated, left out of network-scope figures (D-113): each value becomes the network value minus those servers' values, rows that only came from them are dropped. Ignored for a server or mini scope. The answer's excluded field lists what was applied."
           }
         ],
         "responses": {
@@ -259,6 +269,9 @@
           },
           "304": {
             "description": "Not modified (If-None-Match matched the ETag)"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
           },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
@@ -311,6 +324,16 @@
               "pattern": "^(network|server:[A-Za-z0-9._-]{1,64}|mini:[A-Za-z0-9._-]{1,64}/[^/]{1,64})$"
             },
             "description": "network (default), server:<id> or mini:<server-id>/<mini-id>. A private mini-server (public:false) answers exactly like one that was never seen, for every token."
+          },
+          {
+            "name": "exclude",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9._-]{1,64}(,[A-Za-z0-9._-]{1,64}){0,31}$"
+            },
+            "description": "Server ids, comma-separated, left out of network-scope figures (D-113): each value becomes the network value minus those servers' values, rows that only came from them are dropped. Ignored for a server or mini scope. The answer's excluded field lists what was applied."
           }
         ],
         "responses": {
@@ -379,6 +402,16 @@
               "pattern": "^(network|server:[A-Za-z0-9._-]{1,64}|mini:[A-Za-z0-9._-]{1,64}/[^/]{1,64})$"
             },
             "description": "network (default), server:<id> or mini:<server-id>/<mini-id>. A private mini-server (public:false) answers exactly like one that was never seen, for every token."
+          },
+          {
+            "name": "exclude",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9._-]{1,64}(,[A-Za-z0-9._-]{1,64}){0,31}$"
+            },
+            "description": "Server ids, comma-separated, left out of network-scope figures (D-113): each value becomes the network value minus those servers' values, rows that only came from them are dropped. Ignored for a server or mini scope. The answer's excluded field lists what was applied."
           }
         ],
         "requestBody": {
@@ -456,6 +489,16 @@
               "pattern": "^(network|server:[A-Za-z0-9._-]{1,64}|mini:[A-Za-z0-9._-]{1,64}/[^/]{1,64})$"
             },
             "description": "network (default), server:<id> or mini:<server-id>/<mini-id>. A private mini-server (public:false) answers exactly like one that was never seen, for every token."
+          },
+          {
+            "name": "exclude",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9._-]{1,64}(,[A-Za-z0-9._-]{1,64}){0,31}$"
+            },
+            "description": "Server ids, comma-separated, left out of network-scope figures (D-113): each value becomes the network value minus those servers' values, rows that only came from them are dropped. Ignored for a server or mini scope. The answer's excluded field lists what was applied."
           },
           {
             "name": "type",
@@ -594,6 +637,16 @@
               "pattern": "^(network|server:[A-Za-z0-9._-]{1,64}|mini:[A-Za-z0-9._-]{1,64}/[^/]{1,64})$"
             },
             "description": "network (default), server:<id> or mini:<server-id>/<mini-id>. A private mini-server (public:false) answers exactly like one that was never seen, for every token."
+          },
+          {
+            "name": "exclude",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9._-]{1,64}(,[A-Za-z0-9._-]{1,64}){0,31}$"
+            },
+            "description": "Server ids, comma-separated, left out of network-scope figures (D-113): each value becomes the network value minus those servers' values, rows that only came from them are dropped. Ignored for a server or mini scope. The answer's excluded field lists what was applied."
           }
         ],
         "responses": {
@@ -1031,6 +1084,16 @@
             "description": "network (default), server:<id> or mini:<server-id>/<mini-id>. A private mini-server (public:false) answers exactly like one that was never seen, for every token."
           },
           {
+            "name": "exclude",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9._-]{1,64}(,[A-Za-z0-9._-]{1,64}){0,31}$"
+            },
+            "description": "Server ids, comma-separated, left out of network-scope figures (D-113): each value becomes the network value minus those servers' values, rows that only came from them are dropped. Ignored for a server or mini scope. The answer's excluded field lists what was applied."
+          },
+          {
             "name": "limit",
             "in": "query",
             "required": false,
@@ -1120,6 +1183,16 @@
               "pattern": "^(network|server:[A-Za-z0-9._-]{1,64}|mini:[A-Za-z0-9._-]{1,64}/[^/]{1,64})$"
             },
             "description": "network (default), server:<id> or mini:<server-id>/<mini-id>. A private mini-server (public:false) answers exactly like one that was never seen, for every token."
+          },
+          {
+            "name": "exclude",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9._-]{1,64}(,[A-Za-z0-9._-]{1,64}){0,31}$"
+            },
+            "description": "Server ids, comma-separated, left out of network-scope figures (D-113): each value becomes the network value minus those servers' values, rows that only came from them are dropped. Ignored for a server or mini scope. The answer's excluded field lists what was applied."
           },
           {
             "name": "limit",
@@ -1502,6 +1575,16 @@
             "description": "network (default), server:<id> or mini:<server-id>/<mini-id>. A private mini-server (public:false) answers exactly like one that was never seen, for every token."
           },
           {
+            "name": "exclude",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9._-]{1,64}(,[A-Za-z0-9._-]{1,64}){0,31}$"
+            },
+            "description": "Server ids, comma-separated, left out of network-scope figures (D-113): each value becomes the network value minus those servers' values, rows that only came from them are dropped. Ignored for a server or mini scope. The answer's excluded field lists what was applied."
+          },
+          {
             "name": "limit",
             "in": "query",
             "required": false,
@@ -1586,6 +1669,16 @@
               "type": "string"
             },
             "description": "Namespaced advancement id, e.g. minecraft:story/mine_diamond (minecraft: may be omitted). Required."
+          },
+          {
+            "name": "exclude",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9._-]{1,64}(,[A-Za-z0-9._-]{1,64}){0,31}$"
+            },
+            "description": "Server ids, comma-separated, left out of network-scope figures (D-113): each value becomes the network value minus those servers' values, rows that only came from them are dropped. Ignored for a server or mini scope. The answer's excluded field lists what was applied."
           }
         ],
         "responses": {
@@ -1663,6 +1756,16 @@
               "pattern": "^(network|server:[A-Za-z0-9._-]{1,64}|mini:[A-Za-z0-9._-]{1,64}/[^/]{1,64})$"
             },
             "description": "network (default), server:<id> or mini:<server-id>/<mini-id>. A private mini-server (public:false) answers exactly like one that was never seen, for every token."
+          },
+          {
+            "name": "exclude",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9._-]{1,64}(,[A-Za-z0-9._-]{1,64}){0,31}$"
+            },
+            "description": "Server ids, comma-separated, left out of network-scope figures (D-113): each value becomes the network value minus those servers' values, rows that only came from them are dropped. Ignored for a server or mini scope. The answer's excluded field lists what was applied."
           },
           {
             "name": "limit",
@@ -2168,6 +2271,13 @@
           "scope": {
             "type": "string"
           },
+          "excluded": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "servers left out of the network figures in this answer (the request's exclude); empty when nothing was excluded or the scope is not the network"
+          },
           "total_ms": {
             "type": "integer"
           },
@@ -2344,6 +2454,13 @@
               "string",
               "null"
             ]
+          },
+          "excluded": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "servers left out of the network figures in this answer (the request's exclude); empty when nothing was excluded or the scope is not the network"
           }
         }
       },
@@ -2361,6 +2478,13 @@
           },
           "scope": {
             "type": "string"
+          },
+          "excluded": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "servers left out of the network figures in this answer (the request's exclude); empty when nothing was excluded or the scope is not the network"
           },
           "total": {
             "type": "integer"
@@ -2473,6 +2597,13 @@
         "properties": {
           "scope": {
             "type": "string"
+          },
+          "excluded": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "servers left out of the network figures in this answer (the request's exclude); empty when nothing was excluded or the scope is not the network"
           },
           "players": {
             "type": "array",
@@ -2654,6 +2785,13 @@
           },
           "scope": {
             "type": "string"
+          },
+          "excluded": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "servers left out of the network figures in this answer (the request's exclude); empty when nothing was excluded or the scope is not the network"
           },
           "unit": {
             "type": "string"
@@ -2939,6 +3077,13 @@
           "scope": {
             "type": "string"
           },
+          "excluded": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "servers left out of the network figures in this answer (the request's exclude); empty when nothing was excluded or the scope is not the network"
+          },
           "total": {
             "type": "integer"
           },
@@ -3011,6 +3156,13 @@
           "scope": {
             "type": "string"
           },
+          "excluded": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "servers left out of the network figures in this answer (the request's exclude); empty when nothing was excluded or the scope is not the network"
+          },
           "total": {
             "type": "integer"
           },
@@ -3073,6 +3225,13 @@
               "string",
               "null"
             ]
+          },
+          "excluded": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "servers left out of the network figures in this answer (the request's exclude); empty when nothing was excluded or the scope is not the network"
           },
           "network": {
             "type": [

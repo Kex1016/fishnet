@@ -8,6 +8,7 @@
   import { BarList, ColumnChart, Heatmap, LineChart, StatTile, ViewSwitch, viewParam } from "#lib/charts/index.ts";
   import { HOURS, meanPlayers } from "./servers/boards.ts";
   import { AdvancementFeed, MilestoneFeed } from "#lib/milestones/index.ts";
+  import HiddenServersNote from "#lib/milestones/HiddenServersNote.svelte";
   import { boardHref, PLAYTIME } from "#lib/api/metric.ts";
   import { titleCase } from "#lib/players/names.ts";
   let { data } = $props();
@@ -140,6 +141,9 @@
     />
   </div>
 
-  <MilestoneFeed result={data.milestones} href="/milestones" />
+  <div class="fp-section">
+    <MilestoneFeed result={data.milestones} href="/milestones" />
+    <HiddenServersNote />
+  </div>
   <AdvancementFeed result={data.advancements} href="/advancements" serverNames={data.serverNames} />
 </div>

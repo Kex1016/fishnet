@@ -3,7 +3,7 @@ import { error } from "@sveltejs/kit";
 import type { PageServerLoad } from "./$types";
 import { api } from "#lib/server/cakeutils/client.ts";
 import { fullType } from "#lib/api/metric.ts";
-import { titleCase } from "#lib/players/names.ts";
+import { typeLabel } from "#lib/format/labels.ts";
 import { withoutHidden } from "#lib/server/hidden.ts";
 
 const LIMIT = 48;
@@ -22,7 +22,7 @@ export const load: PageServerLoad = async ({ params, url }) => {
     type || !types.ok ? c.subjects({ type: key, q, limit: LIMIT, offset }) : null,
     type && !mixed ? c.leaderboard({ kind: "stat", type: key, subject: "*" }, "network", { limit: 5 }) : null
   ]);
-  const label = type?.name ?? titleCase(key);
+  const label = typeLabel(key, type?.name);
   if (total?.ok) total.data.entries = withoutHidden(total.data.entries);
   return {
     title: label,

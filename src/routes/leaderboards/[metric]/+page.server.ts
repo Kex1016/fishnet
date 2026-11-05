@@ -7,7 +7,7 @@ import { api } from "#lib/server/cakeutils/client.ts";
 import { boardHref, fullType, metricKey, parseMetric, type Metric } from "#lib/api/metric.ts";
 import { scopeParam } from "#lib/api/scope.ts";
 import { findComposite, findFeatured } from "#lib/boards.ts";
-import { subjectName, titleCase } from "#lib/players/names.ts";
+import { statTitle, typeLabel } from "#lib/format/labels.ts";
 import type { LeaderboardEntry, StatType, Subject } from "#lib/api/types.ts";
 import type { Failure } from "#lib/api/result.ts";
 import { formatStat } from "#lib/format/stat-display.ts";
@@ -47,14 +47,14 @@ export const load: PageServerLoad = async ({ params, url }) => {
   let about: string | null = composite ? `The ${composite.parts.length} distance stats added together, per player.` : null;
   if (stat) {
     type = types?.ok ? types.data.types.find((t) => t.key === stat.type) : undefined;
-    const typeName = type?.name ?? titleCase(stat.type);
+    const typeName = typeLabel(stat.type, type?.name);
     if (stat.subject === "*") {
-      title = `${typeName} total`;
-      about = `Every ${typeName.toLowerCase()} stat added together, per player.`;
+      title = statTitle({ type: stat.type, subject: "*", typeName: type?.name, kind: type?.kind });
+      about = `Every stat under ${typeName.toLowerCase()} added together, per player.`;
     } else {
       const names = subject?.ok ? subject.data.names : [];
       subjectRow = names.find((n) => n.kind === type?.kind) ?? names.find((n) => n.kind === null) ?? names[0];
-      title = subjectName(subjectRow?.name, stat.subject);
+      title = statTitle({ type: stat.type, subject: stat.subject, typeName: type?.name, subjectName: subjectRow?.name });
     }
     kicker = typeName;
   }

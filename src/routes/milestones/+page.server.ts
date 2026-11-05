@@ -9,7 +9,7 @@ import { ok, type Result } from "#lib/api/result.ts";
 import type { MilestoneFeedRow } from "#lib/api/types.ts";
 import { hideFromFeed, prepareFeed } from "#lib/milestones/prepare.server.ts";
 import { firstsByPlayer } from "#lib/milestones/helpers.ts";
-import { titleCase } from "#lib/players/names.ts";
+import { typeLabel } from "#lib/format/labels.ts";
 
 const PAGE = 50;
 // "Most firsts" counts the newest FIRSTS_PAGES × 100 milestones: every page is one more API read, and the
@@ -46,7 +46,7 @@ export const load: PageServerLoad = async ({ url }) => {
   const countedRows = hiddenFree.ok ? hiddenFree.data.milestones.length : 0;
   const total = counted.ok ? counted.data.total : 0;
 
-  const typeOptions = types.ok ? types.data.types.map((t) => ({ key: t.key, label: t.name ?? titleCase(t.key) })) : [];
+  const typeOptions = types.ok ? types.data.types.map((t) => ({ key: t.key, label: typeLabel(t.key, t.name) })) : [];
   return {
     title: "Milestones",
     crumbs: [{ label: "Milestones", href: "/milestones" }],

@@ -234,22 +234,22 @@
  "types": [
   {
    "key": "minecraft:mined",
-   "name": "Mined",
+   "name": "Times Mined",
    "kind": "block"
   },
   {
    "key": "minecraft:used",
-   "name": "Used",
+   "name": "Times Used",
    "kind": "item"
   },
   {
    "key": "minecraft:crafted",
-   "name": "Crafted",
+   "name": "Times Crafted",
    "kind": "item"
   },
   {
    "key": "minecraft:broken",
-   "name": "Broken",
+   "name": "Times Broken",
    "kind": "item"
   },
   {
@@ -264,12 +264,12 @@
   },
   {
    "key": "minecraft:killed",
-   "name": "Killed",
+   "name": "You killed %s %s",
    "kind": "entity"
   },
   {
    "key": "minecraft:killed_by",
-   "name": "Killed By",
+   "name": "%s killed you %s time(s)",
    "kind": "entity"
   },
   {

@@ -17,9 +17,9 @@ test("who needs both uuid and name; the player endpoint's rows have neither fiel
 });
 
 test("stat labels fall back to the key and say 'All' for type totals", () => {
-  expect(statLabel({ type: "minecraft:mined", subject: "minecraft:stone", stat_name: "Stone" })).toBe("Stone");
-  expect(statLabel({ type: "minecraft:mined", subject: "minecraft:diamond_ore", stat_name: null })).toBe("Diamond Ore");
-  expect(statLabel({ type: "minecraft:mined", subject: "*", stat_name: null })).toBe("All mined");
+  expect(statLabel({ type: "minecraft:mined", subject: "minecraft:stone", stat_name: "Stone" })).toBe("Stone mined");
+  expect(statLabel({ type: "minecraft:mined", subject: "minecraft:diamond_ore", stat_name: null })).toBe("Diamond Ore mined");
+  expect(statLabel({ type: "minecraft:mined", subject: "*", stat_name: null })).toBe("Blocks mined");
   expect(statHref({ metric: "mined:minecraft:stone" }, "server:survival")).toBe("/leaderboards/mined%3Aminecraft%3Astone?scope=server%3Asurvival");
   expect(statHref({ metric: "mined:*" })).toBe("/leaderboards/mined%3A*");
   expect(statHref({ metric: "garbage" })).toBeNull();

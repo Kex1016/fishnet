@@ -13,7 +13,7 @@ services:
     init: true
     user: "${FISHNET_UID:-1000}:${FISHNET_GID:-1000}"
     ports:
-      - "127.0.0.1:3000:3000"
+      - "7777:3000"
     env_file: .env
     volumes:
       - ./data:/app/data

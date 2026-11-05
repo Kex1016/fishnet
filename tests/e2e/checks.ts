@@ -46,6 +46,29 @@ export const CHECKS: Check[] = [
     }
   },
   {
+    name: "the advancements pages follow their own feature flag (D-111)",
+    on: ALL,
+    run: async (ctx) => {
+      const r = await ctx.get("/advancements");
+      if (ctx.scenario === "busy") expect(r.status === 200, `/advancements answered ${r.status} with advancements on`);
+      if (ctx.scenario === "fresh") expect(r.status === 404, `/advancements answered ${r.status} with advancements off (404 expected)`);
+      if (ctx.scenario === "live") expect(r.status === 200 || r.status === 404, `/advancements answered ${r.status}`);
+      const on = r.status === 200;
+      const home = await ctx.html("/");
+      const linked = /href="\/advancements"/.test(home);
+      expect(linked === on, on ? "advancements are on but the nav has no entry" : "advancements are off but the nav still links to them");
+      if (!on) expect(!/Latest advancements|First to complete/.test(home), "an advancement section is rendered on the home page while advancements are off");
+      const detail = await ctx.get("/advancements/minecraft%3Astory%2Fmine_diamond");
+      expect(detail.status === (on ? 200 : 404), `an advancement page answered ${detail.status} with advancements ${on ? "on" : "off"}`);
+      if (on) {
+        const feed = await ctx.html("/advancements");
+        expect(feed.includes("Most firsts") && feed.includes("Most completed"), "the advancements page has no side boards");
+        expect(!/Nobody has completed this yet/.test(await ctx.html("/advancements")) || feed.includes("fp-empty"), "contradictory empty state");
+      }
+      return ctx.scenario === "live" ? `advancements ${on ? "on" : "off"}` : undefined;
+    }
+  },
+  {
     name: "/healthz describes the site",
     on: ALL,
     run: async (ctx) => {
@@ -179,6 +202,15 @@ export const CHECKS: Check[] = [
       const ms = await ctx.html("/milestones");
       expect((ms.match(/class="fp-ms[\s"]/g) ?? []).length >= 5, "the milestone feed has fewer than 5 rows");
       expect(ms.includes("Reached before tracking began") || ms.includes("<time"), "milestone rows have no time or backfill tag");
+      const adv = await ctx.html("/advancements");
+      expect((adv.match(/class="fp-ms fp-adv[\s"]/g) ?? []).length >= 5, "the advancement feed has fewer than 5 rows");
+      expect(adv.includes("<time") && adv.includes("first of "), "advancement rows have no time or earner count");
+      expect(adv.includes(">Imported<"), "no advancement row is tagged as imported on the busy fixtures");
+      const advLink = (adv.match(/href="(\/advancements\/[^"]+)"/) ?? [])[1];
+      expect(!!advLink, "the advancement feed links no advancement");
+      const one = await ctx.html(advLink!);
+      expect(one.includes("First in the network") && one.includes("By server") && one.includes("fp-table"), `${advLink} has no network first or server table`);
+      expect(profile.includes("First to complete"), "the profile has no advancement firsts section");
       const stats = await ctx.html("/stats");
       const subject = (stats.match(/href="(\/stats\/subject\/[^"]+)"/) ?? [])[1];
       expect(!!subject, "the catalogue links no subject");
@@ -196,7 +228,7 @@ export const CHECKS: Check[] = [
     name: "the tables view renders every chart's table twin",
     on: ["busy"],
     run: async (ctx) => {
-      for (const p of ["/?view=tables", "/servers/survival?view=tables", "/milestones?view=tables"]) {
+      for (const p of ["/?view=tables", "/servers/survival?view=tables", "/milestones?view=tables", "/advancements?view=tables"]) {
         const html = await ctx.html(p);
         const tables = (html.match(/<table class="fp-table"/g) ?? []).length;
         expect(tables >= 2, `${p} renders ${tables} tables`);
@@ -224,6 +256,12 @@ export const CHECKS: Check[] = [
         ["/img/icon/nothex.png", [404]]
       ];
       if (ctx.scenario !== "fresh") cases.push(["/milestones?scope=mini%3Asurvival%2Fskyblock-1", [200, 404]], ["/milestones?type=no_such_type_zz", [200, 404]]);
+      cases.push(
+        ["/advancements?scope=mini%3Asurvival%2Fskyblock-1", [200, 404]],
+        ["/advancements?scope=server%3Ano-such-server", [200, 404]],
+        ["/advancements/minecraft%3Anope%2Fzz_never", [200, 404]],
+        ["/advancements/%3Cx%3E", [404]]
+      );
       for (const [p, statuses, text] of cases) {
         const r = await ctx.get(p);
         expect(statuses.includes(r.status), `${p} answered ${r.status}`);

@@ -61,7 +61,7 @@
 
 <svelte:head>
   <title>{title}</title>
-  <meta name="description" content="{SITE.name}: {SITE.tagline}. Servers, players, stats, leaderboards and milestones." />
+  <meta name="description" content="{SITE.name}: {SITE.tagline}. Servers, players, stats, leaderboards, milestones and advancements." />
 </svelte:head>
 
 <div class="fp-shell">
@@ -72,7 +72,7 @@
         <nav class="fp-nav-group" aria-label={group.label ?? "Main"}>
           {#if group.label}<span class="fp-nav-group__label">{group.label}</span>{/if}
           {#each group.items as n (n.href)}
-            {#if !n.needsMilestones || data.milestones}
+            {#if (!n.needsMilestones || data.milestones) && (!n.needsAdvancements || data.advancements)}
               <a class="fp-nav" href={n.href} aria-current={here(n.href, page.url.pathname) ? "page" : undefined} title={n.label}>
                 <n.icon class="fp-ico" strokeWidth={1.4} /><span class="fp-nav__label">{n.label}</span>
               </a>

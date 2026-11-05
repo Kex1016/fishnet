@@ -1,7 +1,7 @@
 // Every page of the site (PLAN §3.4), the sidebar and the breadcrumbs. Shared file: minimal
 // additive edits only, named in the unit's report. Milestones only show when the proxy has them.
 import type { Component } from "svelte";
-import { ChartColumn, House, Info, Flag, Server, Trophy, Users } from "@lucide/svelte";
+import { Award, ChartColumn, House, Info, Flag, Server, Trophy, Users } from "@lucide/svelte";
 
 export type Crumb = { label: string; href?: string };
 
@@ -11,6 +11,8 @@ export type NavItem = {
   icon: Component<{ class?: string; strokeWidth?: number }>;
   /** only rendered when the proxy has milestones (layout data `milestones`) */
   needsMilestones?: boolean;
+  /** only rendered when the proxy has advancement milestones (layout data `advancements`, D-111) */
+  needsAdvancements?: boolean;
 };
 
 export type NavGroup = { label?: string; items: NavItem[] };
@@ -28,7 +30,8 @@ export const NAV: NavGroup[] = [
     items: [
       { href: "/leaderboards", label: "Leaderboards", icon: Trophy },
       { href: "/stats", label: "Stats", icon: ChartColumn },
-      { href: "/milestones", label: "Milestones", icon: Flag, needsMilestones: true }
+      { href: "/milestones", label: "Milestones", icon: Flag, needsMilestones: true },
+      { href: "/advancements", label: "Advancements", icon: Award, needsAdvancements: true }
     ]
   },
   {

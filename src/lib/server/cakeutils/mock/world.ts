@@ -62,6 +62,18 @@ export type WorldPlayer = {
   };
   /** leaf scope ("server:<id>" own play, or "mini:<server>/<mini>") → "<type>|<subject>" → value */
   stats: Record<string, Record<string, number>>;
+  /**
+   * advancements completed, per server id → advancement id → how long ago (D-111). Server scopes only:
+   * cakeutils keeps nothing per mini-server. Absent on players from before the field existed.
+   */
+  advancements?: Record<string, Record<string, number>>;
+};
+
+export type WorldAdvancement = {
+  /** namespaced id, e.g. minecraft:story/mine_diamond */
+  id: string;
+  /** the English title the backend reports */
+  title: string;
 };
 
 export type World = {
@@ -70,6 +82,14 @@ export type World = {
   milestones: boolean;
   /** milestone tracking began this long ago; rows reached earlier are backfilled */
   milestones_since_ago_ms: number;
+  /** whether /v2/milestones/advancements exists on this proxy (D-111; false = a proxy without it, 404) */
+  advancements: boolean;
+  /** live advancement tracking began this long ago; completions before it are known only from the import */
+  advancements_since_ago_ms: number;
+  /** servers whose operator ran `cakectl advancements import`: their older completions exist, flagged imported */
+  advancements_imported: string[];
+  /** the advancements anyone has completed: id → title (the registry the backends reported) */
+  advancement_titles: WorldAdvancement[];
   servers: WorldServer[];
   minis: WorldMini[];
   types: StatType[];
@@ -207,6 +227,63 @@ const CUSTOM: Def[] = [
   { key: "minecraft:sleep_in_bed", kind: "custom", name: "Times Slept in a Bed", unit: "count", icon: false, base: 150 }
 ];
 
+// ---- the advancements the busy players complete (vanilla tabs and one mod). `reach`: the share of players who
+// get this far; `hours`: play on a server before it is typically completed. Only advancements with a display
+// count (cakeutils skips recipe unlocks), so the list is what a player sees in the advancement screen.
+type AdvDef = WorldAdvancement & { reach: number; hours: number };
+
+export const ADVANCEMENTS: AdvDef[] = [
+  { id: "minecraft:story/root", title: "Minecraft", reach: 1, hours: 0.02 },
+  { id: "minecraft:story/mine_stone", title: "Stone Age", reach: 0.98, hours: 0.1 },
+  { id: "minecraft:story/upgrade_tools", title: "Getting an Upgrade", reach: 0.95, hours: 0.2 },
+  { id: "minecraft:story/smelt_iron", title: "Acquire Hardware", reach: 0.9, hours: 0.6 },
+  { id: "minecraft:story/obtain_armor", title: "Suit Up", reach: 0.85, hours: 1 },
+  { id: "minecraft:story/lava_bucket", title: "Hot Stuff", reach: 0.7, hours: 1.5 },
+  { id: "minecraft:story/iron_tools", title: "Isn't It Iron Pick", reach: 0.85, hours: 1.2 },
+  { id: "minecraft:story/deflect_arrow", title: "Not Today, Thank You", reach: 0.5, hours: 3 },
+  { id: "minecraft:story/form_obsidian", title: "Ice Bucket Challenge", reach: 0.6, hours: 2.5 },
+  { id: "minecraft:story/mine_diamond", title: "Diamonds!", reach: 0.75, hours: 3 },
+  { id: "minecraft:story/enter_the_nether", title: "We Need to Go Deeper", reach: 0.6, hours: 4 },
+  { id: "minecraft:story/shiny_gear", title: "Cover Me with Diamonds", reach: 0.4, hours: 8 },
+  { id: "minecraft:story/enchant_item", title: "Enchanter", reach: 0.55, hours: 5 },
+  { id: "minecraft:story/cure_zombie_villager", title: "Zombie Doctor", reach: 0.12, hours: 20 },
+  { id: "minecraft:story/follow_ender_eye", title: "Eye Spy", reach: 0.3, hours: 14 },
+  { id: "minecraft:story/enter_the_end", title: "The End?", reach: 0.25, hours: 16 },
+  { id: "minecraft:nether/root", title: "Nether", reach: 0.6, hours: 4 },
+  { id: "minecraft:nether/return_to_sender", title: "Return to Sender", reach: 0.3, hours: 6 },
+  { id: "minecraft:nether/find_fortress", title: "A Terrible Fortress", reach: 0.45, hours: 6 },
+  { id: "minecraft:nether/obtain_blaze_rod", title: "Into Fire", reach: 0.4, hours: 7 },
+  { id: "minecraft:nether/brew_potion", title: "Local Brewery", reach: 0.35, hours: 8 },
+  { id: "minecraft:nether/create_beacon", title: "Bring Home the Beacon", reach: 0.08, hours: 30 },
+  { id: "minecraft:nether/uneasy_alliance", title: "Uneasy Alliance", reach: 0.05, hours: 35 },
+  { id: "minecraft:end/root", title: "The End", reach: 0.25, hours: 16 },
+  { id: "minecraft:end/kill_dragon", title: "Free the End", reach: 0.2, hours: 18 },
+  { id: "minecraft:end/dragon_egg", title: "The Next Generation", reach: 0.06, hours: 19 },
+  { id: "minecraft:end/enter_end_gateway", title: "Remote Getaway", reach: 0.15, hours: 20 },
+  { id: "minecraft:end/elytra", title: "Sky's the Limit", reach: 0.12, hours: 24 },
+  { id: "minecraft:adventure/root", title: "Adventure", reach: 0.95, hours: 0.3 },
+  { id: "minecraft:adventure/kill_a_mob", title: "Monster Hunter", reach: 0.9, hours: 0.4 },
+  { id: "minecraft:adventure/sleep_in_bed", title: "Sweet Dreams", reach: 0.9, hours: 0.5 },
+  { id: "minecraft:adventure/trade", title: "What a Deal!", reach: 0.5, hours: 3 },
+  { id: "minecraft:adventure/shoot_arrow", title: "Take Aim", reach: 0.6, hours: 2 },
+  { id: "minecraft:adventure/totem_of_undying", title: "Postmortal", reach: 0.07, hours: 25 },
+  { id: "minecraft:adventure/kill_all_mobs", title: "Monsters Hunted", reach: 0.03, hours: 50 },
+  { id: "minecraft:adventure/adventuring_time", title: "Adventuring Time", reach: 0.04, hours: 45 },
+  { id: "minecraft:adventure/hero_of_the_village", title: "Hero of the Village", reach: 0.1, hours: 15 },
+  { id: "minecraft:husbandry/root", title: "Husbandry", reach: 0.9, hours: 0.5 },
+  { id: "minecraft:husbandry/plant_seed", title: "A Seedy Place", reach: 0.8, hours: 0.8 },
+  { id: "minecraft:husbandry/breed_an_animal", title: "The Parrots and the Bats", reach: 0.7, hours: 1.5 },
+  { id: "minecraft:husbandry/fishy_business", title: "Fishy Business", reach: 0.6, hours: 2 },
+  { id: "minecraft:husbandry/tactical_fishing", title: "Tactical Fishing", reach: 0.3, hours: 5 },
+  { id: "minecraft:husbandry/balanced_diet", title: "A Balanced Diet", reach: 0.06, hours: 40 },
+  { id: "minecraft:husbandry/bred_all_animals", title: "Two by Two", reach: 0.04, hours: 48 },
+  { id: "minecraft:husbandry/complete_catalogue", title: "A Complete Catalogue", reach: 0.03, hours: 50 },
+  // a modded one, by its namespaced id like any other
+  { id: "farmersdelight:main/root", title: "Farmer's Delight", reach: 0.5, hours: 2 },
+  { id: "farmersdelight:main/get_knife", title: "Cutting Edge", reach: 0.4, hours: 3 },
+  { id: "farmersdelight:main/use_cutting_board", title: "Ready to Cook", reach: 0.35, hours: 4 }
+];
+
 const NAMES = [
   "Pebblewick", "Saltmarsh", "Finnegan_B", "koi_pond", "Brinewalker", "tidepool", "MossyAnchor", "Lanternfish",
   "Reedcutter", "Quillon", "Driftwood_Dan", "Nettlebay", "Oarsman", "Kelpie", "Sandbar", "Mudskipper",
@@ -221,6 +298,10 @@ export function generateFresh(): World {
     scenario: "fresh",
     milestones: false,
     milestones_since_ago_ms: 0,
+    advancements: false,
+    advancements_since_ago_ms: 0,
+    advancements_imported: [],
+    advancement_titles: [],
     servers: [
       { id: "lobby", display_name: "Lobby", mc_version: "26.3", platform: "paper", waiting: 0 },
       { id: "survival", display_name: "Survival", mc_version: "26.3", platform: "paper", waiting: 0 },
@@ -275,6 +356,10 @@ export function generateBusy(): World {
   const random = rng(fnv1a("fishplex-busy"));
   const players: WorldPlayer[] = [];
   const weeks = 10;
+  // live advancement tracking began three weeks ago; survival's operator imported the world's older completions,
+  // creative's did not (so creative only has the last week)
+  const advSince = 21 * DAY;
+  const advImported = ["survival"];
   NAMES.forEach((name, i) => {
     const activity = 0.08 + random() ** 2 * 1.6; // most players small, a few huge
     const firstSeen = Math.floor(random() * weeks * 7 * DAY) + DAY;
@@ -320,6 +405,31 @@ export function generateBusy(): World {
     }
     for (const m of Object.keys(by_mini)) stats[`mini:${m}`] = leafValue(`mini:${m}`, 0.15 * (by_mini[m] / by_server.survival));
 
+    // advancements per server (no mini-servers, no lobby): the deeper the advancement, the fewer players reach
+    // it and the later in their time on that server it happens. Completions before live tracking survive only
+    // on an imported server.
+    const advancements: Record<string, Record<string, number>> = {};
+    for (const s of ["survival", "creative"]) {
+      const ms = by_server[s] ?? 0;
+      if (ms <= 0) continue;
+      const hours = ms / HOUR;
+      const span = firstSeen - (online ? 0 : lastSeen);
+      const bag: Record<string, number> = {};
+      for (const a of ADVANCEMENTS) {
+        const r = rng(fnv1a(`adv|${name}|${s}|${a.id}`));
+        if (s === "creative" && !/root|mine_stone|upgrade_tools|sleep_in_bed|plant_seed|farmersdelight/.test(a.id)) continue;
+        if (r() > a.reach) continue;
+        const need = a.hours * (0.6 + r() * 0.8);
+        if (hours < need) continue;
+        // when: that far into the player's time here, a little jittered
+        const progress = Math.min(0.97, Math.max(0.02, need / hours + (r() - 0.5) * 0.1));
+        const ago = Math.round(firstSeen - span * progress);
+        if (ago > advSince && !advImported.includes(s)) continue;
+        bag[a.id] = ago;
+      }
+      if (Object.keys(bag).length) advancements[s] = bag;
+    }
+
     const prefix: Segment[] =
       i === 0 ? [{ text: "[Admin] ", color: "red", bold: true }] : i === 1 ? [{ text: "[Mod] ", color: "aqua" }] : i < 6 ? [{ text: "✦ ", color: "gold" }] : [];
     const suffix: Segment[] = i === 2 ? [{ text: " ♪", color: "light_purple", italic: true }] : [];
@@ -336,7 +446,8 @@ export function generateBusy(): World {
       prefix: online ? prefix : [],
       suffix: online ? suffix : [],
       playtime: { by_server, by_mini, between_ms: Math.round(totalMs * 0.015) },
-      stats
+      stats,
+      advancements
     });
   });
 
@@ -357,5 +468,19 @@ export function generateBusy(): World {
     stats: { "server:survival": { "minecraft:mined|minecraft:stone": 17, "minecraft:custom|minecraft:walk_one_cm": 84_000 } }
   });
 
-  return { scenario: "busy", milestones: true, milestones_since_ago_ms: 21 * DAY, servers, minis, types, subjects, players };
+  const earned = new Set(players.flatMap((p) => Object.values(p.advancements ?? {}).flatMap((bag) => Object.keys(bag))));
+  return {
+    scenario: "busy",
+    milestones: true,
+    milestones_since_ago_ms: 21 * DAY,
+    advancements: true,
+    advancements_since_ago_ms: advSince,
+    advancements_imported: advImported,
+    advancement_titles: ADVANCEMENTS.filter((a) => earned.has(a.id)).map(({ id, title }) => ({ id, title })),
+    servers,
+    minis,
+    types,
+    subjects,
+    players
+  };
 }

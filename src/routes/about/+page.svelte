@@ -34,6 +34,11 @@
       <span class="fp-tile__note">{data.milestones ? "Shown on the milestones page and in server pages." : "Switched off on the server, so their sections are hidden."}</span>
     </div>
     <div class="fp-tile">
+      <span class="fp-tile__label">Advancements</span>
+      <span class="fp-tile__value" style="font-size: 20px">{data.advancements ? "on" : "off"}</span>
+      <span class="fp-tile__note">{data.advancements ? "Who completed each advancement first, on the advancements page, server pages and profiles." : "Not tracked by this proxy, so their sections are hidden."}</span>
+    </div>
+    <div class="fp-tile">
       <span class="fp-tile__label">Recording since</span>
       <span class="fp-tile__value" style="font-size: 20px">{data.since ? day(data.since) : "not yet"}</span>
       <span class="fp-tile__note">{data.since ? "Charts over time start on this date. Earlier history is not on this site." : "Charts over time appear once the recorder has taken its first snapshots."}</span>
@@ -64,6 +69,11 @@
     <p>
       Milestones that were already reached before recording began are marked "Reached before tracking began", since the
       time they happened is not known.
+    </p>
+    <p>
+      Advancements marked "Imported" were completed before the proxy tracked them live; their time comes from the
+      server's own world files, which the operator imported once. Advancements are kept per server and for the whole
+      network, never per mini-server.
     </p>
   </section>
 

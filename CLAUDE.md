@@ -70,6 +70,7 @@ container for `bun run shots`; they are not a dependency.
 | `src/routes/players/` | directory, profile | W5 |
 | `src/routes/leaderboards/`, `src/routes/stats/` | boards and catalogue | W6 |
 | `src/routes/milestones/` | feed | W7 |
+| `src/routes/advancements/` | advancement firsts: feed, `[...id]` detail (D-111; components in `src/lib/milestones/Advancement*`, `advancements.ts`) | post-W10 |
 | `src/routes/img/`, `src/lib/server/images/` | icon proxy, faces | W8 |
 | `Dockerfile`, `compose.yml`, `.dockerignore`, `.env.example`, `deploy/` | deploy and watcher | W9 |
 | `src/routes/about/`, `README.md` | about page, operator docs | W9b |
@@ -86,7 +87,8 @@ skeletons carry a `<Stub unit="W4" .../>` line: remove it with the unit's PR.
   it as a kind; W0 made it a flag on purpose). `problemCode(r)` gives `mixed_units` etc.
 - `Client` (`client.ts`): `health, network, players, player, playtime, playerStats, playerStat, batch,
   statTypes, subjects, subject, leaderboard(metric, scope, page), miniServers, icon, milestonesEnabled,
-  milestones, milestoneLadder, playerMilestones`. `api()` is the configured singleton. Relations and
+  milestones, milestoneLadder, playerMilestones, advancementsEnabled, advancements, advancement,
+  playerAdvancements` (the last four: cakeutils D-111, PLAN §2.6, feature-detected on their own). `api()` is the configured singleton. Relations and
   admin routes do not exist here.
 - `Scope` (`scope.ts`): `network | server:<id> | mini:<server>/<mini>`; `scopeParam(url)`.
   `Metric` (`metric.ts`): `{kind:"playtime"} | {kind:"stat", type, subject}`; criterion form

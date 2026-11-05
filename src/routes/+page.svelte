@@ -7,7 +7,7 @@
   import Notice from "#lib/design/Notice.svelte";
   import { BarList, ColumnChart, Heatmap, LineChart, StatTile, ViewSwitch, viewParam } from "#lib/charts/index.ts";
   import { HOURS, meanPlayers } from "./servers/boards.ts";
-  import { MilestoneFeed } from "#lib/milestones/index.ts";
+  import { AdvancementFeed, MilestoneFeed } from "#lib/milestones/index.ts";
   import { boardHref, PLAYTIME } from "#lib/api/metric.ts";
   import { titleCase } from "#lib/players/names.ts";
   let { data } = $props();
@@ -23,7 +23,7 @@
   <header class="fp-hero">
     <span class="t-kicker">{SITE.host}</span>
     <h1 class="t-hero">{SITE.name}</h1>
-    <p class="fp-lede t-body-lg">Who is on, the servers, players and their stats, leaderboards and milestones. Every number comes from the network.</p>
+    <p class="fp-lede t-body-lg">Who is on, the servers, players and their stats, leaderboards, milestones and advancements. Every number comes from the network.</p>
   </header>
 
   <section class="fp-section">
@@ -141,4 +141,5 @@
   </div>
 
   <MilestoneFeed result={data.milestones} href="/milestones" />
+  <AdvancementFeed result={data.advancements} href="/advancements" serverNames={data.serverNames} />
 </div>

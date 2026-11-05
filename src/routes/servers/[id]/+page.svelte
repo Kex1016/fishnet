@@ -5,7 +5,7 @@
   import Face from "#lib/design/Face.svelte";
   import Notice from "#lib/design/Notice.svelte";
   import { BarList, Heatmap, LineChart, StatTile, UptimeStrip, ViewSwitch, viewParam } from "#lib/charts/index.ts";
-  import { MilestoneFeed } from "#lib/milestones/index.ts";
+  import { AdvancementFeed, MilestoneFeed } from "#lib/milestones/index.ts";
   import { boardHref, PLAYTIME } from "#lib/api/metric.ts";
   import { group } from "#lib/format/stat-display.ts";
   import { titleCase } from "#lib/players/names.ts";
@@ -154,4 +154,5 @@
   {/if}
 
   <MilestoneFeed result={data.milestones} title="Latest milestones here" href="/milestones?scope={encodeURIComponent(data.scope)}" />
+  <AdvancementFeed result={data.advancements} title="Advancements completed here first" href="/advancements?scope={encodeURIComponent(data.scope)}" showServer={false} />
 </div>

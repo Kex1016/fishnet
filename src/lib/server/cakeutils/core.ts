@@ -68,6 +68,8 @@ export type CoreStatus = {
 export interface Core {
   get<T>(req: Request, priority: Priority): Promise<Result<T>>;
   milestonesEnabled(priority: Priority): Promise<boolean>;
+  /** D-111: true when /v2/milestones/advancements exists on this proxy (a D-109 proxy without it answers 404). */
+  advancementsEnabled(priority: Priority): Promise<boolean>;
   status(): CoreStatus;
 }
 
@@ -87,7 +89,7 @@ type Bad = { good: false; failure: Failure; expires: number };
 type Entry = Good | Bad;
 
 const DAY = 24 * 60 * 60_000;
-const MILESTONE_CHECK_MS = 10 * 60_000;
+const FEATURE_CHECK_MS = 10 * 60_000;
 
 export function createCore(o: CoreOptions): Core {
   const f: FetchLike = o.fetchImpl ?? ((input, init) => fetch(input, init));
@@ -309,22 +311,28 @@ export function createCore(o: CoreOptions): Core {
     }
   }
 
-  let milestones: { at: number; on: boolean } | null = null;
-
-  async function milestonesEnabled(priority: Priority): Promise<boolean> {
-    const t = now();
-    if (milestones && t - milestones.at < MILESTONE_CHECK_MS) return milestones.on;
-    const r = await get<unknown>({ path: "/v2/milestones?limit=1" }, priority);
-    // 404 on the root = a proxy without D-109; a 400 still proves the route exists
-    if ((r.ok && !r.stale) || (!r.ok && r.kind === "bad_request")) milestones = { at: t, on: true };
-    else if (!r.ok && r.kind === "not_found") milestones = { at: t, on: false };
-    else return milestones?.on ?? r.ok; // down or throttled: last known (a stale answer proves it existed)
-    return milestones.on;
+  /**
+   * Feature detection by probing one list route: 404 on it = a proxy without the feature; a good answer or a
+   * 400 proves the route exists. Remembered 10 min; while cakeutils is down or throttling, the last known
+   * value (a stale answer proves the route existed).
+   */
+  function feature(probePath: string): (priority: Priority) => Promise<boolean> {
+    let known: { at: number; on: boolean } | null = null;
+    return async (priority) => {
+      const t = now();
+      if (known && t - known.at < FEATURE_CHECK_MS) return known.on;
+      const r = await get<unknown>({ path: probePath }, priority);
+      if ((r.ok && !r.stale) || (!r.ok && r.kind === "bad_request")) known = { at: t, on: true };
+      else if (!r.ok && r.kind === "not_found") known = { at: t, on: false };
+      else return known?.on ?? r.ok;
+      return known.on;
+    };
   }
 
   return {
     get,
-    milestonesEnabled,
+    milestonesEnabled: feature("/v2/milestones?limit=1"),
+    advancementsEnabled: feature("/v2/milestones/advancements?limit=1"),
     status: () => ({
       reachable: downSince === null,
       downSince,

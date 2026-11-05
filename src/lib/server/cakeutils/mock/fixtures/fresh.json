@@ -2,6 +2,10 @@
  "scenario": "fresh",
  "milestones": false,
  "milestones_since_ago_ms": 0,
+ "advancements": false,
+ "advancements_since_ago_ms": 0,
+ "advancements_imported": [],
+ "advancement_titles": [],
  "servers": [
   {
    "id": "lobby",

@@ -1,5 +1,5 @@
 // Generated from openapi.json by scripts/gen-types.ts. Do not edit by hand: bun run types
-// Milestones (cakeutils D-109) are not in the document yet; their types are hand-written in types.ts.
+// Synced from cakeutils v2/openapi.yaml with bun run openapi (milestones D-109, advancement milestones D-111 included).
 
 export interface paths {
     "/v2/health": {
@@ -362,6 +362,66 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v2/milestones/advancements": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The first player to complete each advancement in a scope, newest first. In the network scope: the earliest completion on any server (server says where). imported = the time came from cakectl advancements import. 400 for a mini: scope.
+         * @description Scopes: one of read, read:stats.
+         */
+        get: operations["listAdvancementMilestones"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v2/milestones/advancement": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * One advancement's first earner in the network and on each server where someone has completed it. 404 when no backend ever reported it.
+         * @description Scopes: one of read, read:stats.
+         */
+        get: operations["advancementMilestone"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v2/players/{ref}/advancement-milestones": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Advancements this player was the first to complete in a scope, newest first. 400 for a mini: scope.
+         * @description Scopes: one of read, read:players, read:stats.
+         */
+        get: operations["listPlayerAdvancementMilestones"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v2/mini-servers": {
         parameters: {
             query?: never;
@@ -641,6 +701,74 @@ export interface components {
                 /** @description epoch ms; null when reached before tracking began (backfilled) */
                 reached_at: number | null;
                 backfilled: boolean;
+            }[];
+        };
+        AdvancementMilestoneList: {
+            scope: string;
+            total: number;
+            milestones: {
+                /** @description namespaced advancement id */
+                advancement: string;
+                /** @description English title as the backend last reported it */
+                title: string;
+                uuid: string;
+                name: string;
+                /** @description where it was completed (network scope: where the first earner completed it) */
+                server: string;
+                /** @description epoch ms, the backend's completion time */
+                earned_at: number;
+                /** @description true when the time came from cakectl advancements import (completed before live tracking) */
+                imported: boolean;
+                /** @description players who have completed it in the scope */
+                earners: number;
+            }[];
+        };
+        PlayerAdvancementMilestoneList: {
+            uuid: string;
+            name: string;
+            scope: string;
+            total: number;
+            milestones: {
+                /** @description namespaced advancement id */
+                advancement: string;
+                /** @description English title as the backend last reported it */
+                title: string;
+                /** @description where it was completed (network scope: where the first earner completed it) */
+                server: string;
+                /** @description epoch ms, the backend's completion time */
+                earned_at: number;
+                /** @description true when the time came from cakectl advancements import (completed before live tracking) */
+                imported: boolean;
+                /** @description players who have completed it in the scope */
+                earners: number;
+            }[];
+        };
+        AdvancementMilestone: {
+            advancement: string;
+            title: string | null;
+            network: {
+                uuid: string;
+                name: string;
+                /** @description where it was completed (network scope: where the first earner completed it) */
+                server: string;
+                /** @description epoch ms, the backend's completion time */
+                earned_at: number;
+                /** @description true when the time came from cakectl advancements import (completed before live tracking) */
+                imported: boolean;
+                /** @description players who have completed it in the scope */
+                earners: number;
+            } | null;
+            servers: {
+                uuid: string;
+                name: string;
+                /** @description where it was completed (network scope: where the first earner completed it) */
+                server: string;
+                /** @description epoch ms, the backend's completion time */
+                earned_at: number;
+                /** @description true when the time came from cakectl advancements import (completed before live tracking) */
+                imported: boolean;
+                /** @description players who have completed it in the scope */
+                earners: number;
             }[];
         };
         MiniServers: {
@@ -1441,6 +1569,127 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PlayerMilestoneList"];
+                };
+            };
+            /** @description Not modified (If-None-Match matched the ETag) */
+            304: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    listAdvancementMilestones: {
+        parameters: {
+            query?: {
+                /** @description network (default), server:<id> or mini:<server-id>/<mini-id>. A private mini-server (public:false) answers exactly like one that was never seen, for every token. */
+                scope?: string;
+                /** @description Page size. */
+                limit?: number;
+                /** @description Rows to skip. */
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    ETag?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdvancementMilestoneList"];
+                };
+            };
+            /** @description Not modified (If-None-Match matched the ETag) */
+            304: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    advancementMilestone: {
+        parameters: {
+            query?: {
+                /** @description Namespaced advancement id, e.g. minecraft:story/mine_diamond (minecraft: may be omitted). Required. */
+                id?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    ETag?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdvancementMilestone"];
+                };
+            };
+            /** @description Not modified (If-None-Match matched the ETag) */
+            304: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    listPlayerAdvancementMilestones: {
+        parameters: {
+            query?: {
+                /** @description network (default), server:<id> or mini:<server-id>/<mini-id>. A private mini-server (public:false) answers exactly like one that was never seen, for every token. */
+                scope?: string;
+                /** @description Page size. */
+                limit?: number;
+                /** @description Rows to skip. */
+                offset?: number;
+            };
+            header?: never;
+            path: {
+                /** @description Player UUID (dashed or undashed) or exact name (case-insensitive). */
+                ref: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    ETag?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlayerAdvancementMilestoneList"];
                 };
             };
             /** @description Not modified (If-None-Match matched the ETag) */

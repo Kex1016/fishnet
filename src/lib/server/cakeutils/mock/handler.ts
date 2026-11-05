@@ -5,9 +5,9 @@
 // routes behind a feature flag. Used in-process (index.ts) and over HTTP (scripts/mock-server.ts).
 // Never loaded in production: hooks.server.ts refuses to start with FISHNET_MOCK set there.
 import type {
-  BatchResponse, Leaderboard, MilestoneFeed, MilestoneFeedRow, MilestoneLadder, MilestoneRow, MiniServers, Network,
-  PlayerList, PlayerMilestones, PlayerProfile, Playtime, StatList, StatRow, StatTypes, StatValue, Subject,
-  SubjectDetail, SubjectList, Unit
+  AdvancementDetail, AdvancementFeed, AdvancementHolder, AdvancementRow, BatchResponse, Leaderboard, MilestoneFeed, MilestoneFeedRow,
+  MilestoneLadder, MilestoneRow, MiniServers, Network, PlayerAdvancements, PlayerList, PlayerMilestones, PlayerProfile, Playtime,
+  StatList, StatRow, StatTypes, StatValue, Subject, SubjectDetail, SubjectList, Unit
 } from "#lib/api/types.ts";
 import { formatStat, durationMs } from "#lib/format/stat-display.ts";
 import { fnv1a, hex, type World, type WorldPlayer, type WorldSubject } from "./world.ts";
@@ -273,6 +273,63 @@ function feedRows(world: World, scope: ScopeInfo, typeFilter: string | null): Mi
   return out;
 }
 
+// ---- advancement milestones (D-111): "first" is computed when read, like cakeutils does, so imported rows
+// with old timestamps and live grants can be in any order. Per server: the earliest completion (ties: the
+// lowest uuid); network: the earliest over all servers, `server` says where. `earners` counts the players who
+// have it in the scope (distinct players in the network).
+
+type AdvEarned = { p: WorldPlayer; server: string; ago: number };
+type AdvIndex = Map<string, AdvEarned[]>; // advancement id → every completion on every server
+
+const advCache = new WeakMap<World, AdvIndex>();
+
+function advIndex(world: World): AdvIndex {
+  let idx = advCache.get(world);
+  if (idx) return idx;
+  idx = new Map();
+  for (const p of world.players) {
+    for (const [server, bag] of Object.entries(p.advancements ?? {})) {
+      for (const [id, ago] of Object.entries(bag)) {
+        if (!idx.has(id)) idx.set(id, []);
+        idx.get(id)!.push({ p, server, ago });
+      }
+    }
+  }
+  advCache.set(world, idx);
+  return idx;
+}
+
+function advTitle(world: World, id: string): string {
+  return world.advancement_titles.find((a) => a.id === id)?.title ?? "";
+}
+
+function fullAdvId(id: string): string {
+  return id.includes(":") ? id : `minecraft:${id}`;
+}
+
+/** The first earner of one advancement in a scope (server id, or null for the network), or null when nobody has it there. */
+function advFirst(world: World, rows: AdvEarned[], server: string | null): AdvancementHolder | null {
+  const inScope = server === null ? rows : rows.filter((r) => r.server === server);
+  if (inScope.length === 0) return null;
+  let first = inScope[0];
+  for (const r of inScope) if (r.ago > first.ago || (r.ago === first.ago && r.p.uuid < first.p.uuid)) first = r;
+  const imported = first.ago > world.advancements_since_ago_ms && world.advancements_imported.includes(first.server);
+  const earners = server === null ? new Set(inScope.map((r) => r.p.uuid)).size : inScope.length;
+  return { uuid: first.p.uuid, name: first.p.name, server: first.server, earned_at: now() - first.ago, imported, earners };
+}
+
+/** Every advancement's first earner in a scope, newest first (then by id, so the order is stable). */
+function advRows(world: World, scope: ScopeInfo): AdvancementRow[] {
+  if (!scope.seen) return [];
+  const out: AdvancementRow[] = [];
+  for (const [id, rows] of advIndex(world)) {
+    const h = advFirst(world, rows, scope.server ?? null);
+    if (h) out.push({ advancement: id, title: advTitle(world, id), ...h });
+  }
+  out.sort((a, b) => b.earned_at - a.earned_at || (a.advancement < b.advancement ? -1 : 1));
+  return out;
+}
+
 // ---- icons: a 16×16 PNG per sha, coloured from the hash (sharp, dev only)
 
 const iconCache = new Map<string, Uint8Array>();
@@ -436,6 +493,18 @@ export async function handleMock(world: World, req: Request): Promise<Response> 
       const data: StatRow = { uuid: p.uuid, scope: scope.scope, ...statValue(world, type, subject, v) };
       return json(req, data);
     }
+    if (seg[2] === "advancement-milestones" && seg.length === 3) {
+      if (!world.advancements) return problem(404, "not_found", "no such route");
+      if (scope.mini) return problem(400, "bad_request", "advancement milestones are kept per server and for the network, not per mini-server");
+      const pg = paging(url);
+      if (pg instanceof Response) return pg;
+      // like the stat milestones, the player endpoint's rows carry neither uuid nor name
+      const rows = advRows(world, scope)
+        .filter((m) => m.uuid === p.uuid)
+        .map(({ uuid: _u, name: _n, ...row }) => row);
+      const data: PlayerAdvancements = { uuid: p.uuid, name: p.name, scope: scope.scope, total: rows.length, milestones: rows.slice(pg.offset, pg.offset + pg.limit) };
+      return json(req, data);
+    }
     if (seg[2] === "milestones" && seg.length === 3) {
       if (!world.milestones) return problem(404, "not_found", "no such route");
       if (scope.mini) return problem(400, "bad_request", "milestones have no mini-server scope");
@@ -524,6 +593,29 @@ export async function handleMock(world: World, req: Request): Promise<Response> 
       return json(req, data);
     }
     return problem(404, "not_found", "no such route");
+  }
+
+  if (seg[0] === "milestones" && (seg[1] === "advancements" || seg[1] === "advancement") && seg.length === 2) {
+    if (!world.advancements) return problem(404, "not_found", "no such route");
+    if (seg[1] === "advancements") {
+      const scope = scopeOf(world, url);
+      if (scope instanceof Response) return scope;
+      if (scope.mini) return problem(400, "bad_request", "advancement milestones are kept per server and for the network, not per mini-server");
+      const pg = paging(url);
+      if (pg instanceof Response) return pg;
+      const rows = advRows(world, scope);
+      const data: AdvancementFeed = { scope: scope.scope, total: rows.length, milestones: rows.slice(pg.offset, pg.offset + pg.limit) };
+      return json(req, data);
+    }
+    const raw = url.searchParams.get("id");
+    if (!raw || !raw.trim()) return problem(400, "bad_request", "'id' is required");
+    const id = fullAdvId(raw.trim());
+    const rows = advIndex(world).get(id);
+    if (!rows) return problem(404, "not_found", `no advancement ${id}`);
+    const network = advFirst(world, rows, null);
+    const servers = [...new Set(rows.map((r) => r.server))].sort().map((sv) => advFirst(world, rows, sv)!);
+    const data: AdvancementDetail = { advancement: id, title: network ? advTitle(world, id) : null, network, servers };
+    return json(req, data);
   }
 
   if (seg[0] === "milestones") {

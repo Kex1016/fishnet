@@ -7,7 +7,7 @@
   import ScopeSwitch from "#lib/design/ScopeSwitch.svelte";
   import { StatTile } from "#lib/charts/index.ts";
   import { Segments, StatsExplorer, playerLabel, isUuidName, splitMini } from "#lib/players/index.ts";
-  import { PlayerFirsts } from "#lib/milestones/index.ts";
+  import { PlayerAdvancementFirsts, PlayerFirsts } from "#lib/milestones/index.ts";
   import { day, ago, dateTime } from "#lib/format/dates.ts";
   import { durationMs, group } from "#lib/format/stat-display.ts";
   import { titleCase } from "#lib/players/names.ts";
@@ -118,6 +118,7 @@
 
     {#if data.showFirsts}
       <PlayerFirsts result={data.firsts} playerName={playerLabel(p.name)} />
+      <PlayerAdvancementFirsts result={data.advFirsts} playerName={playerLabel(p.name)} serverNames={data.serverNames} showServer={data.scope === "network"} />
     {/if}
   {/if}
 </div>

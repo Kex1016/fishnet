@@ -13,8 +13,8 @@
 //
 // Routes the site must never call: /v2/players/{ref}/relations, /v2/admin/*. They are not here.
 import type {
-  BatchResponse, Health, Leaderboard, MilestoneFeed, MilestoneLadder, MiniServers, Network, PlayerList, PlayerMilestones,
-  PlayerProfile, Playtime, StatList, StatRow, StatTypes, SubjectDetail, SubjectList
+  AdvancementDetail, AdvancementFeed, BatchResponse, Health, Leaderboard, MilestoneFeed, MilestoneLadder, MiniServers, Network,
+  PlayerAdvancements, PlayerList, PlayerMilestones, PlayerProfile, Playtime, StatList, StatRow, StatTypes, SubjectDetail, SubjectList
 } from "#lib/api/types.ts";
 import type { Metric } from "#lib/api/metric.ts";
 import type { Scope } from "#lib/api/scope.ts";
@@ -29,6 +29,7 @@ export type PlayersQuery = Page & { online?: boolean; q?: string };
 export type StatsQuery = Page & { scope?: Scope; type?: string; q?: string };
 export type SubjectsQuery = Page & { type?: string; kind?: string; q?: string };
 export type MilestonesQuery = Page & { scope?: Scope; type?: string };
+export type AdvancementsQuery = Page & { scope?: Scope };
 
 export type Icon = { png: Uint8Array; etag: string | null };
 
@@ -69,6 +70,14 @@ export interface Client {
   milestoneLadder(type: string, subject: string, scope?: Scope): Promise<Result<MilestoneLadder>>;
   /** GET /v2/players/{ref}/milestones?scope=&type=&limit=&offset= */
   playerMilestones(ref: string, q?: MilestonesQuery): Promise<Result<PlayerMilestones>>;
+  /** Feature detection (D-111): true when /v2/milestones/advancements exists on this proxy. Cached 10 min; false on 404, last known value when down. */
+  advancementsEnabled(): Promise<boolean>;
+  /** GET /v2/milestones/advancements?scope=&limit=&offset=: first earner of every advancement, newest first; `off` without D-111, bad_request for a mini: scope. */
+  advancements(q?: AdvancementsQuery): Promise<Result<AdvancementFeed>>;
+  /** GET /v2/milestones/advancement?id=: one advancement in the network and on each server; not_found when no backend ever reported it. */
+  advancement(id: string): Promise<Result<AdvancementDetail>>;
+  /** GET /v2/players/{ref}/advancement-milestones?scope=&limit=&offset=: what this player completed first (rows without uuid/name). */
+  playerAdvancements(ref: string, q?: AdvancementsQuery): Promise<Result<PlayerAdvancements>>;
 }
 
 // ---- W1: the internals live in create.ts (paths) and core.ts (cache, ETag, single-flight,

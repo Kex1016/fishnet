@@ -11,8 +11,10 @@
   <h1 class="t-display">Names</h1>
   <p class="fp-lede">
     Change what the site calls a stat. Leave a box empty to use the site's own name. In titles and milestone phrases,
-    <code>{"{subject}"}</code> is the block, item or mob, <code>{"{n}"}</code> is the number and <code>{"{times}"}</code> is
-    “time” or “times”. The grey words are what the site says now.
+    <code>{"{subject}"}</code> is the block, item or mob, <code>{"{player}"}</code> the first player, <code>{"{nth}"}</code>
+    the number as “10th” (“1st km” for distances), <code>{"{n}"}</code> the number as cakeutils writes it and
+    <code>{"{times}"}</code> “time” or “times”. A milestone ending in a letter or number gets “!”. The grey words are what
+    the site says now.
   </p>
 </header>
 
@@ -66,7 +68,7 @@
       <input type="hidden" name="csrf" value={csrf} />
       <label class="head"><span class="t-kicker">New stat</span><span class="fp-field"><input name="key" required maxlength="200" placeholder="killed:minecraft:pufferfish" /></span></label>
       <label><span class="t-kicker">Title</span><span class="fp-field"><input name="title" maxlength="80" placeholder="Pufferfish killed" /></span></label>
-      <label><span class="t-kicker">Milestone phrase</span><span class="fp-field"><input name="phrase" maxlength="80" placeholder={"Killed {n} pufferfish"} /></span></label>
+      <label><span class="t-kicker">Milestone phrase</span><span class="fp-field"><input name="phrase" maxlength="80" placeholder={"{player} killed their {nth} pufferfish"} /></span></label>
       <div class="act"><button class="fp-btn fp-btn--primary" type="submit">Add</button></div>
     </form>
   </div>

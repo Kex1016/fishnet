@@ -20,9 +20,12 @@ export function statLabel(m: StatOf): string {
   return statTitle({ type: m.type, subject: m.subject, subjectName: m.stat_name });
 }
 
-/** A feed row as a sentence around its threshold: "Killed 1000 Pufferfish", "Killed by Zombie 50 times". */
-export function rowPhrase(m: StatOf & Pick<MilestoneFeedRow, "display" | "threshold">): Phrase {
-  return milestonePhrase({ type: m.type, subject: m.subject, subjectName: m.stat_name }, m.display, m.threshold);
+/**
+ * A feed row as a sentence about its first player: "Sealily picked up Pufferfish for the 10th time!",
+ * "1st km swum by Sealily!". `player` is the row's (feed) or the page's (a player's own firsts); unknown → "Someone".
+ */
+export function rowPhrase(m: StatOf & Pick<MilestoneFeedRow, "display" | "threshold" | "unit">, player?: string | null): Phrase {
+  return milestonePhrase({ type: m.type, subject: m.subject, subjectName: m.stat_name, unit: m.unit }, m.display, m.threshold, player);
 }
 
 /** Where a row's stat has its board on this site, or null when the metric cannot be read. */

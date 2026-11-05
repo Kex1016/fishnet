@@ -1,5 +1,5 @@
 import { afterEach, expect, test } from "bun:test";
-import { cleanName, cleanTypeName, milestonePhrase, setLabelOverrides, statTitle, subjectLabel, typeLabel } from "#lib/format/labels.ts";
+import { cleanName, cleanTypeName, milestonePhrase, nthOf, ordinal, setLabelOverrides, statTitle, subjectLabel, typeLabel } from "#lib/format/labels.ts";
 
 afterEach(() => setLabelOverrides({}));
 
@@ -35,21 +35,37 @@ test("titles say what happened", () => {
   expect(statTitle({ type: "create:pressed", subject: "*", kind: "item" })).toBe("Items pressed");
 });
 
-test("milestones put the number inside the sentence", () => {
-  const p = milestonePhrase({ type: "minecraft:killed", subject: "minecraft:pufferfish", subjectName: "Pufferfish" }, "1000", 1000);
-  expect(p).toEqual({ before: "Killed ", value: "1000", after: " Pufferfish", text: "Killed 1000 Pufferfish" });
-  expect(milestonePhrase({ type: "minecraft:killed_by", subject: "minecraft:zombie", subjectName: "Zombie" }, "50", 50).text).toBe("Killed by Zombie 50 times");
-  expect(milestonePhrase({ type: "minecraft:used", subject: "minecraft:bow", subjectName: "Bow" }, "1", 1).text).toBe("Used Bow 1 time");
-  expect(milestonePhrase({ type: "minecraft:custom", subject: "minecraft:walk_one_cm", subjectName: "Distance Walked" }, "10.00 km").text).toBe("Distance Walked: 10.00 km");
-  expect(milestonePhrase({ type: "minecraft:mined", subject: "*" }, "10000").text).toBe("Mined 10000 blocks");
+test("milestones are sentences about the first player", () => {
+  const p = milestonePhrase({ type: "minecraft:picked_up", subject: "minecraft:pufferfish", subjectName: "Pufferfish" }, "10", 10, "Username");
+  expect(p.text).toBe("Username picked up Pufferfish for the 10th time!");
+  expect(p.hasPlayer).toBe(true);
+  expect(p.parts.map((x) => x.kind)).toEqual(["player", "text", "subject", "text", "number", "text"]);
+  const swum = { type: "minecraft:custom", subject: "minecraft:swim_one_cm", subjectName: "Distance Swum", unit: "distance_cm" };
+  expect(milestonePhrase(swum, "1.00 km", 100_000, "Username").text).toBe("1st km swum by Username!");
+  expect(milestonePhrase(swum, "500.0 m", 50_000, null).text).toBe("500th m swum by Someone!");
+  expect(milestonePhrase({ type: "minecraft:killed_by", subject: "minecraft:zombie", subjectName: "Zombie" }, "1", 1, "Roach").text).toBe("Roach was killed by Zombie for the 1st time!");
+  expect(milestonePhrase({ type: "minecraft:mined", subject: "*" }, "10000", 10_000, "Roach").text).toBe("Roach mined their 10 000th block!");
+  expect(milestonePhrase({ type: "minecraft:custom", subject: "minecraft:jump", subjectName: "Jumps" }, "1000", 1000, "Roach").text).toBe("Roach jumped for the 1 000th time!");
+  expect(milestonePhrase({ type: "minecraft:custom", subject: "minecraft:boat_one_cm", subjectName: "Distance by Boat", unit: "distance_cm" }, "10.00 km", 1_000_000, "Roach").text).toBe("10th km travelled by boat by Roach!");
+  expect(milestonePhrase({ type: "create:pressed", subject: "minecraft:iron_ingot", typeName: "Times Pressed", subjectName: "Iron Ingot" }, "112", 112, "Roach").text).toBe("Roach pressed Iron Ingot for the 112th time!");
+});
+
+test("ordinals", () => {
+  expect([1, 2, 3, 4, 11, 12, 13, 21, 22, 101, 111, 1000].map(ordinal)).toEqual(["1st", "2nd", "3rd", "4th", "11th", "12th", "13th", "21st", "22nd", "101st", "111th", "1 000th"]);
+  expect(nthOf(250, "distance_cm", "2.5 m")).toBe("2.5 m");
+  expect(nthOf(50, "damage_tenths", "5.0 ♥")).toBe("5.0 ♥");
 });
 
 test("overrides win, by type and by stat", () => {
-  setLabelOverrides({ types: { "minecraft:killed": { label: "Slain", phrase: "Slew {n} {subject}" } }, stats: { "killed:minecraft:pufferfish": { title: "Puffers popped" } } });
+  setLabelOverrides({ types: { "minecraft:killed": { label: "Slain", phrase: "Slew {n} {subject}" } }, stats: { "killed:minecraft:pufferfish": { title: "Puffers popped", phrase: "{player} popped their {nth} puffer." } } });
   expect(typeLabel("minecraft:killed", "You killed %s %s")).toBe("Slain");
-  expect(milestonePhrase({ type: "minecraft:killed", subject: "minecraft:cod", subjectName: "Cod" }, "5", 5).text).toBe("Slew 5 Cod");
+  // an older phrase without {player}: still a sentence, the page shows the player beside it
+  const old = milestonePhrase({ type: "minecraft:killed", subject: "minecraft:cod", subjectName: "Cod" }, "5", 5, "Roach");
+  expect(old.text).toBe("Slew 5 Cod!");
+  expect(old.hasPlayer).toBe(false);
+  expect(milestonePhrase({ type: "minecraft:killed", subject: "minecraft:pufferfish" }, "10", 10, "Roach").text).toBe("Roach popped their 10th puffer.");
   expect(statTitle({ type: "minecraft:killed", subject: "minecraft:pufferfish" })).toBe("Puffers popped");
   setLabelOverrides({ types: { "create:pressed": { label: "Squashed" } } });
   expect(statTitle({ type: "create:pressed", subject: "minecraft:iron_ingot", subjectName: "Iron Ingot" })).toBe("Iron Ingot squashed");
-  expect(milestonePhrase({ type: "minecraft:killed", subject: "minecraft:cod", subjectName: "{n} Cod" }, "5", 5).text).toBe("Killed 5 {n} Cod");
+  expect(milestonePhrase({ type: "minecraft:picked_up", subject: "minecraft:cod", subjectName: "{n} Cod" }, "5", 5, "{player}").text).toBe("{player} picked up {n} Cod for the 5th time!");
 });

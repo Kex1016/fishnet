@@ -1,4 +1,4 @@
-# fishnet: the Fishplex network website
+# fishnet: Fishnet, the Fishplex network website
 
 Plan, 4 Nov 2026. Site: `https://fishnet.haiiro.moe`, behind David's own Caddy.
 Data: the cakeutils v2 HTTP API on the network's Velocity proxy. Nothing on the site is made up:
@@ -6,7 +6,7 @@ every number comes from the API, or from the site's own recordings of the API (s
 
 ## 1. What we are building
 
-A public, read-only website for the Fishplex network: who is on, the servers, players and their
+Fishnet, a public, read-only website for the Fishplex network: who is on, the servers, players and their
 stats, leaderboards for any stat cakeutils knows, playtime, stat milestones ("first to 10 000 stone"),
 and charts over time. It follows the look of reki.dev, endfield.reki.dev and minecraft.reki.dev
 (section 6), and it must stay correct on a brand new network where almost nothing has happened yet.
@@ -250,7 +250,7 @@ page and from the recorder, as journey does.
 
 ## 6. Look
 
-reki's layout with a Fishplex skin, the way journey skins it for Minecraft:
+reki's layout with a Fishnet skin, the way journey skins it for Minecraft:
 
 - Shell: sidebar (full, icons only, hidden) and TopBar with breadcrumbs and search; dark first, light works.
 - Type: rounded Japanese-capable faces for headings and text, a mono face for numbers, dates "4 Nov 2026".
@@ -319,4 +319,4 @@ first pass misses contracts or states. Do not use `max`. Subagents and workflows
 3. Is `Kex1016/fishnet` private (the watcher then needs a deploy key)? [assume private]
 4. Does Caddy run on the host or in Docker? [host, `127.0.0.1:3000`]
 5. An opt-out list for players who don't want to be on the site? [yes, empty to start]
-6. Site name and accent: "Fishplex" with a sea-blue accent? [yes]
+6. Site name and accent: "Fishplex" with a sea-blue accent? [yes; renamed 5 Nov 2026 by David: the site is "Fishnet", Fishplex is the server network it shows]

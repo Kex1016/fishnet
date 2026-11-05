@@ -39,15 +39,15 @@ export const NAV: NavGroup[] = [
   }
 ];
 
-/** The site name and where it is served (PLAN §8.6). */
-export const SITE = { name: "Fishplex", host: "fishnet.haiiro.moe", tagline: "the Fishplex network, in numbers" } as const;
+/** The site name and where it is served (PLAN §8.6): the site is Fishnet, the network it shows is Fishplex. */
+export const SITE = { name: "Fishnet", host: "fishnet.haiiro.moe", tagline: "the Fishplex network, in numbers" } as const;
 
 /** Is `pathname` on this nav item (its page or below it)? */
 export function here(href: string, pathname: string): boolean {
   return href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(`${href}/`);
 }
 
-/** `<title>`: "Players · Fishplex", or "Fishplex" on the home page. */
+/** `<title>`: "Players · Fishnet", or "Fishnet" on the home page. */
 export function pageTitle(title?: string): string {
   return title ? `${title} · ${SITE.name}` : SITE.name;
 }

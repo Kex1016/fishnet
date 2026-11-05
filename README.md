@@ -1,6 +1,6 @@
 # fishnet
 
-The Fishplex network website: who is on, the servers, players and their stats, leaderboards,
+Fishnet, the website for the Fishplex network: who is on, the servers, players and their stats, leaderboards,
 milestones and advancements, from the cakeutils v2 API. Public, read-only, server-rendered (SvelteKit + Node), with its
 own recorder for charts over time.
 

@@ -11,7 +11,7 @@
     <span class="t-kicker">{SITE.host}</span>
     <h1 class="t-display">About</h1>
     <p class="fp-lede">
-      {SITE.name} is a read-only window on the network. It shows the numbers the network's own server records, and it
+      {SITE.name} is a read-only window on the Fishplex network. It shows the numbers the network's own server records, and it
       cannot change anything in the game.
     </p>
   </header>

@@ -11,15 +11,6 @@ export async function readCached(path: string): Promise<{ bytes: Buffer; ageMs: 
   }
 }
 
-/** Age of a marker file in ms, or null when it does not exist. */
-export async function ageOf(path: string): Promise<number | null> {
-  try {
-    return Math.max(0, Date.now() - (await stat(path)).mtimeMs);
-  } catch {
-    return null;
-  }
-}
-
 /** Write to a temp name, then rename, so a reader never sees half a file. Failures are swallowed: the cache is optional. */
 export async function writeAtomic(path: string, bytes: Uint8Array | string): Promise<void> {
   try {

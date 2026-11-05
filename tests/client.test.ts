@@ -68,7 +68,7 @@ describe("cache", () => {
     if (b.ok) expect(b.asOf).toBe(T0);
   });
 
-  test("TTL floors per route class: boards 15 s, catalogue 10 min, icons forever", async () => {
+  test("TTL floors per tier: boards 1 min, catalogue 30 min, icons forever", async () => {
     const board = { metric: "playtime", scope: "network", unit: "ms", total: 1, entries: [{ rank: 1, uuid: "u", name: "a", value: 1, unit: "ms", display: "0m" }] };
     const sha = "a".repeat(64);
     const r = rig({
@@ -79,9 +79,9 @@ describe("cache", () => {
     await r.client.leaderboard({ kind: "playtime" });
     await r.client.statTypes();
     await r.client.icon(sha);
-    r.advance(14_000);
+    r.advance(59_000);
     await r.client.leaderboard({ kind: "playtime" });
-    r.advance(9 * 60_000);
+    r.advance(29 * 60_000);
     await r.client.statTypes();
     r.advance(30 * 86_400_000);
     const icon = await r.client.icon(sha);
@@ -92,7 +92,7 @@ describe("cache", () => {
   test("past its TTL an answer is served at once while one refresh runs behind it", async () => {
     const r = rig({ "/v2/network": (_c, n) => json(200, network(n)) });
     await r.client.network();
-    r.advance(7_000); // TTL 5 s, refresh window 10 s
+    r.advance(20_000); // live: TTL 15 s, then 45 s served while refreshing
     const [a, b] = await Promise.all([r.client.network(), r.client.network()]);
     expect(a.ok && a.data.total_online).toBe(1);
     expect(b.ok && b.data.total_online).toBe(1);
@@ -144,7 +144,7 @@ describe("cache", () => {
     expect(!c.ok && c.kind).toBe("bad_request");
     if (!c.ok) expect(problemCode(c)).toBe("mixed_units");
     expect(r.calls.length).toBe(2);
-    r.advance(16_000);
+    r.advance(61_000); // boards remember a 404 as long as an answer: 1 min
     await r.client.leaderboard({ kind: "stat", type: "minecraft:mined", subject: "minecraft:stone" });
     expect(r.calls.length).toBe(3);
   });
@@ -261,7 +261,7 @@ describe("rate limits", () => {
     });
     await r.client.network();
     limited = true;
-    r.advance(30_000);
+    r.advance(90_000); // past live's TTL and refresh window
     const a = await r.client.network();
     expect(a.ok && a.stale).toBe(true);
     const n = r.calls.length;
@@ -309,6 +309,80 @@ describe("rate limits", () => {
     expect((await c.player("p1")).ok).toBe(false); // burst 2, reserve 1: background may not take the last
     inRecorder = false;
     expect((await c.player("p2")).ok).toBe(true);
+  });
+});
+
+describe("tiers and throttling", () => {
+  test("a refresh only takes a spare token: when pages are busy it is skipped and the cached answer served", async () => {
+    const paths: Record<string, Handler> = { "/v2/network": (_c, n) => json(200, network(n)) };
+    for (let i = 0; i < 10; i++) paths[`/v2/players/p${i}`] = () => json(200, { uuid: `p${i}` });
+    const r = rig(paths, { ratePerMinute: 6, burst: 4, waitMs: { page: 0 } });
+    await r.client.network();
+    for (let i = 0; i < 3; i++) await r.client.player(`p${i}`); // the bucket is down to 0 of 4
+    r.advance(20_000); // past live's 15 s, inside its window; 2 tokens back, the reserve wants 3
+    const a = await r.client.network();
+    expect(a.ok && a.data.total_online).toBe(1);
+    expect(a.ok && a.stale).toBe(false);
+    await Bun.sleep(0);
+    expect(r.calls.filter((c) => c.path === "/v2/network").length).toBe(1);
+    expect(r.core.status().throttle.refreshSkipped).toBe(1);
+  });
+
+  test("the recorder (background) never takes an answer past its TTL: it waits for a fresh one", async () => {
+    const r = rig({ "/v2/network": (_c, n) => json(200, network(n)) });
+    const bg = createClient({ ...r.opts, core: r.core, priority: "background" });
+    await bg.network();
+    r.advance(20_000);
+    const b = await bg.network();
+    expect(b.ok && b.data.total_online).toBe(2);
+  });
+
+  test("player data is fresh for 30 s and served while refreshing up to 90 s more", async () => {
+    const r = rig({ "/v2/players/a": (_c, n) => json(200, { uuid: "a", n }) });
+    await r.client.player("a");
+    r.advance(29_000);
+    await r.client.player("a");
+    expect(r.calls.length).toBe(1);
+    r.advance(60_000); // 89 s: past the TTL, inside the window
+    const b = await r.client.player("a");
+    expect(b.ok && (b.data as unknown as { n: number }).n).toBe(1);
+    await Bun.sleep(0);
+    expect(r.calls.length).toBe(2);
+  });
+
+  test("RateLimit-Limit below CAKEUTILS_RATE lowers the pace to 90 % of it, logged once", async () => {
+    const r = rig({ "/v2/network": () => json(200, network(1), { "ratelimit-limit": "120", "ratelimit-remaining": "59" }) }, { ratePerMinute: 400 });
+    await r.client.network();
+    r.advance(16_000 + 45_000);
+    await r.client.network();
+    const s = r.core.status().throttle;
+    expect(s.tokenLimit).toBe(120);
+    expect(s.ratePerMinute).toBe(108);
+    expect(r.logs.filter((l) => l.includes("requests/min")).length).toBe(1);
+    expect(r.logs[0]).not.toContain("S3CRET");
+  });
+
+  test("a token limit above CAKEUTILS_RATE changes nothing", async () => {
+    const r = rig({ "/v2/network": () => json(200, network(1), { "ratelimit-limit": "600" }) }, { ratePerMinute: 400 });
+    await r.client.network();
+    expect(r.core.status().throttle.ratePerMinute).toBe(400);
+    expect(r.logs.length).toBe(0);
+  });
+
+  test("status counts rejections by source: cakeutils' 429s and the site's own bucket", async () => {
+    let limited = false;
+    const paths: Record<string, Handler> = {
+      "/v2/network": () => (limited ? json(429, { type: "urn:cakeutils:problem:rate_limited", title: "x", status: 429, detail: "x" }, { "retry-after": "2" }) : json(200, network(1)))
+    };
+    for (let i = 0; i < 10; i++) paths[`/v2/players/p${i}`] = () => json(200, { uuid: `p${i}` });
+    const r = rig(paths, { ratePerMinute: 60, burst: 3, waitMs: { page: 0 } });
+    limited = true;
+    await r.client.network();
+    expect(r.core.status().throttle.upstream429).toBe(1);
+    expect(r.core.status().throttle.last429At).toBe(T0);
+    r.advance(2_000);
+    for (let i = 0; i < 5; i++) await r.client.player(`p${i}`);
+    expect(r.core.status().throttle.localRefused).toBeGreaterThan(0);
   });
 });
 

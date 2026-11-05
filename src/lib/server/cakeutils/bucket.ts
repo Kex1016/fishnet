@@ -21,7 +21,8 @@ export const LOW_REMAINING = 5;
 export class TokenBucket {
   private tokens: number;
   private last: number;
-  private readonly perMs: number;
+  private perMs: number;
+  private readonly configuredPerMs: number;
   private readonly capacity: number;
   private readonly reserveTokens: number;
   private readonly now: () => number;
@@ -32,6 +33,7 @@ export class TokenBucket {
   constructor(o: BucketOptions) {
     this.capacity = Math.max(1, Math.floor(o.burst));
     this.perMs = Math.max(1, o.ratePerMinute) / 60_000;
+    this.configuredPerMs = this.perMs;
     this.reserveTokens = Math.min(this.capacity - 1, Math.floor(this.capacity * (o.reserve ?? 0.5)));
     this.now = o.now ?? Date.now;
     this.sleep = o.sleep ?? ((ms) => new Promise((r) => setTimeout(r, ms)));
@@ -90,6 +92,20 @@ export class TokenBucket {
   observeRemaining(remaining: number | null): void {
     if (remaining === null || !Number.isFinite(remaining)) return;
     if (remaining <= LOW_REMAINING) this.backgroundPausedUntil = this.now() + 10_000;
+  }
+
+  /**
+   * Never refill faster than `perMinute` (the token's own limit at cakeutils, less a margin); never
+   * faster than the configured rate either. A later, higher limit lifts the cap again.
+   */
+  capRate(perMinute: number): void {
+    this.refill();
+    this.perMs = Math.min(this.configuredPerMs, Math.max(1, perMinute) / 60_000);
+  }
+
+  /** The refill rate in requests per minute, for status. */
+  get ratePerMinute(): number {
+    return Math.round(this.perMs * 60_000);
   }
 
   /** Tokens left right now (rounded down), for status. */

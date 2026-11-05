@@ -53,12 +53,22 @@ test("policies and Cache-Control", () => {
   expect(maxAgeMs("no-store")).toBe(0);
   expect(maxAgeMs(null)).toBe(0);
   expect(maxAgeMs("private, max-age=31536000, immutable")).toBe(Infinity);
-  expect(ttlMs(policyFor("/v2/network"), "private, max-age=5")).toBe(5_000);
+  // tiers: live 15 s, player 30 s, boards and feeds 1 min, catalogue 30 min, icons forever
+  expect(ttlMs(policyFor("/v2/network"), "private, max-age=5")).toBe(15_000);
   expect(ttlMs(policyFor("/v2/network"), "private, max-age=30")).toBe(30_000);
-  expect(ttlMs(policyFor("/v2/leaderboards/playtime?scope=server%3Aa"), "private, max-age=5")).toBe(15_000);
-  expect(ttlMs(policyFor("/v2/stats/subjects?type=mined"), null)).toBe(600_000);
+  expect(ttlMs(policyFor("/v2/health"), "private, max-age=5")).toBe(5_000);
+  expect(ttlMs(policyFor("/v2/leaderboards/playtime?scope=server%3Aa"), "private, max-age=5")).toBe(60_000);
+  expect(ttlMs(policyFor("/v2/stats/subjects?type=mined"), null)).toBe(1_800_000);
   expect(policyFor("/v2/health").staleOk).toBe(false);
-  expect(policyFor("/v2/players/x/stats").cls).toBe("live");
+  expect(policyFor("/v2/health").swrMs).toBe(0);
+  expect(policyFor("/v2/players/x/stats").cls).toBe("player");
+  expect(policyFor("/v2/players?q=a").cls).toBe("player");
+  expect(policyFor("/v2/players:batch").cls).toBe("player");
+  expect(policyFor("/v2/milestones?limit=1").cls).toBe("feed");
+  expect(policyFor("/v2/milestones/advancement?id=x").cls).toBe("feed");
+  expect(policyFor("/v2/mini-servers").cls).toBe("live");
+  expect(policyFor("/v2/something-new").cls).toBe("live");
+  expect(ttlMs(policyFor("/v2/icons/abc.png"), null)).toBe(Infinity);
 });
 
 test("redaction", () => {

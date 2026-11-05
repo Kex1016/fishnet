@@ -4,8 +4,13 @@ import type { RequestHandler } from "./$types";
 import { isHidden } from "#lib/server/hidden.ts";
 import { faceService } from "#lib/server/images/index.ts";
 
-const toDefault = () =>
-  new Response(null, { status: 302, headers: { location: "/img/face-default.png", "cache-control": "public, max-age=300" } });
+// Faces are not real-time: browsers keep a head a day and may show it up to a week while they
+// fetch a new one. An old head (Mojang down or throttling, a refresh running) and the redirect to
+// the default head are kept an hour, so a new skin or a first fetch shows up soon after.
+const FRESH = "public, max-age=86400, stale-while-revalidate=604800";
+const SHORT = "public, max-age=3600";
+
+const toDefault = () => new Response(null, { status: 302, headers: { location: "/img/face-default.png", "cache-control": SHORT } });
 
 export const GET: RequestHandler = async ({ params }) => {
   if (isHidden(params.uuid)) return toDefault();
@@ -14,7 +19,7 @@ export const GET: RequestHandler = async ({ params }) => {
   return new Response(r.png as BodyInit, {
     headers: {
       "content-type": "image/png",
-      "cache-control": r.stale ? "public, max-age=300" : "public, max-age=3600, stale-while-revalidate=86400"
+      "cache-control": r.stale ? SHORT : FRESH
     }
   });
 };

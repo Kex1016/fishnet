@@ -1,5 +1,6 @@
 // The transport under the typed client (PLAN §3.2): one in-memory LRU keyed by request, TTL = the
-// answer's max-age raised to a floor per route class (policy.ts), stale-while-revalidate, ETag
+// answer's max-age raised to a floor per tier of data (policy.ts), stale-while-revalidate per tier
+// (refreshes take a token only when one is spare, so they never crowd out a page), ETag
 // revalidation, single-flight for concurrent misses, serve-stale-on-error up to 24 h, a token
 // bucket with page and background priorities (bucket.ts), and Retry-After on 429.
 //
@@ -63,6 +64,21 @@ export type CoreStatus = {
   rateLimitedUntil: number | null;
   cache: { entries: number; bytes: number; hits: number; misses: number; staleServed: number };
   tokens: number;
+  /** where rejections come from: cakeutils' own 429s vs. the site's bucket saying no before asking */
+  throttle: {
+    /** 429 answers from cakeutils since start */
+    upstream429: number;
+    /** requests the site's own bucket turned away (no token within the page's wait) since start */
+    localRefused: number;
+    /** refreshes skipped because no token was spare (the cached answer was served instead) */
+    refreshSkipped: number;
+    /** requests per minute the site allows itself now (CAKEUTILS_RATE, lowered to the token's limit) */
+    ratePerMinute: number;
+    /** the token's own per-minute limit as cakeutils reports it (RateLimit-Limit), or null before the first answer */
+    tokenLimit: number | null;
+    /** epoch ms of the last 429 from cakeutils, or null */
+    last429At: number | null;
+  };
 };
 
 export interface Core {
@@ -114,6 +130,9 @@ export function createCore(o: CoreOptions): Core {
   let lastRefusedLog = -Infinity;
   let lastThrottleLog = -Infinity;
   const counters = { hits: 0, misses: 0, staleServed: 0 };
+  const throttle = { upstream429: 0, localRefused: 0, refreshSkipped: 0 };
+  let tokenLimit: number | null = null;
+  let last429At: number | null = null;
 
   function answer<T>(e: Entry): Result<T> {
     if (!e.good) return { ...e.failure };
@@ -181,6 +200,7 @@ export function createCore(o: CoreOptions): Core {
     if (t0 < downUntil) return fallback<T>(key, policy, "down", {}, downUntil);
 
     if (!(await bucket.take(priority, wait[priority]))) {
+      throttle.localRefused++;
       const w = bucket.waitFor(priority);
       return fallback<T>(key, policy, "rate_limited", { retryAfter: Math.max(1, Math.ceil(w / 1000)) }, now() + Math.max(w, 1000));
     }
@@ -204,6 +224,7 @@ export function createCore(o: CoreOptions): Core {
     const t = now();
     const remaining = res.headers.get("ratelimit-remaining");
     bucket.observeRemaining(remaining === null ? null : Number(remaining));
+    observeLimit(res.headers.get("ratelimit-limit"));
     const cc = res.headers.get("cache-control");
     const status = res.status;
 
@@ -250,6 +271,8 @@ export function createCore(o: CoreOptions): Core {
 
     if (status === 429) {
       markUp();
+      throttle.upstream429++;
+      last429At = t;
       const ra = retryAfterSeconds(res.headers.get("retry-after"));
       blockedUntil = t + ra * 1000;
       if (t - lastThrottleLog > 60_000) {
@@ -271,6 +294,22 @@ export function createCore(o: CoreOptions): Core {
 
     markDown(`HTTP ${status}`);
     return fallback<T>(key, policy, "down", { status, problem: await readProblem(res) }, downUntil);
+  }
+
+  /**
+   * cakeutils' `RateLimit-Limit` is the token's per-minute rate. When CAKEUTILS_RATE is set above it
+   * (say 400 against a token created without `--rate`, which gets cakeutils' default 120), every busy
+   * minute ends in 429s; the bucket steps down to 90 % of the token's rate instead, and says so once.
+   */
+  function observeLimit(h: string | null): void {
+    const n = h === null ? NaN : Number(h);
+    if (!Number.isFinite(n) || n <= 0 || n === tokenLimit) return;
+    tokenLimit = n;
+    const before = bucket.ratePerMinute;
+    bucket.capRate(Math.max(1, Math.floor(n * 0.9)));
+    if (bucket.ratePerMinute !== before) {
+      log(`cakeutils allows ${tokenId(o.token)} ${n} requests/min, below CAKEUTILS_RATE (${o.ratePerMinute ?? 400}): pacing at ${bucket.ratePerMinute}/min`);
+    }
   }
 
   function flight<T>(key: string, run: () => Promise<Result<T>>): Promise<Result<T>> {
@@ -297,9 +336,16 @@ export function createCore(o: CoreOptions): Core {
           counters.hits++;
           return answer<T>(e);
         }
-        if (e.good && !e.stale && t < e.expires + swrMs(e.ttl)) {
+        // Pages get the cached answer at once inside the tier's window; the recorder ("background")
+        // waits for a fresh one, so what it records is never older than the TTL.
+        if (e.good && !e.stale && priority === "page" && t < e.expires + swrMs(policy, e.ttl)) {
           counters.hits++;
-          if (!flights.has(key)) void flight(key, () => fetchInto(key, req, policy, priority));
+          if (!flights.has(key)) {
+            // the refresh only takes a spare token (background priority, no waiting): when pages are
+            // busy it is skipped and the next visitor in the window tries again
+            if (bucket.waitFor("background") === 0) void flight(key, () => fetchInto(key, req, policy, "background"));
+            else throttle.refreshSkipped++;
+          }
           return answer<T>(e);
         }
       }
@@ -340,7 +386,8 @@ export function createCore(o: CoreOptions): Core {
       lastError,
       rateLimitedUntil: blockedUntil > now() ? blockedUntil : null,
       cache: { entries: cache.size, bytes: cache.byteSize, ...counters },
-      tokens: bucket.available
+      tokens: bucket.available,
+      throttle: { ...throttle, ratePerMinute: bucket.ratePerMinute, tokenLimit, last429At }
     })
   };
 }

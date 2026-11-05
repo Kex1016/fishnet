@@ -93,6 +93,20 @@ curl -s http://127.0.0.1:3000/healthz | jq '.cakeutils.throttle, .faces'
 - `localRefused` counts pages the site's own bucket turned away before asking cakeutils (a busy
   minute); `refreshSkipped` counts background refreshes it skipped, serving the cached answer instead.
 - `faces.mojang429` counts Mojang's `429`s on skin lookups (those only cost a default head, never a page).
+- `faces.reasons` says why heads fell back to the default: `noSkin` (the player has no skin of their own,
+  so the default is right), `noProfile` (Mojang has no such account), `offlineUuid` (an offline-mode
+  server's UUID, never asked), `error` (network, HTTP or a bad answer; `faces.lastError` says which, e.g.
+  `profile: ENOTFOUND` when the container cannot reach Mojang). An error is retried after 5 minutes, a
+  missing skin after an hour, and the browser keeps a default-head redirect 5 minutes, so a fallback
+  never sticks.
+
+Faces are cached in `data/cache/faces/` (`<uuid>.png` heads, `<uuid>.miss` markers). To check that the
+container reaches Mojang and to start over:
+
+```sh
+docker exec fishnet node -e "fetch('https://sessionserver.mojang.com/session/minecraft/profile/069a79f444e94726a5befca90e38aaf5').then(r => console.log(r.status), e => console.log(e.cause?.code ?? e.message))"
+rm -f /opt/fishnet/data/cache/faces/*.miss     # forget fallbacks; heads (*.png) stay
+```
 
 Once Caddy is in front, the browser checks in `tests/e2e/` run against the live
 site from any machine with Bun and Playwright: `bun run e2e --base https://fishnet.haiiro.moe`.

@@ -2,6 +2,185 @@
  "scenario": "busy",
  "milestones": true,
  "milestones_since_ago_ms": 1814400000,
+ "advancements": true,
+ "advancements_since_ago_ms": 1814400000,
+ "advancements_imported": [
+  "survival"
+ ],
+ "advancement_titles": [
+  {
+   "id": "minecraft:story/root",
+   "title": "Minecraft"
+  },
+  {
+   "id": "minecraft:story/mine_stone",
+   "title": "Stone Age"
+  },
+  {
+   "id": "minecraft:story/upgrade_tools",
+   "title": "Getting an Upgrade"
+  },
+  {
+   "id": "minecraft:story/smelt_iron",
+   "title": "Acquire Hardware"
+  },
+  {
+   "id": "minecraft:story/obtain_armor",
+   "title": "Suit Up"
+  },
+  {
+   "id": "minecraft:story/lava_bucket",
+   "title": "Hot Stuff"
+  },
+  {
+   "id": "minecraft:story/iron_tools",
+   "title": "Isn't It Iron Pick"
+  },
+  {
+   "id": "minecraft:story/deflect_arrow",
+   "title": "Not Today, Thank You"
+  },
+  {
+   "id": "minecraft:story/form_obsidian",
+   "title": "Ice Bucket Challenge"
+  },
+  {
+   "id": "minecraft:story/mine_diamond",
+   "title": "Diamonds!"
+  },
+  {
+   "id": "minecraft:story/enter_the_nether",
+   "title": "We Need to Go Deeper"
+  },
+  {
+   "id": "minecraft:story/shiny_gear",
+   "title": "Cover Me with Diamonds"
+  },
+  {
+   "id": "minecraft:story/enchant_item",
+   "title": "Enchanter"
+  },
+  {
+   "id": "minecraft:story/follow_ender_eye",
+   "title": "Eye Spy"
+  },
+  {
+   "id": "minecraft:story/enter_the_end",
+   "title": "The End?"
+  },
+  {
+   "id": "minecraft:nether/root",
+   "title": "Nether"
+  },
+  {
+   "id": "minecraft:nether/return_to_sender",
+   "title": "Return to Sender"
+  },
+  {
+   "id": "minecraft:nether/find_fortress",
+   "title": "A Terrible Fortress"
+  },
+  {
+   "id": "minecraft:nether/obtain_blaze_rod",
+   "title": "Into Fire"
+  },
+  {
+   "id": "minecraft:nether/brew_potion",
+   "title": "Local Brewery"
+  },
+  {
+   "id": "minecraft:nether/create_beacon",
+   "title": "Bring Home the Beacon"
+  },
+  {
+   "id": "minecraft:end/root",
+   "title": "The End"
+  },
+  {
+   "id": "minecraft:end/kill_dragon",
+   "title": "Free the End"
+  },
+  {
+   "id": "minecraft:end/dragon_egg",
+   "title": "The Next Generation"
+  },
+  {
+   "id": "minecraft:end/enter_end_gateway",
+   "title": "Remote Getaway"
+  },
+  {
+   "id": "minecraft:end/elytra",
+   "title": "Sky's the Limit"
+  },
+  {
+   "id": "minecraft:adventure/root",
+   "title": "Adventure"
+  },
+  {
+   "id": "minecraft:adventure/kill_a_mob",
+   "title": "Monster Hunter"
+  },
+  {
+   "id": "minecraft:adventure/sleep_in_bed",
+   "title": "Sweet Dreams"
+  },
+  {
+   "id": "minecraft:adventure/trade",
+   "title": "What a Deal!"
+  },
+  {
+   "id": "minecraft:adventure/shoot_arrow",
+   "title": "Take Aim"
+  },
+  {
+   "id": "minecraft:adventure/totem_of_undying",
+   "title": "Postmortal"
+  },
+  {
+   "id": "minecraft:adventure/kill_all_mobs",
+   "title": "Monsters Hunted"
+  },
+  {
+   "id": "minecraft:adventure/adventuring_time",
+   "title": "Adventuring Time"
+  },
+  {
+   "id": "minecraft:adventure/hero_of_the_village",
+   "title": "Hero of the Village"
+  },
+  {
+   "id": "minecraft:husbandry/root",
+   "title": "Husbandry"
+  },
+  {
+   "id": "minecraft:husbandry/plant_seed",
+   "title": "A Seedy Place"
+  },
+  {
+   "id": "minecraft:husbandry/breed_an_animal",
+   "title": "The Parrots and the Bats"
+  },
+  {
+   "id": "minecraft:husbandry/fishy_business",
+   "title": "Fishy Business"
+  },
+  {
+   "id": "minecraft:husbandry/tactical_fishing",
+   "title": "Tactical Fishing"
+  },
+  {
+   "id": "farmersdelight:main/root",
+   "title": "Farmer's Delight"
+  },
+  {
+   "id": "farmersdelight:main/get_knife",
+   "title": "Cutting Edge"
+  },
+  {
+   "id": "farmersdelight:main/use_cutting_board",
+   "title": "Ready to Cook"
+  }
+ ],
  "servers": [
   {
    "id": "lobby",
@@ -849,6 +1028,48 @@
      "minecraft:custom|minecraft:animals_bred": 3,
      "create:pressed|minecraft:iron_ingot": 5
     }
+   },
+   "advancements": {
+    "survival": {
+     "minecraft:story/root": 1645488485,
+     "minecraft:story/mine_stone": 1662115721,
+     "minecraft:story/upgrade_tools": 1660286270,
+     "minecraft:story/smelt_iron": 1662115721,
+     "minecraft:story/lava_bucket": 1564964104,
+     "minecraft:story/form_obsidian": 1507582942,
+     "minecraft:story/mine_diamond": 1500507145,
+     "minecraft:story/enter_the_nether": 1407790281,
+     "minecraft:story/shiny_gear": 1061494065,
+     "minecraft:story/enchant_item": 1418253946,
+     "minecraft:nether/root": 1370774575,
+     "minecraft:nether/return_to_sender": 1369935596,
+     "minecraft:nether/find_fortress": 1176269707,
+     "minecraft:end/root": 762247733,
+     "minecraft:end/kill_dragon": 655861634,
+     "minecraft:end/dragon_egg": 488550035,
+     "minecraft:adventure/root": 1662115721,
+     "minecraft:adventure/kill_a_mob": 1662115721,
+     "minecraft:adventure/sleep_in_bed": 1625086808,
+     "minecraft:adventure/trade": 1643050516,
+     "minecraft:adventure/shoot_arrow": 1662115721,
+     "minecraft:husbandry/plant_seed": 1653628799,
+     "minecraft:husbandry/fishy_business": 1589207422,
+     "minecraft:husbandry/tactical_fishing": 1549780137,
+     "farmersdelight:main/root": 1637055520,
+     "farmersdelight:main/use_cutting_board": 1501068197
+    },
+    "creative": {
+     "minecraft:story/root": 1662115721,
+     "minecraft:story/mine_stone": 1662115721,
+     "minecraft:story/upgrade_tools": 1645965423,
+     "minecraft:nether/root": 1089080330,
+     "minecraft:adventure/root": 1556825176,
+     "minecraft:adventure/sleep_in_bed": 1662115721,
+     "minecraft:husbandry/root": 1578493450,
+     "farmersdelight:main/root": 1329761288,
+     "farmersdelight:main/get_knife": 1299487279,
+     "farmersdelight:main/use_cutting_board": 1009473574
+    }
    }
   },
   {
@@ -1035,6 +1256,29 @@
      "minecraft:custom|minecraft:damage_taken": 103,
      "minecraft:custom|minecraft:animals_bred": 1,
      "minecraft:custom|minecraft:sleep_in_bed": 1
+    }
+   },
+   "advancements": {
+    "survival": {
+     "minecraft:story/root": 1455133209,
+     "minecraft:story/mine_stone": 1467578402,
+     "minecraft:story/upgrade_tools": 1467578402,
+     "minecraft:story/smelt_iron": 1359131322,
+     "minecraft:story/obtain_armor": 1295326943,
+     "minecraft:story/lava_bucket": 1260752812,
+     "minecraft:story/deflect_arrow": 1235571769,
+     "minecraft:story/mine_diamond": 1207691323,
+     "minecraft:story/enchant_item": 976707872,
+     "minecraft:nether/find_fortress": 416100638,
+     "minecraft:adventure/root": 1458309564,
+     "minecraft:adventure/kill_a_mob": 1467578402,
+     "minecraft:adventure/sleep_in_bed": 1394306058,
+     "minecraft:adventure/shoot_arrow": 1242515104,
+     "minecraft:husbandry/root": 1448175891,
+     "minecraft:husbandry/plant_seed": 1333503035,
+     "minecraft:husbandry/breed_an_animal": 1228103447,
+     "minecraft:husbandry/tactical_fishing": 645058482,
+     "farmersdelight:main/use_cutting_board": 789058014
     }
    }
   },
@@ -1264,6 +1508,33 @@
      "minecraft:custom|minecraft:jump": 5,
      "minecraft:custom|minecraft:damage_dealt": 36
     }
+   },
+   "advancements": {
+    "survival": {
+     "minecraft:story/root": 3528637775,
+     "minecraft:story/mine_stone": 3515858851,
+     "minecraft:story/upgrade_tools": 3386378137,
+     "minecraft:story/smelt_iron": 3335222589,
+     "minecraft:story/iron_tools": 3237719266,
+     "minecraft:story/deflect_arrow": 3185090010,
+     "minecraft:story/enter_the_nether": 2712407241,
+     "minecraft:story/enchant_item": 2231334527,
+     "minecraft:nether/root": 2806284937,
+     "minecraft:nether/return_to_sender": 2573535411,
+     "minecraft:nether/find_fortress": 2022995813,
+     "minecraft:nether/brew_potion": 1524045632,
+     "minecraft:adventure/root": 3533761868,
+     "minecraft:adventure/kill_a_mob": 3355579128,
+     "minecraft:adventure/sleep_in_bed": 3367972622,
+     "minecraft:husbandry/root": 3505074788,
+     "minecraft:husbandry/plant_seed": 3533761868,
+     "minecraft:husbandry/breed_an_animal": 3254351708,
+     "farmersdelight:main/root": 3037415103
+    },
+    "creative": {
+     "minecraft:nether/root": 1756758285,
+     "farmersdelight:main/get_knife": 615286769
+    }
    }
   },
   {
@@ -1486,6 +1757,27 @@
      "minecraft:custom|minecraft:sprint_one_cm": 12223,
      "minecraft:custom|minecraft:boat_one_cm": 2485,
      "minecraft:custom|minecraft:jump": 13
+    }
+   },
+   "advancements": {
+    "survival": {
+     "minecraft:story/root": 4534976278,
+     "minecraft:story/mine_stone": 4572219747,
+     "minecraft:story/upgrade_tools": 4682633747,
+     "minecraft:story/smelt_iron": 4474414232,
+     "minecraft:story/obtain_armor": 4531248031,
+     "minecraft:story/lava_bucket": 4095713669,
+     "minecraft:story/iron_tools": 4340269787,
+     "minecraft:story/enter_the_nether": 2865760211,
+     "minecraft:nether/root": 3101080301,
+     "minecraft:nether/find_fortress": 3300565920,
+     "minecraft:adventure/root": 4597836932,
+     "minecraft:adventure/kill_a_mob": 4522629107,
+     "minecraft:adventure/sleep_in_bed": 4538829864,
+     "minecraft:husbandry/root": 4616905465,
+     "minecraft:husbandry/plant_seed": 4494403670,
+     "minecraft:husbandry/breed_an_animal": 4627029816,
+     "farmersdelight:main/root": 4205210034
     }
    }
   },
@@ -1760,6 +2052,37 @@
      "minecraft:custom|minecraft:sleep_in_bed": 2,
      "create:pressed|minecraft:iron_ingot": 4
     }
+   },
+   "advancements": {
+    "survival": {
+     "minecraft:story/root": 2069120777,
+     "minecraft:story/mine_stone": 2069120777,
+     "minecraft:story/upgrade_tools": 2069120777,
+     "minecraft:story/smelt_iron": 2069120777,
+     "minecraft:story/obtain_armor": 2069120777,
+     "minecraft:story/iron_tools": 2052028354,
+     "minecraft:story/deflect_arrow": 2000687173,
+     "minecraft:story/mine_diamond": 1991780953,
+     "minecraft:story/enchant_item": 1917573218,
+     "minecraft:story/follow_ender_eye": 1623552015,
+     "minecraft:nether/root": 2015108846,
+     "minecraft:nether/obtain_blaze_rod": 1871115563,
+     "minecraft:nether/brew_potion": 1838424988,
+     "minecraft:end/root": 1574562915,
+     "minecraft:end/enter_end_gateway": 1405720502,
+     "minecraft:adventure/root": 2061326568,
+     "minecraft:adventure/kill_a_mob": 2069120777,
+     "minecraft:adventure/sleep_in_bed": 2069120777,
+     "minecraft:adventure/adventuring_time": 1325490166,
+     "minecraft:husbandry/root": 2069120777,
+     "minecraft:husbandry/plant_seed": 2069120777,
+     "minecraft:husbandry/breed_an_animal": 2043638837,
+     "farmersdelight:main/get_knife": 2026478934
+    },
+    "creative": {
+     "minecraft:nether/root": 1684462549,
+     "farmersdelight:main/get_knife": 1739890018
+    }
    }
   },
   {
@@ -1932,6 +2255,24 @@
      "minecraft:custom|minecraft:damage_taken": 205,
      "minecraft:custom|minecraft:fish_caught": 1
     }
+   },
+   "advancements": {
+    "survival": {
+     "minecraft:story/root": 948351984,
+     "minecraft:story/mine_stone": 938359166,
+     "minecraft:story/upgrade_tools": 948351984,
+     "minecraft:story/smelt_iron": 846700095,
+     "minecraft:story/obtain_armor": 688175039,
+     "minecraft:story/iron_tools": 735395850,
+     "minecraft:story/mine_diamond": 197824171,
+     "minecraft:nether/root": 91670500,
+     "minecraft:adventure/root": 890730115,
+     "minecraft:adventure/kill_a_mob": 890249889,
+     "minecraft:adventure/sleep_in_bed": 842135090,
+     "minecraft:husbandry/root": 924556294,
+     "minecraft:husbandry/plant_seed": 813515869,
+     "minecraft:husbandry/breed_an_animal": 576372215
+    }
    }
   },
   {
@@ -2091,6 +2432,33 @@
      "minecraft:custom|minecraft:damage_taken": 182,
      "minecraft:custom|minecraft:animals_bred": 1,
      "minecraft:custom|minecraft:sleep_in_bed": 1
+    }
+   },
+   "advancements": {
+    "survival": {
+     "minecraft:story/root": 5824015021,
+     "minecraft:story/mine_stone": 5759069653,
+     "minecraft:story/upgrade_tools": 5625502822,
+     "minecraft:story/smelt_iron": 5614721398,
+     "minecraft:story/obtain_armor": 5824015021,
+     "minecraft:story/lava_bucket": 5561892311,
+     "minecraft:story/iron_tools": 5574557986,
+     "minecraft:story/deflect_arrow": 4902335409,
+     "minecraft:story/form_obsidian": 5433791491,
+     "minecraft:story/mine_diamond": 4949048393,
+     "minecraft:story/enter_the_nether": 5113758566,
+     "minecraft:nether/root": 4771274179,
+     "minecraft:nether/find_fortress": 4886055008,
+     "minecraft:nether/obtain_blaze_rod": 3774944407,
+     "minecraft:adventure/root": 5824015021,
+     "minecraft:adventure/kill_a_mob": 5824015021,
+     "minecraft:adventure/sleep_in_bed": 5579577230,
+     "minecraft:adventure/shoot_arrow": 5019135305,
+     "minecraft:husbandry/root": 5824015021,
+     "minecraft:husbandry/plant_seed": 5824015021,
+     "minecraft:husbandry/breed_an_animal": 5310597815,
+     "farmersdelight:main/root": 5557654519,
+     "farmersdelight:main/use_cutting_board": 4634342585
     }
    }
   },
@@ -2283,6 +2651,27 @@
      "minecraft:custom|minecraft:damage_dealt": 14,
      "minecraft:custom|minecraft:damage_taken": 18
     }
+   },
+   "advancements": {
+    "survival": {
+     "minecraft:story/root": 5742085650,
+     "minecraft:story/mine_stone": 5945096702,
+     "minecraft:story/upgrade_tools": 5749980604,
+     "minecraft:story/lava_bucket": 4277928066,
+     "minecraft:story/iron_tools": 4739058726,
+     "minecraft:story/deflect_arrow": 2808622259,
+     "minecraft:story/form_obsidian": 4323983566,
+     "minecraft:story/mine_diamond": 3547441334,
+     "minecraft:story/shiny_gear": 1150637426,
+     "minecraft:nether/obtain_blaze_rod": 294233567,
+     "minecraft:adventure/root": 5586806048,
+     "minecraft:adventure/kill_a_mob": 5613480979,
+     "minecraft:adventure/sleep_in_bed": 5366275847,
+     "minecraft:adventure/shoot_arrow": 4518838300,
+     "minecraft:husbandry/root": 5577532310,
+     "minecraft:husbandry/fishy_business": 4007092565,
+     "farmersdelight:main/get_knife": 3493519430
+    }
    }
   },
   {
@@ -2464,6 +2853,26 @@
      "minecraft:custom|minecraft:animals_bred": 2,
      "minecraft:custom|minecraft:sleep_in_bed": 2,
      "create:pressed|minecraft:iron_ingot": 6
+    }
+   },
+   "advancements": {
+    "survival": {
+     "minecraft:story/root": 1304977294,
+     "minecraft:story/mine_stone": 1344337638,
+     "minecraft:story/upgrade_tools": 1328782113,
+     "minecraft:story/smelt_iron": 1288510877,
+     "minecraft:story/obtain_armor": 1261151187,
+     "minecraft:story/lava_bucket": 1196790757,
+     "minecraft:story/mine_diamond": 916639568,
+     "minecraft:story/enter_the_nether": 987379409,
+     "minecraft:nether/root": 953119062,
+     "minecraft:nether/obtain_blaze_rod": 527240354,
+     "minecraft:adventure/root": 1286009694,
+     "minecraft:adventure/kill_a_mob": 1319218439,
+     "minecraft:adventure/sleep_in_bed": 1307413595,
+     "minecraft:husbandry/root": 1302486748,
+     "minecraft:husbandry/plant_seed": 1337070991,
+     "minecraft:husbandry/breed_an_animal": 1298211336
     }
    }
   },
@@ -2682,6 +3091,33 @@
      "minecraft:custom|minecraft:fish_caught": 15,
      "minecraft:custom|minecraft:animals_bred": 11,
      "create:pressed|minecraft:iron_ingot": 32
+    }
+   },
+   "advancements": {
+    "survival": {
+     "minecraft:story/root": 2805358128,
+     "minecraft:story/mine_stone": 2805358128,
+     "minecraft:story/upgrade_tools": 2805358128,
+     "minecraft:story/obtain_armor": 2805358128,
+     "minecraft:story/iron_tools": 2805358128,
+     "minecraft:story/deflect_arrow": 2493928389,
+     "minecraft:story/form_obsidian": 2506079755,
+     "minecraft:story/enter_the_nether": 2501906227,
+     "minecraft:story/enchant_item": 2529869903,
+     "minecraft:story/follow_ender_eye": 1701052716,
+     "minecraft:story/enter_the_end": 2234663053,
+     "minecraft:nether/root": 2453206546,
+     "minecraft:adventure/root": 2805358128,
+     "minecraft:adventure/kill_a_mob": 2742455842,
+     "minecraft:adventure/sleep_in_bed": 2805358128,
+     "minecraft:adventure/trade": 2680987557,
+     "minecraft:adventure/shoot_arrow": 2805358128,
+     "minecraft:husbandry/root": 2746915614,
+     "minecraft:husbandry/plant_seed": 2763429773,
+     "minecraft:husbandry/fishy_business": 2754052894,
+     "minecraft:husbandry/tactical_fishing": 2482662376,
+     "farmersdelight:main/root": 2614769104,
+     "farmersdelight:main/use_cutting_board": 2594270201
     }
    }
   },
@@ -2934,6 +3370,39 @@
      "minecraft:custom|minecraft:fish_caught": 1,
      "create:pressed|minecraft:iron_ingot": 1
     }
+   },
+   "advancements": {
+    "survival": {
+     "minecraft:story/root": 1058019746,
+     "minecraft:story/mine_stone": 1079899265,
+     "minecraft:story/upgrade_tools": 1032388377,
+     "minecraft:story/smelt_iron": 990880550,
+     "minecraft:story/obtain_armor": 931463105,
+     "minecraft:story/lava_bucket": 943727309,
+     "minecraft:story/iron_tools": 908499572,
+     "minecraft:story/mine_diamond": 616855993,
+     "minecraft:story/enter_the_nether": 434374331,
+     "minecraft:nether/root": 379027395,
+     "minecraft:adventure/root": 1079899265,
+     "minecraft:adventure/kill_a_mob": 1063676240,
+     "minecraft:adventure/sleep_in_bed": 1008665604,
+     "minecraft:adventure/trade": 568536088,
+     "minecraft:adventure/shoot_arrow": 794637891,
+     "minecraft:husbandry/root": 1062605696,
+     "farmersdelight:main/root": 931179253,
+     "farmersdelight:main/get_knife": 663687248,
+     "farmersdelight:main/use_cutting_board": 354215624
+    },
+    "creative": {
+     "minecraft:story/root": 1079899265,
+     "minecraft:story/mine_stone": 1029252942,
+     "minecraft:story/upgrade_tools": 1063510060,
+     "minecraft:adventure/root": 1063769348,
+     "minecraft:adventure/sleep_in_bed": 1047486473,
+     "minecraft:husbandry/root": 963105026,
+     "minecraft:husbandry/plant_seed": 911394967,
+     "farmersdelight:main/get_knife": 213527957
+    }
    }
   },
   {
@@ -3128,6 +3597,25 @@
      "minecraft:custom|minecraft:time_since_death": 254922,
      "minecraft:custom|minecraft:mob_kills": 1
     }
+   },
+   "advancements": {
+    "survival": {
+     "minecraft:story/root": 2857265569,
+     "minecraft:story/mine_stone": 2822297348,
+     "minecraft:story/upgrade_tools": 2842364524,
+     "minecraft:story/smelt_iron": 2607356194,
+     "minecraft:story/obtain_armor": 2448101637,
+     "minecraft:story/iron_tools": 2450211304,
+     "minecraft:story/form_obsidian": 1951336035,
+     "minecraft:story/enter_the_nether": 1948942840,
+     "minecraft:adventure/root": 2827703295,
+     "minecraft:adventure/shoot_arrow": 2296189996,
+     "minecraft:husbandry/root": 2729510545,
+     "minecraft:husbandry/plant_seed": 2658342733,
+     "minecraft:husbandry/breed_an_animal": 2658951582,
+     "minecraft:husbandry/fishy_business": 2459628801,
+     "farmersdelight:main/get_knife": 2109671244
+    }
    }
   },
   {
@@ -3297,6 +3785,26 @@
      "minecraft:custom|minecraft:jump": 1,
      "minecraft:custom|minecraft:damage_dealt": 7,
      "minecraft:custom|minecraft:damage_taken": 6
+    }
+   },
+   "advancements": {
+    "survival": {
+     "minecraft:story/root": 4849038802,
+     "minecraft:story/mine_stone": 4788725487,
+     "minecraft:story/upgrade_tools": 4849038802,
+     "minecraft:story/smelt_iron": 4837477151,
+     "minecraft:story/obtain_armor": 4292954035,
+     "minecraft:story/lava_bucket": 4210133805,
+     "minecraft:story/iron_tools": 4190353961,
+     "minecraft:story/form_obsidian": 3240620151,
+     "minecraft:story/mine_diamond": 3485595075,
+     "minecraft:nether/root": 2468817778,
+     "minecraft:adventure/root": 4727009574,
+     "minecraft:adventure/kill_a_mob": 4484636900,
+     "minecraft:adventure/sleep_in_bed": 4433718102,
+     "minecraft:adventure/trade": 2927822240,
+     "minecraft:husbandry/root": 4488223643,
+     "farmersdelight:main/root": 3570375317
     }
    }
   },
@@ -3495,6 +4003,35 @@
      "minecraft:custom|minecraft:damage_dealt": 134,
      "minecraft:custom|minecraft:damage_taken": 12,
      "create:pressed|minecraft:iron_ingot": 1
+    }
+   },
+   "advancements": {
+    "survival": {
+     "minecraft:story/root": 5234724711,
+     "minecraft:story/mine_stone": 5234724711,
+     "minecraft:story/upgrade_tools": 5234724711,
+     "minecraft:story/smelt_iron": 5234724711,
+     "minecraft:story/obtain_armor": 5184256014,
+     "minecraft:story/deflect_arrow": 5023257092,
+     "minecraft:story/mine_diamond": 5234724711,
+     "minecraft:story/enter_the_end": 4366412295,
+     "minecraft:nether/root": 5082124040,
+     "minecraft:nether/return_to_sender": 5234724711,
+     "minecraft:nether/find_fortress": 4700152733,
+     "minecraft:nether/obtain_blaze_rod": 4781943882,
+     "minecraft:nether/brew_potion": 4822544429,
+     "minecraft:adventure/root": 5234724711,
+     "minecraft:adventure/kill_a_mob": 5118691669,
+     "minecraft:adventure/sleep_in_bed": 5234724711,
+     "minecraft:adventure/trade": 5234724711,
+     "minecraft:husbandry/root": 5234724711,
+     "minecraft:husbandry/plant_seed": 5152989615,
+     "minecraft:husbandry/breed_an_animal": 5234724711,
+     "farmersdelight:main/root": 5234724711,
+     "farmersdelight:main/use_cutting_board": 4893866241
+    },
+    "creative": {
+     "minecraft:nether/root": 1559372932
     }
    }
   },
@@ -3819,6 +4356,34 @@
      "minecraft:custom|minecraft:sleep_in_bed": 1,
      "create:pressed|minecraft:iron_ingot": 3
     }
+   },
+   "advancements": {
+    "survival": {
+     "minecraft:story/root": 3419597786,
+     "minecraft:story/mine_stone": 3419597786,
+     "minecraft:story/upgrade_tools": 3419597786,
+     "minecraft:story/smelt_iron": 3412719946,
+     "minecraft:story/obtain_armor": 3419597786,
+     "minecraft:story/lava_bucket": 3291768779,
+     "minecraft:story/iron_tools": 3328429980,
+     "minecraft:story/deflect_arrow": 3187223025,
+     "minecraft:story/enter_the_nether": 3209986770,
+     "minecraft:story/enchant_item": 3130476481,
+     "minecraft:nether/root": 2916948122,
+     "minecraft:nether/brew_potion": 2723739856,
+     "minecraft:end/enter_end_gateway": 1570972703,
+     "minecraft:adventure/root": 3419597786,
+     "minecraft:adventure/kill_a_mob": 3419597786,
+     "minecraft:adventure/sleep_in_bed": 3419597786,
+     "minecraft:husbandry/root": 3419597786,
+     "minecraft:husbandry/plant_seed": 3419597786,
+     "minecraft:husbandry/breed_an_animal": 3379798653,
+     "minecraft:husbandry/tactical_fishing": 3125796266,
+     "farmersdelight:main/root": 3307585949
+    },
+    "creative": {
+     "minecraft:husbandry/plant_seed": 1744222158
+    }
    }
   },
   {
@@ -4050,6 +4615,28 @@
      "minecraft:custom|minecraft:fish_caught": 3,
      "minecraft:custom|minecraft:sleep_in_bed": 2
     }
+   },
+   "advancements": {
+    "survival": {
+     "minecraft:story/root": 5653303347,
+     "minecraft:story/mine_stone": 5653303347,
+     "minecraft:story/upgrade_tools": 5653303347,
+     "minecraft:story/smelt_iron": 5272091221,
+     "minecraft:story/obtain_armor": 4901920907,
+     "minecraft:story/iron_tools": 4643284112,
+     "minecraft:story/deflect_arrow": 3415106305,
+     "minecraft:story/form_obsidian": 2596997755,
+     "minecraft:story/mine_diamond": 3455960536,
+     "minecraft:story/enter_the_nether": 2820068314,
+     "minecraft:nether/root": 922681160,
+     "minecraft:adventure/root": 5275607166,
+     "minecraft:adventure/kill_a_mob": 5381946285,
+     "minecraft:adventure/shoot_arrow": 4613904706,
+     "minecraft:husbandry/root": 5628906011,
+     "minecraft:husbandry/plant_seed": 5322799085,
+     "minecraft:husbandry/breed_an_animal": 5008869767,
+     "farmersdelight:main/root": 3975275883
+    }
    }
   },
   {
@@ -4253,6 +4840,33 @@
      "minecraft:custom|minecraft:jump": 2,
      "minecraft:custom|minecraft:damage_dealt": 29,
      "minecraft:custom|minecraft:damage_taken": 14
+    }
+   },
+   "advancements": {
+    "survival": {
+     "minecraft:story/root": 2844968194,
+     "minecraft:story/mine_stone": 2844968194,
+     "minecraft:story/upgrade_tools": 2709018154,
+     "minecraft:story/smelt_iron": 2719413144,
+     "minecraft:story/obtain_armor": 2606816917,
+     "minecraft:story/deflect_arrow": 2286047794,
+     "minecraft:story/form_obsidian": 2365560559,
+     "minecraft:story/mine_diamond": 2435580354,
+     "minecraft:nether/root": 2267626203,
+     "minecraft:nether/obtain_blaze_rod": 1723195811,
+     "minecraft:nether/brew_potion": 1393859862,
+     "minecraft:adventure/root": 2844968194,
+     "minecraft:adventure/kill_a_mob": 2745939683,
+     "minecraft:adventure/sleep_in_bed": 2704142832,
+     "minecraft:adventure/trade": 2199422996,
+     "minecraft:husbandry/root": 2652435090,
+     "minecraft:husbandry/plant_seed": 2745432159,
+     "minecraft:husbandry/fishy_business": 2286861603,
+     "farmersdelight:main/use_cutting_board": 1626728191
+    },
+    "creative": {
+     "minecraft:nether/root": 1365520683,
+     "farmersdelight:main/use_cutting_board": 1700140449
     }
    }
   },
@@ -4483,6 +5097,33 @@
      "minecraft:custom|minecraft:sleep_in_bed": 1,
      "create:pressed|minecraft:iron_ingot": 1
     }
+   },
+   "advancements": {
+    "survival": {
+     "minecraft:story/root": 2286540209,
+     "minecraft:story/mine_stone": 2286540209,
+     "minecraft:story/upgrade_tools": 2259000864,
+     "minecraft:story/smelt_iron": 2214734025,
+     "minecraft:story/obtain_armor": 2210252258,
+     "minecraft:story/lava_bucket": 2051973012,
+     "minecraft:story/iron_tools": 2021102676,
+     "minecraft:story/form_obsidian": 1785938263,
+     "minecraft:story/mine_diamond": 1755523122,
+     "minecraft:adventure/root": 2261381232,
+     "minecraft:adventure/kill_a_mob": 2235307870,
+     "minecraft:adventure/sleep_in_bed": 2225601095,
+     "minecraft:adventure/trade": 1830854513,
+     "minecraft:adventure/shoot_arrow": 2037682684,
+     "minecraft:husbandry/root": 2189535662,
+     "minecraft:husbandry/plant_seed": 2211508469,
+     "minecraft:husbandry/breed_an_animal": 2109914683,
+     "minecraft:husbandry/fishy_business": 2093416296,
+     "farmersdelight:main/root": 1883569005
+    },
+    "creative": {
+     "minecraft:adventure/sleep_in_bed": 1754316551,
+     "minecraft:husbandry/plant_seed": 1546872222
+    }
    }
   },
   {
@@ -4654,6 +5295,28 @@
      "minecraft:custom|minecraft:damage_dealt": 970,
      "minecraft:custom|minecraft:fish_caught": 1,
      "create:pressed|minecraft:iron_ingot": 9
+    }
+   },
+   "advancements": {
+    "survival": {
+     "minecraft:story/root": 5292364801,
+     "minecraft:story/mine_stone": 5231475925,
+     "minecraft:story/upgrade_tools": 5409758381,
+     "minecraft:story/smelt_iron": 5409758381,
+     "minecraft:story/iron_tools": 5409758381,
+     "minecraft:story/deflect_arrow": 4683108558,
+     "minecraft:story/form_obsidian": 4774665212,
+     "minecraft:story/mine_diamond": 3579749723,
+     "minecraft:nether/root": 3792090521,
+     "minecraft:nether/find_fortress": 2405500044,
+     "minecraft:adventure/root": 5409758381,
+     "minecraft:adventure/kill_a_mob": 5409758381,
+     "minecraft:adventure/sleep_in_bed": 5357423123,
+     "minecraft:adventure/trade": 4526790809,
+     "minecraft:adventure/shoot_arrow": 4172726559,
+     "minecraft:husbandry/root": 5302113916,
+     "minecraft:husbandry/fishy_business": 5005267323,
+     "farmersdelight:main/use_cutting_board": 3221117274
     }
    }
   },
@@ -4835,6 +5498,30 @@
      "minecraft:custom|minecraft:animals_bred": 1,
      "create:pressed|minecraft:iron_ingot": 4
     }
+   },
+   "advancements": {
+    "survival": {
+     "minecraft:story/root": 3600510840,
+     "minecraft:story/mine_stone": 3600510840,
+     "minecraft:story/upgrade_tools": 3517477634,
+     "minecraft:story/smelt_iron": 3477822493,
+     "minecraft:story/obtain_armor": 3323500600,
+     "minecraft:story/iron_tools": 3347011857,
+     "minecraft:story/form_obsidian": 3235371476,
+     "minecraft:story/mine_diamond": 3137813083,
+     "minecraft:nether/root": 2783616498,
+     "minecraft:nether/return_to_sender": 2547142386,
+     "minecraft:nether/find_fortress": 2637659886,
+     "minecraft:nether/obtain_blaze_rod": 2506239605,
+     "minecraft:adventure/root": 3600510840,
+     "minecraft:adventure/kill_a_mob": 3513982953,
+     "minecraft:adventure/sleep_in_bed": 3400536001,
+     "minecraft:adventure/trade": 2652157711,
+     "minecraft:adventure/shoot_arrow": 3202096025,
+     "minecraft:husbandry/plant_seed": 3559046329,
+     "farmersdelight:main/get_knife": 2608056996,
+     "farmersdelight:main/use_cutting_board": 2505489056
+    }
    }
   },
   {
@@ -5008,6 +5695,35 @@
      "minecraft:custom|minecraft:time_since_death": 134216,
      "minecraft:custom|minecraft:damage_dealt": 16,
      "minecraft:custom|minecraft:damage_taken": 10
+    }
+   },
+   "advancements": {
+    "survival": {
+     "minecraft:story/root": 1581334787,
+     "minecraft:story/mine_stone": 1569712682,
+     "minecraft:story/upgrade_tools": 1564688385,
+     "minecraft:story/smelt_iron": 1540629782,
+     "minecraft:story/obtain_armor": 1531382574,
+     "minecraft:story/iron_tools": 1527112355,
+     "minecraft:story/enchant_item": 1380935713,
+     "minecraft:nether/root": 1422619416,
+     "minecraft:nether/return_to_sender": 1146870323,
+     "minecraft:nether/obtain_blaze_rod": 1189322265,
+     "minecraft:adventure/root": 1553626789,
+     "minecraft:adventure/kill_a_mob": 1550606733,
+     "minecraft:adventure/sleep_in_bed": 1579130830,
+     "minecraft:adventure/trade": 1466997667,
+     "minecraft:adventure/shoot_arrow": 1491114508,
+     "minecraft:husbandry/root": 1536638684,
+     "minecraft:husbandry/plant_seed": 1539395085,
+     "minecraft:husbandry/breed_an_animal": 1486215716,
+     "farmersdelight:main/root": 1450548603,
+     "farmersdelight:main/get_knife": 1416467601
+    },
+    "creative": {
+     "minecraft:story/root": 1533066491,
+     "minecraft:story/mine_stone": 1424616699,
+     "minecraft:adventure/root": 1134265498
     }
    }
   },
@@ -5239,6 +5955,33 @@
      "minecraft:custom|minecraft:animals_bred": 9,
      "minecraft:custom|minecraft:sleep_in_bed": 3
     }
+   },
+   "advancements": {
+    "survival": {
+     "minecraft:story/root": 3419634983,
+     "minecraft:story/mine_stone": 3419634983,
+     "minecraft:story/upgrade_tools": 3335537522,
+     "minecraft:story/smelt_iron": 3419634983,
+     "minecraft:story/obtain_armor": 3397069812,
+     "minecraft:story/iron_tools": 3382810142,
+     "minecraft:story/form_obsidian": 3419634983,
+     "minecraft:story/mine_diamond": 3376741849,
+     "minecraft:nether/root": 3220914537,
+     "minecraft:nether/return_to_sender": 3348930543,
+     "minecraft:nether/obtain_blaze_rod": 3098201023,
+     "minecraft:nether/create_beacon": 2476000525,
+     "minecraft:end/elytra": 2640376712,
+     "minecraft:adventure/kill_a_mob": 3418686255,
+     "minecraft:adventure/sleep_in_bed": 3362339149,
+     "minecraft:adventure/trade": 3419634983,
+     "minecraft:adventure/shoot_arrow": 3234015302,
+     "minecraft:adventure/hero_of_the_village": 2608291864,
+     "minecraft:husbandry/root": 3419634983,
+     "minecraft:husbandry/plant_seed": 3357274251,
+     "minecraft:husbandry/breed_an_animal": 3269104561,
+     "minecraft:husbandry/fishy_business": 3338357357,
+     "farmersdelight:main/get_knife": 3310990959
+    }
    }
   },
   {
@@ -5383,6 +6126,36 @@
      "minecraft:custom|minecraft:damage_taken": 89,
      "minecraft:custom|minecraft:fish_caught": 1,
      "create:pressed|minecraft:iron_ingot": 2
+    }
+   },
+   "advancements": {
+    "survival": {
+     "minecraft:story/root": 1470690403,
+     "minecraft:story/mine_stone": 1470690403,
+     "minecraft:story/upgrade_tools": 1470690403,
+     "minecraft:story/smelt_iron": 1470690403,
+     "minecraft:story/obtain_armor": 1439702876,
+     "minecraft:story/lava_bucket": 1470690403,
+     "minecraft:story/iron_tools": 1445879308,
+     "minecraft:story/deflect_arrow": 1470690403,
+     "minecraft:story/mine_diamond": 1461884996,
+     "minecraft:story/shiny_gear": 1456486914,
+     "minecraft:story/enchant_item": 1438008225,
+     "minecraft:story/follow_ender_eye": 1277948355,
+     "minecraft:nether/root": 1395444204,
+     "minecraft:nether/brew_potion": 1404040641,
+     "minecraft:end/kill_dragon": 1124964256,
+     "minecraft:adventure/root": 1470690403,
+     "minecraft:adventure/kill_a_mob": 1470690403,
+     "minecraft:adventure/sleep_in_bed": 1470690403,
+     "minecraft:adventure/trade": 1470690403,
+     "minecraft:adventure/shoot_arrow": 1444224183,
+     "minecraft:husbandry/root": 1470690403,
+     "minecraft:husbandry/plant_seed": 1470690403,
+     "minecraft:husbandry/breed_an_animal": 1432821992,
+     "minecraft:husbandry/fishy_business": 1470501420,
+     "minecraft:husbandry/tactical_fishing": 1389525295,
+     "farmersdelight:main/get_knife": 1430637491
     }
    }
   },
@@ -5538,6 +6311,31 @@
      "minecraft:custom|minecraft:damage_taken": 114,
      "minecraft:custom|minecraft:animals_bred": 1,
      "create:pressed|minecraft:iron_ingot": 2
+    }
+   },
+   "advancements": {
+    "survival": {
+     "minecraft:story/root": 1009155714,
+     "minecraft:story/mine_stone": 1013887817,
+     "minecraft:story/upgrade_tools": 1034752118,
+     "minecraft:story/smelt_iron": 1034752118,
+     "minecraft:story/obtain_armor": 1033861973,
+     "minecraft:story/lava_bucket": 1034752118,
+     "minecraft:story/iron_tools": 1034752118,
+     "minecraft:story/form_obsidian": 999726817,
+     "minecraft:story/mine_diamond": 1034752118,
+     "minecraft:story/enter_the_nether": 1034752118,
+     "minecraft:story/enchant_item": 955306952,
+     "minecraft:nether/root": 1023007032,
+     "minecraft:nether/return_to_sender": 1022561953,
+     "minecraft:adventure/root": 1034752118,
+     "minecraft:adventure/sleep_in_bed": 1034752118,
+     "minecraft:adventure/kill_all_mobs": 450864211,
+     "minecraft:husbandry/plant_seed": 1034050485,
+     "minecraft:husbandry/breed_an_animal": 1017835541,
+     "minecraft:husbandry/tactical_fishing": 988182057,
+     "farmersdelight:main/get_knife": 989488415,
+     "farmersdelight:main/use_cutting_board": 1034752118
     }
    }
   },
@@ -5757,6 +6555,44 @@
      "minecraft:custom|minecraft:jump": 27,
      "minecraft:custom|minecraft:damage_dealt": 24,
      "minecraft:custom|minecraft:damage_taken": 30
+    }
+   },
+   "advancements": {
+    "survival": {
+     "minecraft:story/root": 1783428675,
+     "minecraft:story/mine_stone": 1783428675,
+     "minecraft:story/upgrade_tools": 1778370709,
+     "minecraft:story/obtain_armor": 1772917425,
+     "minecraft:story/lava_bucket": 1781892009,
+     "minecraft:story/mine_diamond": 1767193005,
+     "minecraft:story/shiny_gear": 1736574109,
+     "minecraft:story/enchant_item": 1772741681,
+     "minecraft:nether/find_fortress": 1760555016,
+     "minecraft:end/enter_end_gateway": 1694642177,
+     "minecraft:end/elytra": 1625121677,
+     "minecraft:adventure/root": 1783428675,
+     "minecraft:adventure/kill_a_mob": 1783428675,
+     "minecraft:adventure/sleep_in_bed": 1783428675,
+     "minecraft:adventure/trade": 1754148834,
+     "minecraft:adventure/shoot_arrow": 1773427735,
+     "minecraft:husbandry/root": 1783428675,
+     "minecraft:husbandry/plant_seed": 1783428675,
+     "minecraft:husbandry/breed_an_animal": 1782847321,
+     "minecraft:husbandry/fishy_business": 1773236242,
+     "farmersdelight:main/root": 1777150435,
+     "farmersdelight:main/get_knife": 1757364868
+    },
+    "creative": {
+     "minecraft:story/root": 1783428675,
+     "minecraft:story/mine_stone": 1779273866,
+     "minecraft:story/upgrade_tools": 1783428675,
+     "minecraft:adventure/root": 1782314467,
+     "minecraft:adventure/sleep_in_bed": 1774249062,
+     "minecraft:husbandry/root": 1776070800,
+     "minecraft:husbandry/plant_seed": 1770508611,
+     "farmersdelight:main/root": 1758225414,
+     "farmersdelight:main/get_knife": 1739617114,
+     "farmersdelight:main/use_cutting_board": 1734163576
     }
    }
   },
@@ -6057,6 +6893,31 @@
      "minecraft:custom|minecraft:sleep_in_bed": 7,
      "create:pressed|minecraft:iron_ingot": 22
     }
+   },
+   "advancements": {
+    "survival": {
+     "minecraft:story/root": 4771925452,
+     "minecraft:story/mine_stone": 4849793994,
+     "minecraft:story/upgrade_tools": 4849793994,
+     "minecraft:story/smelt_iron": 4731906810,
+     "minecraft:story/obtain_armor": 4838001754,
+     "minecraft:story/lava_bucket": 4849793994,
+     "minecraft:story/form_obsidian": 4639087436,
+     "minecraft:story/mine_diamond": 4576919473,
+     "minecraft:story/enter_the_nether": 4722249909,
+     "minecraft:story/follow_ender_eye": 4124038719,
+     "minecraft:nether/return_to_sender": 4257741923,
+     "minecraft:nether/create_beacon": 2501092667,
+     "minecraft:adventure/root": 4849793994,
+     "minecraft:adventure/kill_a_mob": 4849793994,
+     "minecraft:adventure/trade": 4757860088,
+     "minecraft:adventure/shoot_arrow": 4843129815,
+     "minecraft:husbandry/root": 4849793994,
+     "minecraft:husbandry/plant_seed": 4849793994,
+     "minecraft:husbandry/breed_an_animal": 4849793994,
+     "minecraft:husbandry/fishy_business": 4849793994,
+     "minecraft:husbandry/tactical_fishing": 4602008744
+    }
    }
   },
   {
@@ -6278,6 +7139,28 @@
      "minecraft:custom|minecraft:jump": 14,
      "minecraft:custom|minecraft:damage_dealt": 72,
      "minecraft:custom|minecraft:damage_taken": 13
+    }
+   },
+   "advancements": {
+    "survival": {
+     "minecraft:story/root": 2666235701,
+     "minecraft:story/mine_stone": 2688169329,
+     "minecraft:story/upgrade_tools": 2688169329,
+     "minecraft:story/obtain_armor": 2568295950,
+     "minecraft:story/iron_tools": 2675402249,
+     "minecraft:story/deflect_arrow": 2554026851,
+     "minecraft:story/form_obsidian": 2512496989,
+     "minecraft:nether/find_fortress": 2201011019,
+     "minecraft:adventure/root": 2688169329,
+     "minecraft:adventure/kill_a_mob": 2628182018,
+     "minecraft:adventure/sleep_in_bed": 2688169329,
+     "minecraft:adventure/trade": 2483341687,
+     "minecraft:adventure/shoot_arrow": 2443637448,
+     "minecraft:husbandry/root": 2654383828,
+     "minecraft:husbandry/plant_seed": 2661472816,
+     "minecraft:husbandry/breed_an_animal": 2441398374,
+     "minecraft:husbandry/fishy_business": 2599505602,
+     "farmersdelight:main/root": 2420129690
     }
    }
   },
@@ -6530,6 +7413,33 @@
      "minecraft:custom|minecraft:sleep_in_bed": 1,
      "create:pressed|minecraft:iron_ingot": 11
     }
+   },
+   "advancements": {
+    "survival": {
+     "minecraft:story/root": 3781112587,
+     "minecraft:story/mine_stone": 3781112587,
+     "minecraft:story/upgrade_tools": 3781112587,
+     "minecraft:story/smelt_iron": 3674531599,
+     "minecraft:story/obtain_armor": 3781112587,
+     "minecraft:story/lava_bucket": 3747162523,
+     "minecraft:story/iron_tools": 3548184788,
+     "minecraft:story/deflect_arrow": 3099098359,
+     "minecraft:story/form_obsidian": 3411094438,
+     "minecraft:story/mine_diamond": 3487866444,
+     "minecraft:story/enchant_item": 3106758866,
+     "minecraft:nether/return_to_sender": 2694896720,
+     "minecraft:adventure/root": 3781112587,
+     "minecraft:adventure/sleep_in_bed": 3633019264,
+     "minecraft:adventure/trade": 3096555699,
+     "minecraft:husbandry/root": 3762337514,
+     "minecraft:husbandry/plant_seed": 3781112587,
+     "farmersdelight:main/root": 3767693914,
+     "farmersdelight:main/get_knife": 3543328548
+    },
+    "creative": {
+     "minecraft:adventure/sleep_in_bed": 366440528,
+     "minecraft:husbandry/root": 409588751
+    }
    }
   },
   {
@@ -6742,6 +7652,30 @@
      "minecraft:custom|minecraft:jump": 3,
      "minecraft:custom|minecraft:damage_dealt": 59
     }
+   },
+   "advancements": {
+    "survival": {
+     "minecraft:story/root": 4270011815,
+     "minecraft:story/mine_stone": 4246537977,
+     "minecraft:story/upgrade_tools": 4270011815,
+     "minecraft:story/smelt_iron": 4270011815,
+     "minecraft:story/lava_bucket": 4001265123,
+     "minecraft:story/enter_the_nether": 4088778172,
+     "minecraft:story/enter_the_end": 1525436958,
+     "minecraft:nether/return_to_sender": 3321634889,
+     "minecraft:nether/obtain_blaze_rod": 3659305887,
+     "minecraft:end/root": 1985966262,
+     "minecraft:end/dragon_egg": 2483285297,
+     "minecraft:adventure/root": 4270011815,
+     "minecraft:adventure/kill_a_mob": 4270011815,
+     "minecraft:adventure/sleep_in_bed": 4270011815,
+     "minecraft:adventure/trade": 4039706218,
+     "minecraft:adventure/shoot_arrow": 4167957003,
+     "minecraft:adventure/adventuring_time": 785469284,
+     "minecraft:husbandry/root": 4270011815,
+     "minecraft:husbandry/breed_an_animal": 4223428313,
+     "farmersdelight:main/use_cutting_board": 3631803251
+    }
    }
   },
   {
@@ -6949,6 +7883,47 @@
      "minecraft:custom|minecraft:mob_kills": 3,
      "minecraft:custom|minecraft:jump": 9,
      "minecraft:custom|minecraft:damage_dealt": 85
+    }
+   },
+   "advancements": {
+    "survival": {
+     "minecraft:story/root": 1802362359,
+     "minecraft:story/mine_stone": 1798980967,
+     "minecraft:story/upgrade_tools": 1796430673,
+     "minecraft:story/smelt_iron": 1765974515,
+     "minecraft:story/lava_bucket": 1805042513,
+     "minecraft:story/iron_tools": 1805042513,
+     "minecraft:story/deflect_arrow": 1775552529,
+     "minecraft:story/form_obsidian": 1711545137,
+     "minecraft:story/shiny_gear": 1573012952,
+     "minecraft:story/enchant_item": 1741334708,
+     "minecraft:nether/root": 1739686699,
+     "minecraft:nether/return_to_sender": 1634206904,
+     "minecraft:nether/obtain_blaze_rod": 1492630277,
+     "minecraft:end/elytra": 749352656,
+     "minecraft:adventure/root": 1765300215,
+     "minecraft:adventure/kill_a_mob": 1797019363,
+     "minecraft:adventure/sleep_in_bed": 1805042513,
+     "minecraft:adventure/trade": 1748271819,
+     "minecraft:adventure/shoot_arrow": 1805042513,
+     "minecraft:adventure/totem_of_undying": 1248594249,
+     "minecraft:adventure/hero_of_the_village": 1429331756,
+     "minecraft:husbandry/root": 1789104738,
+     "minecraft:husbandry/plant_seed": 1773755404,
+     "minecraft:husbandry/breed_an_animal": 1763542197,
+     "minecraft:husbandry/fishy_business": 1733646541,
+     "minecraft:husbandry/tactical_fishing": 1684336932,
+     "farmersdelight:main/root": 1766307986,
+     "farmersdelight:main/use_cutting_board": 1679742009
+    },
+    "creative": {
+     "minecraft:story/root": 1773957870,
+     "minecraft:story/mine_stone": 1780329283,
+     "minecraft:story/upgrade_tools": 1649284455,
+     "minecraft:adventure/root": 1736514946,
+     "minecraft:adventure/sleep_in_bed": 1702864495,
+     "minecraft:husbandry/root": 1559980834,
+     "minecraft:husbandry/plant_seed": 1345830717
     }
    }
   },
@@ -7177,6 +8152,45 @@
      "minecraft:custom|minecraft:damage_dealt": 51,
      "create:pressed|minecraft:iron_ingot": 1
     }
+   },
+   "advancements": {
+    "survival": {
+     "minecraft:story/root": 1572644656,
+     "minecraft:story/mine_stone": 1534048661,
+     "minecraft:story/upgrade_tools": 1534626893,
+     "minecraft:story/smelt_iron": 1572644656,
+     "minecraft:story/obtain_armor": 1572644656,
+     "minecraft:story/lava_bucket": 1530775979,
+     "minecraft:story/iron_tools": 1565079208,
+     "minecraft:story/deflect_arrow": 1520129024,
+     "minecraft:story/form_obsidian": 1572644656,
+     "minecraft:story/mine_diamond": 1572644656,
+     "minecraft:story/enter_the_nether": 1514113046,
+     "minecraft:story/shiny_gear": 1508022768,
+     "minecraft:story/follow_ender_eye": 1280265842,
+     "minecraft:nether/root": 1552912412,
+     "minecraft:nether/brew_potion": 1472863570,
+     "minecraft:end/enter_end_gateway": 1243740803,
+     "minecraft:adventure/root": 1572644656,
+     "minecraft:adventure/kill_a_mob": 1572644656,
+     "minecraft:adventure/sleep_in_bed": 1572644656,
+     "minecraft:adventure/shoot_arrow": 1572644656,
+     "minecraft:husbandry/root": 1572644656,
+     "minecraft:husbandry/breed_an_animal": 1572644656,
+     "minecraft:husbandry/fishy_business": 1572644656,
+     "farmersdelight:main/root": 1500764314
+    },
+    "creative": {
+     "minecraft:story/root": 1572644656,
+     "minecraft:story/mine_stone": 1572644656,
+     "minecraft:story/upgrade_tools": 1572644656,
+     "minecraft:nether/root": 1326955169,
+     "minecraft:adventure/root": 1572644656,
+     "minecraft:adventure/sleep_in_bed": 1570455568,
+     "minecraft:husbandry/root": 1572644656,
+     "minecraft:husbandry/plant_seed": 1572644656,
+     "farmersdelight:main/use_cutting_board": 1234225500
+    }
    }
   },
   {
@@ -7336,6 +8350,29 @@
      "minecraft:custom|minecraft:jump": 28,
      "minecraft:custom|minecraft:damage_dealt": 187,
      "minecraft:custom|minecraft:damage_taken": 17
+    }
+   },
+   "advancements": {
+    "survival": {
+     "minecraft:story/root": 2197484931,
+     "minecraft:story/mine_stone": 2182053540,
+     "minecraft:story/smelt_iron": 2197484931,
+     "minecraft:story/obtain_armor": 2150927064,
+     "minecraft:story/iron_tools": 2127318471,
+     "minecraft:story/mine_diamond": 2136671941,
+     "minecraft:story/enter_the_nether": 2066892994,
+     "minecraft:story/shiny_gear": 2098582515,
+     "minecraft:story/enchant_item": 2081253228,
+     "minecraft:nether/root": 2034772228,
+     "minecraft:nether/find_fortress": 1905525174,
+     "minecraft:nether/obtain_blaze_rod": 2116065349,
+     "minecraft:end/root": 1469076386,
+     "minecraft:adventure/root": 2197484931,
+     "minecraft:adventure/kill_a_mob": 2197484931,
+     "minecraft:adventure/trade": 2197484931,
+     "minecraft:husbandry/root": 2155869875,
+     "minecraft:husbandry/breed_an_animal": 2197484931,
+     "farmersdelight:main/use_cutting_board": 2106675400
     }
    }
   },
@@ -7680,6 +8717,34 @@
      "minecraft:custom|minecraft:sleep_in_bed": 1,
      "create:pressed|minecraft:iron_ingot": 9
     }
+   },
+   "advancements": {
+    "survival": {
+     "minecraft:story/root": 3579850935,
+     "minecraft:story/mine_stone": 3615071815,
+     "minecraft:story/upgrade_tools": 3615071815,
+     "minecraft:story/smelt_iron": 3613456647,
+     "minecraft:story/obtain_armor": 3485601311,
+     "minecraft:story/lava_bucket": 3582076813,
+     "minecraft:story/iron_tools": 3615071815,
+     "minecraft:story/deflect_arrow": 3442823846,
+     "minecraft:story/form_obsidian": 3569517027,
+     "minecraft:story/mine_diamond": 3415084811,
+     "minecraft:story/enchant_item": 3490912018,
+     "minecraft:nether/root": 3332955733,
+     "minecraft:nether/brew_potion": 3372871450,
+     "minecraft:adventure/root": 3615071815,
+     "minecraft:adventure/kill_a_mob": 3615071815,
+     "minecraft:adventure/sleep_in_bed": 3615071815,
+     "minecraft:adventure/trade": 3612256385,
+     "minecraft:adventure/shoot_arrow": 3579607099,
+     "minecraft:husbandry/root": 3615071815,
+     "minecraft:husbandry/plant_seed": 3504856870,
+     "minecraft:husbandry/breed_an_animal": 3593838843,
+     "minecraft:husbandry/tactical_fishing": 3483625126,
+     "farmersdelight:main/root": 3519139383,
+     "farmersdelight:main/use_cutting_board": 3253356901
+    }
    }
   },
   {
@@ -7851,6 +8916,29 @@
      "minecraft:custom|minecraft:animals_bred": 3,
      "minecraft:custom|minecraft:sleep_in_bed": 1,
      "create:pressed|minecraft:iron_ingot": 7
+    }
+   },
+   "advancements": {
+    "survival": {
+     "minecraft:story/root": 1449436995,
+     "minecraft:story/mine_stone": 1449436995,
+     "minecraft:story/upgrade_tools": 1449436995,
+     "minecraft:story/smelt_iron": 1370009416,
+     "minecraft:story/lava_bucket": 1363157559,
+     "minecraft:story/iron_tools": 1392911605,
+     "minecraft:story/form_obsidian": 1222129124,
+     "minecraft:story/mine_diamond": 1132396025,
+     "minecraft:story/shiny_gear": 735959893,
+     "minecraft:story/enchant_item": 966868954,
+     "minecraft:nether/root": 1122561404,
+     "minecraft:nether/obtain_blaze_rod": 672224958,
+     "minecraft:adventure/root": 1443536553,
+     "minecraft:adventure/sleep_in_bed": 1449436995,
+     "minecraft:adventure/trade": 1144373524,
+     "minecraft:adventure/shoot_arrow": 1339204863,
+     "minecraft:husbandry/plant_seed": 1414188784,
+     "minecraft:husbandry/breed_an_animal": 1324281712,
+     "farmersdelight:main/get_knife": 1257977040
     }
    }
   },
@@ -8081,6 +9169,29 @@
      "minecraft:custom|minecraft:fish_caught": 1,
      "create:pressed|minecraft:iron_ingot": 2
     }
+   },
+   "advancements": {
+    "survival": {
+     "minecraft:story/root": 1121103953,
+     "minecraft:story/mine_stone": 1121103953,
+     "minecraft:story/upgrade_tools": 1121103953,
+     "minecraft:story/smelt_iron": 1071638867,
+     "minecraft:story/lava_bucket": 1054721588,
+     "minecraft:story/iron_tools": 1028046708,
+     "minecraft:story/deflect_arrow": 998134158,
+     "minecraft:story/mine_diamond": 910379931,
+     "minecraft:story/enter_the_nether": 729864651,
+     "minecraft:nether/return_to_sender": 710591423,
+     "minecraft:adventure/root": 1087284732,
+     "minecraft:adventure/kill_a_mob": 1072754605,
+     "minecraft:adventure/sleep_in_bed": 1077107125,
+     "minecraft:adventure/trade": 922921387,
+     "minecraft:husbandry/plant_seed": 1039786519,
+     "minecraft:husbandry/breed_an_animal": 1103579983,
+     "minecraft:husbandry/fishy_business": 935053849,
+     "minecraft:husbandry/tactical_fishing": 890217707,
+     "farmersdelight:main/get_knife": 887764625
+    }
    }
   },
   {
@@ -8263,6 +9374,33 @@
      "minecraft:custom|minecraft:jump": 218,
      "minecraft:custom|minecraft:damage_taken": 211,
      "minecraft:custom|minecraft:animals_bred": 1
+    }
+   },
+   "advancements": {
+    "survival": {
+     "minecraft:story/root": 3316027210,
+     "minecraft:story/mine_stone": 3365511896,
+     "minecraft:story/upgrade_tools": 3362878707,
+     "minecraft:story/smelt_iron": 3244431205,
+     "minecraft:story/obtain_armor": 3308421971,
+     "minecraft:story/lava_bucket": 3216302470,
+     "minecraft:story/iron_tools": 3349996244,
+     "minecraft:story/mine_diamond": 3242340793,
+     "minecraft:story/enchant_item": 2893214447,
+     "minecraft:story/follow_ender_eye": 1284527939,
+     "minecraft:nether/root": 2960845447,
+     "minecraft:nether/obtain_blaze_rod": 2199591939,
+     "minecraft:nether/brew_potion": 2507250964,
+     "minecraft:adventure/root": 3365511896,
+     "minecraft:adventure/kill_a_mob": 3301721786,
+     "minecraft:adventure/sleep_in_bed": 3322663511,
+     "minecraft:adventure/shoot_arrow": 3096903980,
+     "minecraft:husbandry/root": 3365511896,
+     "minecraft:husbandry/plant_seed": 3365511896,
+     "minecraft:husbandry/breed_an_animal": 3240917310,
+     "minecraft:husbandry/tactical_fishing": 2792956893,
+     "farmersdelight:main/root": 3156879876,
+     "farmersdelight:main/get_knife": 2884438302
     }
    }
   },

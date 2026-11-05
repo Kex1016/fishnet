@@ -1,6 +1,7 @@
 // Player profile (W5, PLAN §3.4): prefix/suffix, first and last seen, playtime by server and mini,
 // standing on the featured boards, the stats explorer (by type, with icons and search), the scope
-// switch and the milestones this player was first to. Everything but the header follows ?scope=.
+// switch, the milestones this player was first to and the advancements they completed first. Everything but
+// the header follows ?scope=.
 // Hidden players are a 404 before any other call (PLAN §3.4, §8.5).
 import { error } from "@sveltejs/kit";
 import type { PageServerLoad } from "./$types";
@@ -8,7 +9,7 @@ import { api } from "#lib/server/cakeutils/client.ts";
 import { isHidden } from "#lib/server/hidden.ts";
 import { parseScope, scopeOf, type Scope } from "#lib/api/scope.ts";
 import { fail, ok, type Result } from "#lib/api/result.ts";
-import type { BatchPlayer, Leaderboard, PlayerMilestones, StatList, StatValue } from "#lib/api/types.ts";
+import type { BatchPlayer, Leaderboard, PlayerAdvancements, PlayerMilestones, StatList, StatValue } from "#lib/api/types.ts";
 import { COMPOSITES, FEATURED } from "#lib/boards.ts";
 import { batchIncludes, compositeValue, standing, type BoardStanding } from "#lib/players/ranks.ts";
 import { playerLabel, splitMini, titleCase } from "#lib/players/names.ts";
@@ -60,7 +61,7 @@ export const load: PageServerLoad = async ({ params, url }) => {
   const offset = Math.max(0, Math.floor(Number(url.searchParams.get("offset") ?? 0) || 0));
   const miniScope = parsed?.kind === "mini";
 
-  const [network, types, minis, stats, firsts, me, ...boards] = await Promise.all([
+  const [network, types, minis, stats, firsts, advFirsts, me, ...boards] = await Promise.all([
     c.network(),
     c.statTypes(),
     c.miniServers(),
@@ -68,6 +69,8 @@ export const load: PageServerLoad = async ({ params, url }) => {
     // milestones have no mini scope (PLAN §2.5): the section is left out there, no call made
     // W7's prepareFeed drops opted-out players and adds icons from the catalogue
     miniScope ? Promise.resolve(null) : c.playerMilestones(ref, { scope, limit: 10 }).then(prepareFeed),
+    // advancement milestones (D-111) have no mini scope either; their rows name no player, so nothing to hide
+    miniScope ? Promise.resolve(null) : c.playerAdvancements(ref, { scope, limit: 10 }),
     player.ok ? c.batch([ref], batchIncludes(FEATURED, COMPOSITES), scope) : Promise.resolve(null),
     ...(player.ok ? FEATURED.map((b) => c.leaderboard(b.metric, scope, { limit: BOARD_PAGE })) : [])
   ] as const);
@@ -114,6 +117,7 @@ export const load: PageServerLoad = async ({ params, url }) => {
     types,
     stats,
     firsts: (firsts ?? fail("bad_request")) as Result<PlayerMilestones>,
+    advFirsts: (advFirsts ?? fail("bad_request")) as Result<PlayerAdvancements>,
     showFirsts: !miniScope,
     standings,
     boardsDown,

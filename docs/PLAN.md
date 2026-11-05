@@ -114,6 +114,26 @@ on `/v2/milestones` means an older proxy, so every milestone section hides itsel
 every 10 min, so it turns on by itself once the proxy is updated); respect `max-age=5`; names and icons
 through the catalogue.
 
+### 2.6 Advancement milestones (D-111, merged 5 Nov 2026)
+
+Who completed each advancement first, per server and for the network (cakeutils STATS §10). Additive,
+under `/v2/milestones`, with its own feature check (a D-109 proxy without D-111 answers `404` on the
+list route):
+
+- `GET /v2/milestones/advancements?scope=&limit=&offset=` → `{scope, total, milestones:[{advancement, title,
+  uuid, name, server, earned_at, imported, earners}]}`, newest first; in the network scope `server` says
+  where the first earner completed it.
+- `GET /v2/milestones/advancement?id=` → `{advancement, title|null, network:{…}|null, servers:[{…}]}`,
+  `404` when no backend ever reported it; `minecraft:` may be omitted.
+- `GET /v2/players/{ref}/advancement-milestones?scope=&limit=&offset=` → the same rows without uuid/name.
+- `scope=mini:` → `400`; never-seen server → empty list. Nothing is backfilled: `imported:true` marks a
+  time that came from the operator's one-time `cakectl advancements import` (shown as "Imported").
+
+Pages: `/advancements` (feed, "Most firsts", "Most completed"), `/advancements/<id>` (first in the
+network and on each server, with how many players have it there, never summed across servers), the
+profile's "First to complete", and five-row feeds on the home and server pages. `earners` is per scope
+(network = distinct players) and is shown as "first of n".
+
 ## 3. Architecture
 
 ### 3.1 Stack

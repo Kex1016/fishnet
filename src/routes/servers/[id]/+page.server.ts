@@ -1,5 +1,5 @@
-// One server (W4): status, who is on, online and waiting over the week, its boards, milestones and
-// live public mini-servers. Every board is read at scope `server:<id>`, which already includes the
+// One server (W4): status, who is on, online and waiting over the week, its boards, milestones, advancements
+// completed here first and live public mini-servers. Every board is read at scope `server:<id>`, which already includes the
 // server's minis; scopes are never added together (cakeutils I3).
 import { error } from "@sveltejs/kit";
 import type { PageServerLoad } from "./$types";
@@ -11,7 +11,7 @@ import { boardHref, PLAYTIME } from "#lib/api/metric.ts";
 import { parseScope, type Scope } from "#lib/api/scope.ts";
 import { formatStat, group } from "#lib/format/stat-display.ts";
 import type { TimePoint } from "#lib/charts/index.ts";
-import { prepareFeed } from "#lib/milestones/prepare.server.ts";
+import { hideFromFeed, prepareFeed } from "#lib/milestones/prepare.server.ts";
 import { activityGrid, barRows, boardSum, isOutage } from "../boards.ts";
 
 export const load: PageServerLoad = async ({ params }) => {
@@ -22,13 +22,14 @@ export const load: PageServerLoad = async ({ params }) => {
   const h = history();
   const featured = FEATURED.filter((b) => b.metric.kind === "stat");
 
-  const [network, minis, online, playtime, stats, milestones, hist, onlineWeek, onlineRecent, presence, hours] = await Promise.all([
+  const [network, minis, online, playtime, stats, milestones, advancements, hist, onlineWeek, onlineRecent, presence, hours] = await Promise.all([
     c.network(),
     c.miniServers(),
     c.players({ online: true, limit: 100 }),
     boardSum(c, PLAYTIME, scope, withoutHidden),
     Promise.all(featured.map((b) => c.leaderboard(b.metric, scope, { limit: 5 }))),
     c.milestones({ scope, limit: 5 }).then(prepareFeed),
+    c.advancements({ scope, limit: 5 }).then(hideFromFeed),
     h.server(id, "week"),
     h.online(scope, "week"),
     h.onlineRecent(scope),
@@ -77,6 +78,7 @@ export const load: PageServerLoad = async ({ params }) => {
     boards,
     outage: stats.some(isOutage),
     milestones,
+    advancements,
     onlineWeek,
     onlineRecent,
     waiting: waitingLine.length >= 2 ? waitingLine : [],

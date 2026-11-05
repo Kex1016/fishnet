@@ -1,7 +1,7 @@
 // The typed client over the transport core (core.ts): builds each route's path and keeps the
 // signatures W0 froze in client.ts. Kept apart from client.ts so tests can import it without the
 // SvelteKit env module.
-import type { MilestoneFeed } from "#lib/api/types.ts";
+import type { AdvancementFeed, MilestoneFeed } from "#lib/api/types.ts";
 import { shortType } from "#lib/api/metric.ts";
 import { fail } from "#lib/api/result.ts";
 import type { Client, Icon } from "./client.ts";
@@ -63,6 +63,19 @@ export function createClient(o: ClientOptions): Client {
     playerMilestones: async (ref, p = {}) => {
       if (!(await client.milestonesEnabled())) return fail("off");
       return get(`/v2/players/${enc(ref)}/milestones${q(p)}`);
+    },
+    advancementsEnabled: () => core.advancementsEnabled(prio()),
+    advancements: async (p = {}) => {
+      if (!(await client.advancementsEnabled())) return fail("off");
+      return get<AdvancementFeed>(`/v2/milestones/advancements${q(p)}`);
+    },
+    advancement: async (id) => {
+      if (!(await client.advancementsEnabled())) return fail("off");
+      return get(`/v2/milestones/advancement${q({ id })}`);
+    },
+    playerAdvancements: async (ref, p = {}) => {
+      if (!(await client.advancementsEnabled())) return fail("off");
+      return get(`/v2/players/${enc(ref)}/advancement-milestones${q(p)}`);
     }
   };
   return client;

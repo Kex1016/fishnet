@@ -4,18 +4,20 @@
 //    reach the page; a ladder keeps the rung and says "First player unknown";
 //  - feed rows get their icon (and kind) from the catalogue, because the API's rows carry none.
 import type { Result } from "#lib/api/result.ts";
-import type { MilestoneFeedRow, MilestoneLadder } from "#lib/api/types.ts";
+import type { AdvancementDetail, AdvancementHolder, MilestoneFeedRow, MilestoneLadder } from "#lib/api/types.ts";
 import { api } from "#lib/server/cakeutils/client.ts";
 import { isHiddenPlayer } from "#lib/server/hidden.ts";
 
 type Rows = { milestones: MilestoneFeedRow[]; total: number };
+/** any feed whose rows name a player: the stat milestones and the advancement milestones alike */
+type AnyRows = { milestones: { uuid?: string | null; name?: string | null }[]; total: number };
 
 function hidden(m: { uuid?: string | null; name?: string | null }): boolean {
   return !!m.uuid && !!m.name && isHiddenPlayer({ uuid: m.uuid, name: m.name });
 }
 
 /** Drops rows whose first player opted out. `total` stays the API's (paging is by the API's offsets). */
-export function hideFromFeed<T extends Rows>(r: Result<T>): Result<T> {
+export function hideFromFeed<T extends AnyRows>(r: Result<T>): Result<T> {
   if (!r.ok) return r;
   return { ...r, data: { ...r.data, milestones: r.data.milestones.filter((m) => !hidden(m)) } };
 }
@@ -48,3 +50,16 @@ export async function withIcons<T extends Rows>(r: Result<T>, max = 24): Promise
 export async function prepareFeed<T extends Rows>(r: Result<T>): Promise<Result<T>> {
   return withIcons(hideFromFeed(r));
 }
+
+/**
+ * An advancement's detail with opted-out first earners blanked (D-111): the row stays, with its server, time and
+ * count, so the page says "First player unknown" rather than pretending nobody has it. Hidden rows keep their
+ * `earners`, which is a count, not a name.
+ */
+export function hideFromAdvancement(r: Result<AdvancementDetail>): Result<AdvancementDetail> {
+  if (!r.ok) return r;
+  const blank = (h: AdvancementHolder): HiddenHolder => (hidden(h) ? { ...h, uuid: null, name: null } : h);
+  return { ...r, data: { ...r.data, network: r.data.network ? blank(r.data.network) : null, servers: r.data.servers.map(blank) } as AdvancementDetail };
+}
+
+type HiddenHolder = Omit<AdvancementHolder, "uuid" | "name"> & { uuid: string | null; name: string | null };

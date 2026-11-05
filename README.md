@@ -1,7 +1,7 @@
 # fishnet
 
-The Fishplex network website: who is on, the servers, players and their stats, leaderboards and
-milestones, from the cakeutils v2 API. Public, read-only, server-rendered (SvelteKit + Node), with its
+The Fishplex network website: who is on, the servers, players and their stats, leaderboards,
+milestones and advancements, from the cakeutils v2 API. Public, read-only, server-rendered (SvelteKit + Node), with its
 own recorder for charts over time.
 
 - `docs/PLAN.md`: the spec (architecture, work units, deploy, privacy).
@@ -62,5 +62,12 @@ database. Deleting the database loses history, never anything from cakeutils.
 - Stats for a network are never added together with those of a server; a server's numbers include
   its mini-servers, and breakdowns are not summed.
 
-The about page (`/about`) shows the same status: whether cakeutils is reachable, whether milestones are
-on, and the date recording began.
+The about page (`/about`) shows the same status: whether cakeutils is reachable, whether milestones and
+advancements are on, and the date recording began.
+
+Advancements (cakeutils D-111) are who completed each advancement first, per server and for the network:
+`/advancements` (feed, most firsts, most completed), `/advancements/<id>` (network and per-server firsts), the
+"First to complete" section of a profile, and short feeds on the home and server pages. They have their
+own feature check (`/v2/milestones/advancements` answering 404 hides every section) and no mini-server
+scope. A row tagged "Imported" was completed before live tracking; its time comes from the operator's
+one-time `cakectl advancements import`.

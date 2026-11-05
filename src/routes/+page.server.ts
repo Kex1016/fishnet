@@ -1,5 +1,5 @@
 // Home (W4): who is on right now, the network in numbers, playtime, online over the week, new players
-// per week, latest milestones. Every number comes from the API or from the recorder (history).
+// per week, latest milestones and advancements. Every number comes from the API or from the recorder (history).
 // Each section keeps its own Result, so one failing call never blanks the page (PLAN §3.5).
 import type { PageServerLoad } from "./$types";
 import { api } from "#lib/server/cakeutils/client.ts";
@@ -11,7 +11,7 @@ import type { Result } from "#lib/api/result.ts";
 import { formatStat, group } from "#lib/format/stat-display.ts";
 import { day } from "#lib/format/dates.ts";
 import type { TimePoint } from "#lib/charts/index.ts";
-import { prepareFeed } from "#lib/milestones/prepare.server.ts";
+import { hideFromFeed, prepareFeed } from "#lib/milestones/prepare.server.ts";
 import { activityGrid, barRows, boardSum, isOutage, type BoardSum } from "./servers/boards.ts";
 
 type Tile = { key: string; label: string; value: string; note?: string; href?: string; spark?: TimePoint[] };
@@ -30,12 +30,13 @@ export const load: PageServerLoad = async () => {
   const featured = FEATURED.filter((b) => b.metric.kind === "stat");
   const boards = [{ id: "playtime", label: "Time played", metric: PLAYTIME }, ...featured];
 
-  const [network, online, seen, sums, milestones, onlineWeek, onlineRecent, joins, since, series, hours] = await Promise.all([
+  const [network, online, seen, sums, milestones, advancements, onlineWeek, onlineRecent, joins, since, series, hours] = await Promise.all([
     c.network(),
     c.players({ online: true, limit: 100 }),
     c.players({ limit: 1 }),
     Promise.all(boards.map((b) => boardSum(c, b.metric, "network", withoutHidden))),
     c.milestones({ limit: 5 }).then(prepareFeed),
+    c.advancements({ limit: 5 }).then(hideFromFeed),
     h.online("network", "week"),
     h.onlineRecent("network"),
     h.joinsPerWeek("month"),
@@ -78,5 +79,7 @@ export const load: PageServerLoad = async () => {
   }
 
   const top = playtime.ok ? { ok: true as const, rows: barRows(playtime.data.top), asOf: playtime.asOf, stale: playtime.stale } : { ok: false as const, rows: [], asOf: undefined, stale: false };
-  return { title: undefined, crumbs: [], network, online, onlineRecent, totals, top, milestones, onlineWeek, joins, since, busiestHours: { since: hours.since, rows: activityGrid(hours.cells) } };
+  const serverNames: Record<string, string> = {};
+  if (network.ok) for (const s of network.data.servers) serverNames[s.id] = s.display_name;
+  return { title: undefined, crumbs: [], network, online, onlineRecent, totals, top, milestones, advancements, serverNames, onlineWeek, joins, since, busiestHours: { since: hours.since, rows: activityGrid(hours.cells) } };
 };

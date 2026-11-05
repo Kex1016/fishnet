@@ -67,3 +67,33 @@ export type MilestoneFeed = Omit<S["MilestoneList"], "milestones"> & { milestone
 
 /** GET /v2/players/{ref}/milestones: what this player was first to reach. */
 export type PlayerMilestones = Omit<S["PlayerMilestoneList"], "milestones"> & { milestones: MilestoneFeedRow[] };
+
+// ---- Advancement milestones (D-111, merged in cakeutils 5 Nov 2026; STATS §10, API §3). Who completed each
+// advancement first, per server and for the network. Only network and server scopes exist (mini: → 400);
+// nothing is backfilled, but a row's time may come from the operator's one-time import (`imported`).
+// Feature-detected on its own: a proxy with D-109 but not D-111 answers 404 on /v2/milestones/advancements.
+
+type ApiAdvancementRow = S["AdvancementMilestoneList"]["milestones"][number];
+
+/** Who was first to an advancement in one scope: `server` is where (in the network scope: where the first earner did it), `earners` how many players have it there. */
+export type AdvancementHolder = NonNullable<S["AdvancementMilestone"]["network"]>;
+
+/**
+ * A feed row: the advancement (namespaced id and the English title the backend last reported) plus its first
+ * earner. The feed has `uuid` and `name`; the player endpoint's rows have neither (the player is on the
+ * envelope), so both are optional here. `title` may be empty for an advancement the backend never titled.
+ */
+export type AdvancementRow = Omit<ApiAdvancementRow, "uuid" | "name" | "title"> & {
+  uuid?: string | null;
+  name?: string | null;
+  title?: string | null;
+};
+
+/** GET /v2/milestones/advancements: newest first. */
+export type AdvancementFeed = Omit<S["AdvancementMilestoneList"], "milestones"> & { milestones: AdvancementRow[] };
+
+/** GET /v2/milestones/advancement?id=: one advancement's first earner in the network and on each server where someone has it; `network` is null only when nobody has it. */
+export type AdvancementDetail = S["AdvancementMilestone"];
+
+/** GET /v2/players/{ref}/advancement-milestones: what this player was first to complete. */
+export type PlayerAdvancements = Omit<S["PlayerAdvancementMilestoneList"], "milestones"> & { milestones: AdvancementRow[] };

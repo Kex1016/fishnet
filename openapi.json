@@ -1477,6 +1477,260 @@
         }
       }
     },
+    "/v2/milestones/advancements": {
+      "get": {
+        "operationId": "listAdvancementMilestones",
+        "tags": [
+          "milestones"
+        ],
+        "summary": "The first player to complete each advancement in a scope, newest first. In the network scope: the earliest completion on any server (server says where). imported = the time came from cakectl advancements import. 400 for a mini: scope.",
+        "description": "Scopes: one of read, read:stats.",
+        "x-cakeutils-scopes": [
+          "read",
+          "read:stats"
+        ],
+        "parameters": [
+          {
+            "name": "scope",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "network",
+              "pattern": "^(network|server:[A-Za-z0-9._-]{1,64}|mini:[A-Za-z0-9._-]{1,64}/[^/]{1,64})$"
+            },
+            "description": "network (default), server:<id> or mini:<server-id>/<mini-id>. A private mini-server (public:false) answers exactly like one that was never seen, for every token."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 10
+            },
+            "description": "Page size."
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 1000000,
+              "default": 0
+            },
+            "description": "Rows to skip."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "headers": {
+              "ETag": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdvancementMilestoneList"
+                }
+              }
+            }
+          },
+          "304": {
+            "description": "Not modified (If-None-Match matched the ETag)"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/v2/milestones/advancement": {
+      "get": {
+        "operationId": "advancementMilestone",
+        "tags": [
+          "milestones"
+        ],
+        "summary": "One advancement's first earner in the network and on each server where someone has completed it. 404 when no backend ever reported it.",
+        "description": "Scopes: one of read, read:stats.",
+        "x-cakeutils-scopes": [
+          "read",
+          "read:stats"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Namespaced advancement id, e.g. minecraft:story/mine_diamond (minecraft: may be omitted). Required."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "headers": {
+              "ETag": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdvancementMilestone"
+                }
+              }
+            }
+          },
+          "304": {
+            "description": "Not modified (If-None-Match matched the ETag)"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/v2/players/{ref}/advancement-milestones": {
+      "get": {
+        "operationId": "listPlayerAdvancementMilestones",
+        "tags": [
+          "milestones"
+        ],
+        "summary": "Advancements this player was the first to complete in a scope, newest first. 400 for a mini: scope.",
+        "description": "Scopes: one of read, read:players, read:stats.",
+        "x-cakeutils-scopes": [
+          "read",
+          "read:players",
+          "read:stats"
+        ],
+        "parameters": [
+          {
+            "name": "ref",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Player UUID (dashed or undashed) or exact name (case-insensitive)."
+          },
+          {
+            "name": "scope",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "network",
+              "pattern": "^(network|server:[A-Za-z0-9._-]{1,64}|mini:[A-Za-z0-9._-]{1,64}/[^/]{1,64})$"
+            },
+            "description": "network (default), server:<id> or mini:<server-id>/<mini-id>. A private mini-server (public:false) answers exactly like one that was never seen, for every token."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 10
+            },
+            "description": "Page size."
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 1000000,
+              "default": 0
+            },
+            "description": "Rows to skip."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "headers": {
+              "ETag": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlayerAdvancementMilestoneList"
+                }
+              }
+            }
+          },
+          "304": {
+            "description": "Not modified (If-None-Match matched the ETag)"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
     "/v2/mini-servers": {
       "get": {
         "operationId": "listMiniServers",
@@ -2668,6 +2922,230 @@
                 },
                 "backfilled": {
                   "type": "boolean"
+                }
+              }
+            }
+          }
+        }
+      },
+      "AdvancementMilestoneList": {
+        "type": "object",
+        "required": [
+          "scope",
+          "total",
+          "milestones"
+        ],
+        "properties": {
+          "scope": {
+            "type": "string"
+          },
+          "total": {
+            "type": "integer"
+          },
+          "milestones": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "advancement",
+                "title",
+                "uuid",
+                "name",
+                "server",
+                "earned_at",
+                "imported",
+                "earners"
+              ],
+              "properties": {
+                "advancement": {
+                  "type": "string",
+                  "description": "namespaced advancement id"
+                },
+                "title": {
+                  "type": "string",
+                  "description": "English title as the backend last reported it"
+                },
+                "uuid": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "server": {
+                  "type": "string",
+                  "description": "where it was completed (network scope: where the first earner completed it)"
+                },
+                "earned_at": {
+                  "type": "integer",
+                  "description": "epoch ms, the backend's completion time"
+                },
+                "imported": {
+                  "type": "boolean",
+                  "description": "true when the time came from cakectl advancements import (completed before live tracking)"
+                },
+                "earners": {
+                  "type": "integer",
+                  "description": "players who have completed it in the scope"
+                }
+              }
+            }
+          }
+        }
+      },
+      "PlayerAdvancementMilestoneList": {
+        "type": "object",
+        "required": [
+          "uuid",
+          "name",
+          "scope",
+          "total",
+          "milestones"
+        ],
+        "properties": {
+          "uuid": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "scope": {
+            "type": "string"
+          },
+          "total": {
+            "type": "integer"
+          },
+          "milestones": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "advancement",
+                "title",
+                "server",
+                "earned_at",
+                "imported",
+                "earners"
+              ],
+              "properties": {
+                "advancement": {
+                  "type": "string",
+                  "description": "namespaced advancement id"
+                },
+                "title": {
+                  "type": "string",
+                  "description": "English title as the backend last reported it"
+                },
+                "server": {
+                  "type": "string",
+                  "description": "where it was completed (network scope: where the first earner completed it)"
+                },
+                "earned_at": {
+                  "type": "integer",
+                  "description": "epoch ms, the backend's completion time"
+                },
+                "imported": {
+                  "type": "boolean",
+                  "description": "true when the time came from cakectl advancements import (completed before live tracking)"
+                },
+                "earners": {
+                  "type": "integer",
+                  "description": "players who have completed it in the scope"
+                }
+              }
+            }
+          }
+        }
+      },
+      "AdvancementMilestone": {
+        "type": "object",
+        "required": [
+          "advancement",
+          "title",
+          "network",
+          "servers"
+        ],
+        "properties": {
+          "advancement": {
+            "type": "string"
+          },
+          "title": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "network": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "required": [
+              "uuid",
+              "name",
+              "server",
+              "earned_at",
+              "imported",
+              "earners"
+            ],
+            "properties": {
+              "uuid": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "server": {
+                "type": "string",
+                "description": "where it was completed (network scope: where the first earner completed it)"
+              },
+              "earned_at": {
+                "type": "integer",
+                "description": "epoch ms, the backend's completion time"
+              },
+              "imported": {
+                "type": "boolean",
+                "description": "true when the time came from cakectl advancements import (completed before live tracking)"
+              },
+              "earners": {
+                "type": "integer",
+                "description": "players who have completed it in the scope"
+              }
+            }
+          },
+          "servers": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "uuid",
+                "name",
+                "server",
+                "earned_at",
+                "imported",
+                "earners"
+              ],
+              "properties": {
+                "uuid": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "server": {
+                  "type": "string",
+                  "description": "where it was completed (network scope: where the first earner completed it)"
+                },
+                "earned_at": {
+                  "type": "integer",
+                  "description": "epoch ms, the backend's completion time"
+                },
+                "imported": {
+                  "type": "boolean",
+                  "description": "true when the time came from cakectl advancements import (completed before live tracking)"
+                },
+                "earners": {
+                  "type": "integer",
+                  "description": "players who have completed it in the scope"
                 }
               }
             }

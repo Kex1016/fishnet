@@ -1,5 +1,5 @@
 /* fishnet design tokens: a rebuild of the reki look (journey's docs/reki.md, reki's public rules) with
-   the Fishplex skin (PLAN §6, §8.6): warm greys, one sea-blue accent, compact corners, quick motion.
+   the Fishnet skin (PLAN §6, §8.6): warm greys, one sea-blue accent, compact corners, quick motion.
    Nothing here is copied from reki's files. Dark first; light and system work. Theme comes from
    data-theme="dark|light" on <html>; no attribute = follow the system. */
 

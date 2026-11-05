@@ -21,8 +21,8 @@
 <div class="fp-page">
   <header class="fp-hero">
     <span class="t-kicker">Design system</span>
-    <h1 class="t-hero">Fishplex look</h1>
-    <p class="fp-lede t-body-lg">reki's layout with the Fishplex skin: warm greys, one sea-blue accent, compact corners, quick motion. Dark first, light works.</p>
+    <h1 class="t-hero">Fishnet look</h1>
+    <p class="fp-lede t-body-lg">reki's layout with the Fishnet skin: warm greys, one sea-blue accent, compact corners, quick motion. Dark first, light works.</p>
   </header>
 
   <section class="fp-section">

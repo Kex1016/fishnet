@@ -1,5 +1,5 @@
 <script lang="ts">
-  // The Fishplex mark: a small fish on the 24px grid, one colour (currentColor), stroke 1.5.
+  // The Fishnet mark: a small fish on the 24px grid, one colour (currentColor), stroke 1.5.
   let { size = 22, class: cls = "" }: { size?: number; class?: string } = $props();
 </script>
 

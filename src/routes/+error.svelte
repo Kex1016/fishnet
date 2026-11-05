@@ -5,7 +5,7 @@
   const line = $derived(page.status === 404 ? "There is nothing at this address." : (page.error?.message ?? "Try again in a moment."));
 </script>
 
-<svelte:head><title>{page.status} · Fishplex</title></svelte:head>
+<svelte:head><title>{page.status} · Fishnet</title></svelte:head>
 
 <div class="fp-page">
   <div class="fp-empty" style="min-height: 240px">

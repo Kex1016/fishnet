@@ -1,6 +1,6 @@
 # CLAUDE.md — fishnet
 
-The Fishplex network website: `https://fishnet.haiiro.moe`, a public, read-only, server-rendered
+Fishnet, the website for the Fishplex network: `https://fishnet.haiiro.moe`, a public, read-only, server-rendered
 SvelteKit site over the cakeutils v2 API. The spec is `docs/PLAN.md` (read it first); this file is
 for engineering sessions and the work units of PLAN §7. The goal in David's words: `docs/GOAL.md`
 (the project files) and PLAN §1.

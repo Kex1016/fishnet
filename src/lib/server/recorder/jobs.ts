@@ -7,7 +7,7 @@
 //   - a sum is written only when every page of a board was read (no partial totals).
 import type { Client } from "../cakeutils/client.ts";
 import type { Result } from "#lib/api/result.ts";
-import type { Leaderboard, MilestoneFeedRow } from "#lib/api/types.ts";
+import type { AdvancementRow, Leaderboard, MilestoneFeedRow } from "#lib/api/types.ts";
 import type { Scope } from "#lib/api/scope.ts";
 import { metricKey, type Metric } from "#lib/api/metric.ts";
 import { FEATURED, type FeaturedBoard } from "#lib/boards.ts";
@@ -31,7 +31,7 @@ export type Outcome = "ok" | "skipped" | "down";
 
 const PAGE = 100;
 /** Page caps, so one job never turns into a flood: playtime board 10 pages, totals 50, players 100. */
-export const CAPS = { playtimePages: 10, totalPages: 50, playerPages: 100, profilesPerRun: 30, milestonePagesFirst: 20, milestonePages: 3 };
+export const CAPS = { playtimePages: 10, totalPages: 50, playerPages: 100, profilesPerRun: 30, milestonePagesFirst: 20, milestonePages: 3, advancementPagesFirst: 20, advancementPages: 5 };
 
 const ID = /^[A-Za-z0-9._-]{1,64}$/;
 
@@ -304,6 +304,59 @@ export async function recordServerMilestones(d: RecorderDeps): Promise<Outcome> 
   return any ? "ok" : "skipped";
 }
 
+// ---- 10 min (network) and 1 h (servers): advancement firsts (D-111), every row replaced
+
+/**
+ * Stores the advancement feed of a scope: one row per advancement, its first earner as the API says now.
+ * Unlike stat milestones a first can change (an import brings an older completion), so every page read
+ * replaces its rows instead of stopping at a known one; the feed is small (one row per advancement anyone
+ * has), so a few pages cover it. Skipped without a request when the proxy has no advancements.
+ */
+export async function recordAdvancements(d: RecorderDeps, scope: Scope): Promise<Outcome> {
+  if (!(await d.client.advancementsEnabled())) return "skipped";
+  const seriesKey = `advancements:${scope}`;
+  const first = seriesSince(d.db, seriesKey) === null;
+  const maxPages = first ? CAPS.advancementPagesFirst : CAPS.advancementPages;
+  const now = d.now();
+  const ins = d.db.prepare(
+    "INSERT OR REPLACE INTO advancement_first (scope, advancement, uuid, name, server, earned_at, imported, seen_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
+  );
+  for (let page = 0; page < maxPages; page++) {
+    const r = await d.client.advancements({ scope, limit: PAGE, offset: page * PAGE });
+    if (!r.ok) return r.kind === "off" || r.kind === "not_found" || r.kind === "bad_request" ? "skipped" : "down";
+    if (r.stale) return "down";
+    const rows: AdvancementRow[] = Array.isArray(r.data.milestones) ? r.data.milestones : [];
+    tx(d.db, () => {
+      for (const m of rows) {
+        const advancement = str(m?.advancement);
+        const server = str(m?.server);
+        const earned = int(m?.earned_at);
+        if (!advancement || !server || earned === null) continue;
+        const uuid = str(m.uuid);
+        const name = str(m.name);
+        if ((uuid || name) && d.hidden({ uuid: uuid ?? "", name: name ?? "" })) continue;
+        ins.run(scope, advancement, uuid, name, server, earned, m.imported ? 1 : 0, now);
+      }
+      registerSeries(d.db, seriesKey, now);
+    });
+    if (rows.length < PAGE) break;
+  }
+  return "ok";
+}
+
+export async function recordServerAdvancements(d: RecorderDeps): Promise<Outcome> {
+  if (!(await d.client.advancementsEnabled())) return "skipped";
+  const servers = knownServers(d.db);
+  if (!servers.length) return "down"; // no network sample yet
+  let any = false;
+  for (const s of servers) {
+    const o = await recordAdvancements(d, `server:${s}`);
+    if (o === "down") return "down";
+    if (o === "ok") any = true;
+  }
+  return any ? "ok" : "skipped";
+}
+
 // ---- 1 h: roll-ups, retention, opt-outs
 
 /** Rolls complete hours of minute rows into online_hour (re-rolls the last two to catch late rows). */
@@ -347,13 +400,16 @@ export function purgeHidden(db: Db, hidden: Hidden): void {
   const gone = rows.filter((r) => hidden(r)).map((r) => r.uuid);
   const ms = db.prepare("SELECT DISTINCT uuid, name FROM milestone WHERE uuid IS NOT NULL OR name IS NOT NULL").all() as { uuid: string | null; name: string | null }[];
   const goneMs = ms.filter((r) => hidden({ uuid: r.uuid ?? "", name: r.name ?? "" }));
-  if (!gone.length && !goneMs.length) return;
+  const adv = db.prepare("SELECT DISTINCT uuid, name FROM advancement_first WHERE uuid IS NOT NULL OR name IS NOT NULL").all() as { uuid: string | null; name: string | null }[];
+  const goneAdv = adv.filter((r) => hidden({ uuid: r.uuid ?? "", name: r.name ?? "" }));
+  if (!gone.length && !goneMs.length && !goneAdv.length) return;
   tx(db, () => {
     for (const u of gone) {
       db.prepare("DELETE FROM board_entry WHERE uuid = ?").run(u);
       db.prepare("DELETE FROM player WHERE uuid = ?").run(u);
     }
     for (const m of goneMs) db.prepare("DELETE FROM milestone WHERE uuid IS ? AND name IS ?").run(m.uuid, m.name);
+    for (const m of goneAdv) db.prepare("DELETE FROM advancement_first WHERE uuid IS ? AND name IS ?").run(m.uuid, m.name);
   });
 }
 

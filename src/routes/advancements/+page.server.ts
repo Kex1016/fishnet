@@ -1,10 +1,12 @@
 // Advancements (cakeutils D-111): who completed each advancement first, per server and for the network,
-// newest first, with the players who were first most often and the advancements most players have.
+// newest first, with the players who were first most often, the advancements most players have, and the
+// recorder's firsts-per-day heatmap.
 // 404 when the proxy has no advancement milestones (the nav entry is hidden too). Scopes are network and
 // server only: a mini: scope gets a line saying so, never a 500.
 import { error } from "@sveltejs/kit";
 import type { PageServerLoad } from "./$types";
 import { api } from "#lib/server/cakeutils/client.ts";
+import { history } from "#lib/server/history.ts";
 import { scopeParam } from "#lib/api/scope.ts";
 import { fail, ok, type Result } from "#lib/api/result.ts";
 import type { AdvancementRow } from "#lib/api/types.ts";
@@ -23,10 +25,11 @@ export const load: PageServerLoad = async ({ url }) => {
   const offset = Math.max(0, Math.min(1_000_000, Number(url.searchParams.get("offset") ?? 0) || 0));
   const c = api();
 
-  const [network, rawFeed, firstPage] = await Promise.all([
+  const [network, rawFeed, firstPage, perDay] = await Promise.all([
     c.network(),
     miniScope ? Promise.resolve(fail("bad_request")) : c.advancements({ scope, limit: PAGE, offset }),
-    miniScope ? Promise.resolve(fail("bad_request")) : c.advancements({ scope, limit: 100, offset: 0 })
+    miniScope ? Promise.resolve(fail("bad_request")) : c.advancements({ scope, limit: 100, offset: 0 }),
+    miniScope ? Promise.resolve({ since: null, days: [] }) : history().advancementsPerDay(scope, "quarter")
   ]);
   if (miniScope ? !(await c.advancementsEnabled()) : !rawFeed.ok && rawFeed.kind === "off") error(404, "This proxy has no advancement milestones");
 
@@ -59,6 +62,7 @@ export const load: PageServerLoad = async ({ url }) => {
     offset,
     firsts: firstsByPlayer(rows).slice(0, 10),
     completed: mostCompleted(rows, 10),
+    perDay,
     countedFrom: { read: Math.min(total, COUNT_PAGES * 100), total, asOf: counted.ok ? counted.asOf : null, stale: counted.ok ? counted.stale : false, ok: counted.ok }
   };
 };

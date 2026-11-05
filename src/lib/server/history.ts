@@ -11,7 +11,7 @@ import { recorderHistory } from "./recorder/index.ts";
 
 export type Point = { t: number; v: number };
 export type Series = { since: number | null; points: Point[] };
-export type Range = "day" | "week" | "month";
+export type Range = "day" | "week" | "month" | "quarter";
 
 export type ServerSample = { t: number; online: number; waiting: number; linked: boolean };
 export type ServerSeries = { since: number | null; samples: ServerSample[] };
@@ -53,6 +53,12 @@ export interface History {
   rankMoves(metric: string, scope: Scope): Promise<RankMoves>;
   /** Milestones reached per UTC day (from the API's reached_at, stored to survive offsets), zero days included, from the first dated milestone on. Backfilled rows have no day and are not counted. */
   milestonesPerDay(scope: Scope, range: Range): Promise<DayGrid>;
+  /**
+   * Advancement firsts per UTC day (D-111): the day each advancement was first completed in the scope, from the
+   * API's earned_at, zero days included, from the earliest first on. Imported rows count on their real day, so
+   * the grid can reach back before recording began; `since` says so. Empty when the proxy has no advancements.
+   */
+  advancementsPerDay(scope: Scope, range: Range): Promise<DayGrid>;
   /** New players per week (Monday 00:00 UTC) by first_seen, from the recorder's player table. Empty until every player's first_seen is known. */
   joinsPerWeek(range: Range): Promise<Series>;
 }
@@ -70,6 +76,7 @@ export const emptyHistory: History = {
   networkTotal: async () => EMPTY,
   rankMoves: async () => ({ since: null, moves: [] }),
   milestonesPerDay: async () => ({ since: null, days: [] }),
+  advancementsPerDay: async () => ({ since: null, days: [] }),
   joinsPerWeek: async () => EMPTY
 };
 

@@ -63,6 +63,8 @@ export const CHECKS: Check[] = [
       if (on) {
         const feed = await ctx.html("/advancements");
         expect(feed.includes("Most firsts") && feed.includes("Most completed"), "the advancements page has no side boards");
+        expect(feed.includes("Firsts per day"), "the advancements page has no firsts-per-day heatmap");
+        if (ctx.scenario === "busy") expect(feed.includes("fp-plot__cell--"), "the firsts-per-day heatmap has no cells on the busy fixtures");
         expect(!/Nobody has completed this yet/.test(await ctx.html("/advancements")) || feed.includes("fp-empty"), "contradictory empty state");
       }
       return ctx.scenario === "live" ? `advancements ${on ? "on" : "off"}` : undefined;

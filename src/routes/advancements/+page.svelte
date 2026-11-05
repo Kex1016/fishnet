@@ -2,14 +2,15 @@
   import { page } from "$app/state";
   import Pager from "#lib/design/Pager.svelte";
   import ScopeSwitch from "#lib/design/ScopeSwitch.svelte";
-  import { BarList, ViewSwitch, viewParam } from "#lib/charts/index.ts";
-  import { AdvancementFeed, advHref } from "#lib/milestones/index.ts";
+  import { BarList, Heatmap, ViewSwitch, viewParam } from "#lib/charts/index.ts";
+  import { AdvancementFeed, advHref, dayGrid } from "#lib/milestones/index.ts";
   import { group } from "#lib/format/stat-display.ts";
   let { data } = $props();
 
   const view = $derived(viewParam(page.url));
   const scopeLabel = $derived(data.scope === "network" ? "Network" : (data.serverNames[data.scope.slice(7)] ?? data.scope));
   const f = $derived(data.countedFrom);
+  const grid = $derived(dayGrid(data.perDay.days, data.perDay.since, Date.now()));
 </script>
 
 <div class="fp-page">
@@ -57,6 +58,17 @@
         {#if f.ok && f.total > f.read}
           <p class="t-caption fp-adv-note">Counted over the newest {group(f.read)} of {group(f.total)} advancements.</p>
         {/if}
+        <Heatmap
+          title="Firsts per day"
+          sub="{scopeLabel} · by week, UTC · imported completions on their own day"
+          {view}
+          since={data.perDay.since}
+          rows={grid.rows}
+          columns={grid.columns}
+          cellLabel={(row, column) => `${row}, week of ${column}`}
+          emptyTitle="No firsts recorded yet"
+          emptyLine="The days fill in as the site records advancement firsts."
+        />
       </div>
     </div>
   {/if}

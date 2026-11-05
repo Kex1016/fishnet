@@ -278,6 +278,33 @@ export function createSqliteHistory(db: Db, o: HistoryOptions = {}): History {
       }
     ),
 
+    advancementsPerDay: guard(
+      () => ({ since: null, days: [] }),
+      (scope: Scope, range: Range): DayGrid => {
+        if (!parseScope(scope) || !isRange(range)) return { since: null, days: [] };
+        const recorded = seriesSince(db, `advancements:${scope}`);
+        if (recorded === null) return { since: null, days: [] };
+        // earned_at predates our recording (imports reach back months): the grid starts at the earliest first
+        const first = (db.prepare("SELECT min(earned_at) AS t FROM advancement_first WHERE scope = ?").get(scope) as { t: number | null }).t;
+        const since = first === null ? recorded : Math.min(recorded, Number(first));
+        const today = floorTo(now(), DAY);
+        const span = Math.round(RANGE_MS[range] / DAY);
+        const start = Math.max(today - (span - 1) * DAY, floorTo(since, DAY));
+        const rows = db
+          .prepare("SELECT uuid, name, earned_at FROM advancement_first WHERE scope = ? AND earned_at >= ? AND earned_at < ?")
+          .all(scope, start, today + DAY) as { uuid: string | null; name: string | null; earned_at: number }[];
+        const counts = new Map<number, number>();
+        for (const r of rows) {
+          if ((r.uuid || r.name) && hidden({ uuid: r.uuid ?? "", name: r.name ?? "" })) continue;
+          const d = floorTo(Number(r.earned_at), DAY);
+          counts.set(d, (counts.get(d) ?? 0) + 1);
+        }
+        const days: DayGrid["days"] = [];
+        for (let d = start; d <= today; d += DAY) days.push({ day: d, v: counts.get(d) ?? 0 });
+        return { since, days };
+      }
+    ),
+
     joinsPerWeek: guard(
       () => EMPTY,
       (range: Range): Series => {

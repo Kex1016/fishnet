@@ -14,7 +14,7 @@
 
   import { afterNavigate } from "$app/navigation";
   import { page } from "$app/state";
-  import { onMount } from "svelte";
+  import { onMount, untrack } from "svelte";
   import { PanelLeft, Search } from "@lucide/svelte";
   import { NAV, SITE, here, pageTitle, type Crumb } from "#lib/nav.ts";
   import Mark from "#lib/design/Mark.svelte";
@@ -22,6 +22,11 @@
   import Notice from "#lib/design/Notice.svelte";
 
   let { children, data } = $props();
+
+  // the owner's stat names (admin.db): the same set the server used, so hydration matches
+  import { setLabelOverrides } from "#lib/format/labels.ts";
+  untrack(() => setLabelOverrides(data.labelOverrides)); // server render and first client render
+  $effect.pre(() => setLabelOverrides(data.labelOverrides)); // after a navigation brings a new set
 
   // Sidebar: full, icons only (rail) or hidden, cycled by the TopBar's toggle and remembered per
   // device. "auto" until mounted: CSS shows the rail on phones, full otherwise. On phones the full

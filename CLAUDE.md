@@ -11,6 +11,9 @@ for engineering sessions and the work units of PLAN §7. The goal in David's wor
   from `+page.server.ts` / `+server.ts`. No `/v2` pass-through route, ever. `bun run build` ends with
   `scripts/leakcheck.ts`, which fails on a token, the env name or a source map in `build/client/`.
   Logs show the token's public id (`cu_<id>`) only; URLs in logs are `scheme://host:port`.
+- **Admin is the one writer.** `/admin` (404 without `FISHNET_ADMIN_TOKEN`) edits names and the hide lists
+  only; nothing on the site ever writes to cakeutils. Every admin action calls `requireAdmin` (session +
+  CSRF token); the admin token is read only in `src/lib/server/admin/index.ts` and never logged.
 - **Real data everywhere.** Every number comes from the API or from the recorder's SQLite. No
   placeholder numbers in pages. The mock exists for development; the production server refuses to
   start with `FISHNET_MOCK` set.
@@ -72,6 +75,7 @@ container for `bun run shots`; they are not a dependency.
 | `src/routes/leaderboards/`, `src/routes/stats/` | boards and catalogue | W6 |
 | `src/routes/milestones/` | feed | W7 |
 | `src/routes/advancements/` | advancement firsts: feed, `[...id]` detail (D-111; components in `src/lib/milestones/Advancement*`, `advancements.ts`) | post-W10 |
+| `src/routes/admin/`, `src/lib/server/admin/` | owner editing behind `FISHNET_ADMIN_TOKEN`: names (overrides for `labels.ts`, `data/admin.db`), hidden servers and players (edits the list files) | post-W10 |
 | `src/routes/img/`, `src/lib/server/images/` | icon proxy, faces | W8 |
 | `Dockerfile`, `compose.yml`, `.dockerignore`, `.env.example`, `deploy/` | deploy and watcher | W9 |
 | `src/routes/about/`, `README.md` | about page, operator docs | W9b |

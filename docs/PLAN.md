@@ -12,7 +12,9 @@ and charts over time. It follows the look of reki.dev, endfield.reki.dev and min
 (section 6), and it must stay correct on a brand new network where almost nothing has happened yet.
 
 Non-goals: writing to cakeutils (no announce, no admin), accounts or logins, friends and party data,
-analytics or third-party requests from visitors' browsers.
+analytics or third-party requests from visitors' browsers. One exception, added 5 Nov 2026 at David's
+request: the owner, with a site-side admin token, can edit stat and milestone names and the hide lists at
+`/admin` (README, "Editing the site"); visitors still get a read-only site.
 
 ## 2. Facts about cakeutils the site depends on
 

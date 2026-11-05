@@ -18,7 +18,7 @@
       {#snippet children(data)}
         <ol class="fp-rows">
           {#each data.milestones.slice(0, limit) as m (rowKey(m))}
-            <MilestoneItem {m} showPlayer={false} />
+            <MilestoneItem {m} showPlayer={false} {playerName} />
           {/each}
         </ol>
       {/snippet}

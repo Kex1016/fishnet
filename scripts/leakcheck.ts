@@ -5,9 +5,11 @@ import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 
 const root = process.argv[2] ?? "build/client";
-const needles = ["CAKEUTILS_API_TOKEN", "cu_mock_mock", "Bearer cu_"];
+const needles = ["CAKEUTILS_API_TOKEN", "FISHNET_ADMIN_TOKEN", "cu_mock_mock", "Bearer cu_"];
 const token = process.env.CAKEUTILS_API_TOKEN;
 if (token && token.length >= 8) needles.push(token);
+const adminToken = process.env.FISHNET_ADMIN_TOKEN;
+if (adminToken && adminToken.length >= 8) needles.push(adminToken);
 const pattern = /\bcu_[A-Za-z0-9]{2,}_[A-Za-z0-9_-]{8,}/;
 
 let files = 0;
@@ -20,7 +22,7 @@ function walk(dir: string) {
     else if (/\.(js|mjs|css|html|json|txt|map|svg|webmanifest)$/.test(name)) {
       files++;
       const text = readFileSync(p, "utf8");
-      for (const n of needles) if (text.includes(n)) hits.push(`${p}: contains ${n === token ? "the API token" : JSON.stringify(n)}`);
+      for (const n of needles) if (text.includes(n)) hits.push(`${p}: contains ${n === token ? "the API token" : n === adminToken ? "the admin token" : JSON.stringify(n)}`);
       const m = pattern.exec(text);
       if (m) hits.push(`${p}: looks like a token (${m[0].slice(0, 12)}…)`);
       if (name.endsWith(".map")) hits.push(`${p}: a source map is shipped to the client`);

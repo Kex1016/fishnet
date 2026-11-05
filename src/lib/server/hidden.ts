@@ -24,6 +24,16 @@ function load(): HiddenList {
   return list;
 }
 
+/** Drops the cached list, so the next call re-reads the file (after an admin edit). */
+export function reloadHiddenPlayers(): void {
+  loaded = null;
+}
+
+/** The current list (cached for a minute). */
+export function hiddenPlayers(): HiddenList {
+  return load();
+}
+
 /** True when this uuid or name is on the opt-out list. */
 export function isHidden(uuidOrName: string): boolean {
   return load().has(uuidOrName);

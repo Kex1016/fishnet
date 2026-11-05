@@ -4,6 +4,7 @@ import { error } from "@sveltejs/kit";
 import type { LayoutServerLoad } from "./$types";
 import { api, exclusionStatus } from "#lib/server/cakeutils/client.ts";
 import { hiddenServers } from "#lib/server/hidden-servers.ts";
+import { labelOverrides } from "#lib/server/admin/index.ts";
 
 export const load: LayoutServerLoad = async ({ locals, url }) => {
   // A hidden server answers like one that never existed: its page and any ?scope= inside it are a 404.
@@ -22,6 +23,8 @@ export const load: LayoutServerLoad = async ({ locals, url }) => {
     /** servers are hidden: network milestones (D-109) still count them, pages say so */
     serversHidden: ex.hidden > 0,
     /** cakeutils is older than D-113: its network stats still count the hidden servers */
-    exclusionUnsupported: ex.unsupported
+    exclusionUnsupported: ex.unsupported,
+    /** the owner's stat names (admin.db), for labels.ts in the browser */
+    labelOverrides: labelOverrides()
   };
 };

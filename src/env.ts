@@ -27,6 +27,10 @@ export const variables = defineEnvVars({
   FISHNET_DATA_DIR: { schema: str("data"), description: "Recorder SQLite file and caches" },
   HIDDEN_PLAYERS_FILE: { schema: str("data/hidden-players.txt"), description: "Opted-out players, one per line" },
   HIDDEN_SERVERS_FILE: { schema: str("data/hidden-servers.txt"), description: "Servers the site never shows, one id per line" },
+  FISHNET_ADMIN_TOKEN: {
+    schema: str(""),
+    description: "Site-side admin secret (not the cakeutils token), at least 24 characters; unset = no /admin; never logged"
+  },
   FISHNET_MOCK: {
     schema: (v) => {
       const m = v?.trim();

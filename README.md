@@ -36,6 +36,26 @@ Copy `.env.example` to `.env` and set the values. `.env` is never committed.
 | `FISHNET_DATA_DIR` | Recorder database and caches | `data` |
 | `HIDDEN_PLAYERS_FILE` | Players who opted out, one UUID or name per line | `data/hidden-players.txt` |
 | `HIDDEN_SERVERS_FILE` | Servers the site never shows, one cakeutils server id per line (below) | `data/hidden-servers.txt` |
+| `FISHNET_ADMIN_TOKEN` | Site-side admin secret for `/admin` (below), at least 24 characters; not the cakeutils token; never logged | none: `/admin` is a 404 |
+
+### Editing the site (`/admin`)
+
+With `FISHNET_ADMIN_TOKEN` set (make one with `openssl rand -base64 32`), `/admin` asks for that token and
+then lets you change three things; everyone else still sees a read-only site:
+
+- **Names**: what the site calls each stat type (label, title, milestone phrase) and single stats, on top
+  of the site's own words (`src/lib/format/labels.ts`). Stored in `data/admin.db`; pages use them on the
+  next view.
+- **Hidden servers** and **hidden players**: adds and removes lines in the two files below, keeping your
+  own comments. Hand edits to the files still work.
+
+The token is checked in constant time; 5 failed tries per address (20 overall) in 10 minutes lock sign-in
+for the rest of the window. A sign-in lasts 12 hours in an httpOnly, SameSite=Strict, Secure
+`__Host-` cookie held in memory (a restart signs you out). Every change needs the session's own form token
+on top of SvelteKit's origin check. Failed tries are logged with the address, never the token. Behind Caddy
+the per-address limit only sees Caddy unless `ADDRESS_HEADER=X-Forwarded-For` and `XFF_DEPTH=1` are set;
+without them every client shares the one limit. Remove the variable to switch `/admin` off; the saved
+names stay in use.
 
 ### Hiding a server
 

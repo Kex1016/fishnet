@@ -28,6 +28,11 @@ export function hiddenServers(): ServerList {
   return list;
 }
 
+/** Drops the cached list, so the next call re-reads the file (after an admin edit). */
+export function reloadHiddenServers(): void {
+  loaded = null;
+}
+
 export function isHiddenServer(id: string | null | undefined): boolean {
   return hiddenServers().has(id);
 }

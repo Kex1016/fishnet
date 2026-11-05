@@ -2,7 +2,7 @@
 // the server side, so the components can use them in the browser too.
 import type { MilestoneRow, MilestoneFeedRow } from "#lib/api/types.ts";
 import { parseMetric, boardHref } from "#lib/api/metric.ts";
-import { titleCase } from "#lib/players/names.ts";
+import { milestonePhrase, statTitle, type Phrase } from "#lib/format/labels.ts";
 
 /** What a rung says about its time: exact, before tracking, or not reached. */
 export type When = { state: "at"; at: number } | { state: "before" } | { state: "none" };
@@ -13,11 +13,16 @@ export function whenOf(m: Pick<MilestoneRow, "reached_at" | "backfilled">): When
   return { state: "none" };
 }
 
-/** The name of the stat a feed row is about: the API's, else the key title-cased; type totals say "All <type>". */
-export function statLabel(m: Pick<MilestoneFeedRow, "type" | "subject" | "stat_name">): string {
-  if (m.stat_name) return m.stat_name;
-  if (m.subject === "*") return `All ${titleCase(m.type).toLowerCase()}`;
-  return titleCase(m.subject);
+type StatOf = Pick<MilestoneFeedRow, "type" | "subject" | "stat_name">;
+
+/** The stat a feed row is about, in words (#lib/format/labels.ts): "Pufferfish killed", "Mobs killed" for a type total. */
+export function statLabel(m: StatOf): string {
+  return statTitle({ type: m.type, subject: m.subject, subjectName: m.stat_name });
+}
+
+/** A feed row as a sentence around its threshold: "Killed 1000 Pufferfish", "Killed by Zombie 50 times". */
+export function rowPhrase(m: StatOf & Pick<MilestoneFeedRow, "display" | "threshold">): Phrase {
+  return milestonePhrase({ type: m.type, subject: m.subject, subjectName: m.stat_name }, m.display, m.threshold);
 }
 
 /** Where a row's stat has its board on this site, or null when the metric cannot be read. */

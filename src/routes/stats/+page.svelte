@@ -8,6 +8,7 @@
   import { StatTile } from "#lib/charts/index.ts";
   import { group } from "#lib/format/stat-display.ts";
   import { subjectName } from "#lib/players/names.ts";
+  import { typeLabel } from "#lib/format/labels.ts";
   import { withParams } from "#lib/url.ts";
   import { KINDS, kindLabel } from "./kinds.ts";
   let { data } = $props();
@@ -31,7 +32,7 @@
         {#each data.types.data.types as t (t.key)}
           {@const n = data.typeCounts[t.key]}
           <StatTile
-            label={t.name ?? subjectName(null, t.key)}
+            label={typeLabel(t.key, t.name)}
             value={n === undefined ? "—" : group(n)}
             unit={n === 1 ? "subject" : "subjects"}
             note={t.kind ?? undefined}

@@ -5,7 +5,8 @@ import type { PageServerLoad } from "./$types";
 import { api } from "#lib/server/cakeutils/client.ts";
 import { fullType } from "#lib/api/metric.ts";
 import { scopeParam } from "#lib/api/scope.ts";
-import { subjectName, titleCase } from "#lib/players/names.ts";
+import { subjectName } from "#lib/players/names.ts";
+import { statTitle, typeLabel } from "#lib/format/labels.ts";
 import { withoutHidden } from "#lib/server/hidden.ts";
 import { hideFromLadder } from "#lib/milestones/prepare.server.ts";
 import { scopeLabel, scopeMinis } from "../../../leaderboards/board.ts";
@@ -30,7 +31,8 @@ export const load: PageServerLoad = async ({ params, url }) => {
     firstType && !miniScope ? c.milestoneLadder(firstType, params.subject, scope) : null
   ]);
 
-  const typeName = (key: string) => (types.ok ? types.data.types.find((t) => t.key === key)?.name : null) ?? titleCase(key);
+  const typeRow = (key: string) => (types.ok ? types.data.types.find((t) => t.key === key) : undefined);
+  const typeName = (key: string) => typeLabel(key, typeRow(key)?.name);
   const names = subject.ok ? subject.data.names : [];
   const primary = names[0];
   const label = subjectName(primary?.name, params.subject);
@@ -58,6 +60,15 @@ export const load: PageServerLoad = async ({ params, url }) => {
     }),
     firstType: firstType ?? null,
     firstTypeName: firstType ? typeName(firstType) : null,
+    /** the ladder's heading: the subject under the chosen type ("Pufferfish killed") */
+    ladderName: firstType
+      ? statTitle({
+          type: firstType,
+          subject: params.subject,
+          typeName: typeRow(firstType)?.name,
+          subjectName: (names.find((n) => n.kind === typeRow(firstType)?.kind) ?? primary)?.name
+        })
+      : label,
     miniScope,
     ladder: ladder ? hideFromLadder(ladder) : null
   };

@@ -75,7 +75,7 @@
               {/each}
             </nav>
           {/if}
-          {#if data.ladder}<MilestoneLadder result={data.ladder} statName={data.label} /><HiddenServersNote scope={data.scope} />{/if}
+          {#if data.ladder}<MilestoneLadder result={data.ladder} statName={data.ladderName} /><HiddenServersNote scope={data.scope} />{/if}
         </section>
       {:else if data.miniScope}
         <p class="t-small t-muted">Milestones are kept per server and for the whole network, not per mini-server.</p>

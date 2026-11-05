@@ -4,11 +4,12 @@
   import PlayerName from "#lib/design/PlayerName.svelte";
   import Slot from "#lib/design/Slot.svelte";
   import { dateTime, ago, iso } from "#lib/format/dates.ts";
-  import { statHref, statLabel, whenOf, whoOf } from "./helpers.ts";
+  import { rowPhrase, statHref, statLabel, whenOf, whoOf } from "./helpers.ts";
   let { m, showStat = true, showPlayer = true, scope }: { m: MilestoneFeedRow; showStat?: boolean; showPlayer?: boolean; scope?: string } = $props();
   const who = $derived(whoOf(m));
   const when = $derived(whenOf(m));
   const name = $derived(statLabel(m));
+  const phrase = $derived(rowPhrase(m));
   const href = $derived(statHref(m, scope));
 </script>
 
@@ -16,8 +17,8 @@
   {#if showStat}<Slot icon={m.icon} kind={(m.kind as Kind | null | undefined) ?? (m.subject === "*" ? "custom" : null)} {name} />{/if}
   <div class="fp-ms__main">
     <div class="fp-ms__what">
-      <span class="fp-ms__thr">{m.display}</span>
-      {#if showStat}{#if href}<a class="fp-ms__stat" {href}>{name}</a>{:else}<span class="fp-ms__stat">{name}</span>{/if}{/if}
+      {#if showStat && href}<a class="fp-ms__stat" {href}>{phrase.before}<span class="fp-ms__thr">{phrase.value}</span>{phrase.after}</a>
+      {:else}<span class="fp-ms__stat">{phrase.before}<span class="fp-ms__thr">{phrase.value}</span>{phrase.after}</span>{/if}
     </div>
     {#if showPlayer}
       <div class="fp-ms__who">
@@ -39,7 +40,7 @@
   .fp-ms:hover { background: var(--raised); }
   .fp-ms__main { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
   .fp-ms__what { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-2); min-width: 0; }
-  .fp-ms__thr { font: 600 15px/20px var(--font-mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .fp-ms__thr { font: 600 15px/20px var(--font-mono); font-variant-numeric: tabular-nums; white-space: nowrap; color: var(--text); }
   .fp-ms__stat { font: 500 15px/20px var(--font-text); color: var(--text); overflow-wrap: anywhere; }
   a.fp-ms__stat:hover { color: var(--acc-ink); text-decoration: none; }
   .fp-ms__who { font: 400 13px/20px var(--font-text); min-width: 0; }

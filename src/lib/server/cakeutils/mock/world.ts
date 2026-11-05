@@ -141,15 +141,16 @@ export const MIN = 60_000;
 
 // ---- the catalogue every busy stat is drawn from
 
+// the game's own English names, as cakeutils sends them (stats-screen templates included)
 export const VANILLA_TYPES: StatType[] = [
-  { key: "minecraft:mined", name: "Mined", kind: "block" },
-  { key: "minecraft:used", name: "Used", kind: "item" },
-  { key: "minecraft:crafted", name: "Crafted", kind: "item" },
-  { key: "minecraft:broken", name: "Broken", kind: "item" },
+  { key: "minecraft:mined", name: "Times Mined", kind: "block" },
+  { key: "minecraft:used", name: "Times Used", kind: "item" },
+  { key: "minecraft:crafted", name: "Times Crafted", kind: "item" },
+  { key: "minecraft:broken", name: "Times Broken", kind: "item" },
   { key: "minecraft:picked_up", name: "Picked Up", kind: "item" },
   { key: "minecraft:dropped", name: "Dropped", kind: "item" },
-  { key: "minecraft:killed", name: "Killed", kind: "entity" },
-  { key: "minecraft:killed_by", name: "Killed By", kind: "entity" },
+  { key: "minecraft:killed", name: "You killed %s %s", kind: "entity" },
+  { key: "minecraft:killed_by", name: "%s killed you %s time(s)", kind: "entity" },
   { key: "minecraft:custom", name: "Custom", kind: "custom" }
 ];
 

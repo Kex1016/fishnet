@@ -48,7 +48,7 @@
   /** in a type's view: that one group, paged */
   const single = $derived(type ? (groups[0] ?? { type, name: typeName(catalogue, type), kind: kindOf(catalogue, type), stats: [], total: 0 }) : null);
   const pageRows = $derived(single ? single.stats.slice(offset, offset + limit) : []);
-  const chips = $derived([{ key: null as string | null, label: "All" }, ...(catalogue ?? []).map((t) => ({ key: t.key as string | null, label: t.name ?? typeName(undefined, t.key) }))]);
+  const chips = $derived([{ key: null as string | null, label: "All" }, ...(catalogue ?? []).map((t) => ({ key: t.key as string | null, label: typeName(catalogue, t.key) }))]);
   const at = (t: string | null) => withParams(url, { type: t, offset: null });
   const kindFor = (t: string): Kind | null => kindOf(catalogue, t) as Kind | null;
   const href = (s: { type: string; subject: string }) => boardHref({ kind: "stat", type: s.type, subject: s.subject }, scope);

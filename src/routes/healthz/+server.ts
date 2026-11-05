@@ -6,12 +6,14 @@ import { json } from "@sveltejs/kit";
 import type { RequestHandler } from "./$types";
 import { apiStatus } from "#lib/server/cakeutils/client.ts";
 import { history } from "#lib/server/history.ts";
+import { faceService } from "#lib/server/images/index.ts";
 
 const iso = (t: number | null) => (t === null ? null : new Date(t).toISOString());
 
 export const GET: RequestHandler = async ({ locals }) => {
   const s = apiStatus();
   const recordingSince = await history().recordingSince();
+  const f = faceService().stats();
   return json(
     {
       status: "ok",
@@ -21,8 +23,12 @@ export const GET: RequestHandler = async ({ locals }) => {
         downSince: iso(s.downSince),
         lastOkAt: iso(s.lastOkAt),
         rateLimitedUntil: iso(s.rateLimitedUntil),
-        lastError: s.lastError
+        lastError: s.lastError,
+        // rejections by source: cakeutils' own 429s vs. the site's bucket turning a page away first
+        throttle: { ...s.throttle, last429At: iso(s.throttle.last429At) }
       },
+      // Mojang's skin lookups (the other place a 429 can come from)
+      faces: { ...f, last429At: iso(f.last429At), backoffUntil: iso(f.backoffUntil) },
       cache: s.cache,
       recordingSince: iso(recordingSince)
     },

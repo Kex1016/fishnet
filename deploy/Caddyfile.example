@@ -1,6 +1,12 @@
 # Add to the host's Caddyfile (or drop into a file it imports), then `caddy reload`.
 fishnet.haiiro.moe {
 	encode zstd gzip
+
+	# The few files in static/ come without a Cache-Control from the Node server (hashed /_app/immutable/
+	# files, /img/icon and /img/face already carry their own): let browsers keep them a day.
+	@static path /favicon.svg /robots.txt /img/face-default.png
+	header @static Cache-Control "public, max-age=86400, stale-while-revalidate=604800"
+
 	reverse_proxy 127.0.0.1:3000
 }
 

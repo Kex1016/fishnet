@@ -5,8 +5,11 @@ import sharp from "sharp";
 import { join } from "node:path";
 import { ageOf, isPng, readCached, writeAtomic } from "./disk.ts";
 
-export const FACE_TTL_MS = 24 * 3600_000;
-export const FACE_MISS_TTL_MS = 10 * 60_000;
+// Skins change rarely and a day-old head is fine: a head is fresh for 3 days, then served at once while
+// one refresh runs behind it (never blocking a visitor on Mojang again once a head is on disk).
+export const FACE_TTL_MS = 3 * 24 * 3600_000;
+/** a player without a skin (or a failed fetch) is asked again after this long */
+export const FACE_MISS_TTL_MS = 3600_000;
 const BACKOFF_MS = 60_000;
 const MAX_SKIN_BYTES = 256 * 1024;
 const FETCH_TIMEOUT_MS = 5_000;
@@ -20,7 +23,11 @@ export type FaceOptions = {
   fetch?: typeof fetch;
   /** mock mode and tests: never call Mojang */
   offline?: boolean;
+  log?: (line: string) => void;
 };
+
+/** For /healthz: how often Mojang said no, so a rejection can be told apart from cakeutils' own. */
+export type FaceStats = { fetched: number; failed: number; mojang429: number; last429At: number | null; backoffUntil: number | null };
 
 /** Crop head + hat from a skin (64x64, legacy 64x32, or an HD multiple of 64) into a 64x64 PNG. */
 export async function headFromSkin(skin: Uint8Array): Promise<Buffer> {
@@ -52,6 +59,8 @@ export function skinUrlFromProfile(profile: unknown): string | null {
 
 export function createFaces(opts: FaceOptions) {
   const f = opts.fetch ?? fetch;
+  const log = opts.log ?? ((l: string) => console.warn(l));
+  const stats = { fetched: 0, failed: 0, mojang429: 0, last429At: null as number | null };
   const inflight = new Map<string, Promise<Buffer | null>>();
   let backoffUntil = 0;
   let active = 0;
@@ -68,29 +77,56 @@ export function createFaces(opts: FaceOptions) {
     }
   }
 
-  async function get(url: string, accept: "json" | "bytes"): Promise<Response | null> {
+  async function get(url: string, accept: "json" | "bytes"): Promise<Response | null | "throttled"> {
     const res = await f(url, { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS), redirect: "error", headers: { accept: accept === "json" ? "application/json" : "image/png" } });
     if (res.status === 429) {
-      backoffUntil = Date.now() + BACKOFF_MS;
-      return null;
+      const t = Date.now();
+      stats.mojang429++;
+      stats.last429At = t;
+      if (t >= backoffUntil) log(`faces: Mojang rate-limited the skin lookup (429); serving cached or default heads for ${BACKOFF_MS / 1000} s`);
+      backoffUntil = t + BACKOFF_MS;
+      return "throttled";
     }
     return res.ok ? res : null;
   }
 
-  async function fetchFace(id: string): Promise<Buffer | null> {
+  /** A head, null (no skin or a failure: remembered as a miss), or "throttled" (Mojang said 429: not a miss). */
+  async function fetchFace(id: string): Promise<Buffer | null | "throttled"> {
     try {
       const profileRes = await get(`https://sessionserver.mojang.com/session/minecraft/profile/${id}`, "json");
-      if (!profileRes) return null;
+      if (!profileRes || profileRes === "throttled") return profileRes;
       const skin = skinUrlFromProfile(await profileRes.json());
       if (!skin) return null;
       const skinRes = await get(skin, "bytes");
-      if (!skinRes) return null;
+      if (!skinRes || skinRes === "throttled") return skinRes;
       const bytes = new Uint8Array(await skinRes.arrayBuffer());
       if (bytes.length > MAX_SKIN_BYTES || !isPng(bytes)) return null;
       return await headFromSkin(bytes);
     } catch {
       return null;
     }
+  }
+
+  /** One fetch per player at a time; writes the head (or a miss marker) to disk. */
+  function refresh(id: string, file: string): Promise<Buffer | null> {
+    let p = inflight.get(id);
+    if (!p) {
+      p = slot(() => fetchFace(id))
+        .then(async (png) => {
+          if (png === "throttled") return null;
+          if (png) {
+            stats.fetched++;
+            await writeAtomic(file, png);
+          } else {
+            stats.failed++;
+            await writeAtomic(join(opts.dir, `${id}.miss`), "");
+          }
+          return png;
+        })
+        .finally(() => inflight.delete(id));
+      inflight.set(id, p);
+    }
+    return p;
   }
 
   /** `uuid` is the dashed lower-case form the route matcher yields. Never throws. */
@@ -103,22 +139,23 @@ export function createFaces(opts: FaceOptions) {
 
     const missAge = await ageOf(join(opts.dir, `${id}.miss`));
     const missFresh = missAge !== null && missAge < FACE_MISS_TTL_MS;
-    if (!missFresh && Date.now() >= backoffUntil) {
-      let p = inflight.get(id);
-      if (!p) {
-        p = slot(() => fetchFace(id)).finally(() => inflight.delete(id));
-        inflight.set(id, p);
-      }
-      const png = await p;
-      if (png) {
-        await writeAtomic(file, png);
-        return { kind: "face", png, stale: false };
-      }
-      await writeAtomic(join(opts.dir, `${id}.miss`), "");
+    const mayAsk = !missFresh && Date.now() >= backoffUntil;
+    if (cached) {
+      // an old head now, a new one for the next visitor
+      if (mayAsk) void refresh(id, file);
+      return { kind: "face", png: cached.bytes, stale: true };
     }
-    // Mojang unreachable or no skin: an old head beats the default one.
-    return cached ? { kind: "face", png: cached.bytes, stale: true } : { kind: "default" };
+    if (mayAsk) {
+      const png = await refresh(id, file);
+      if (png) return { kind: "face", png, stale: false };
+    }
+    // Mojang unreachable, throttling or no skin, and no head on disk yet
+    return { kind: "default" };
   }
 
-  return { face };
+  function faceStats(): FaceStats {
+    return { ...stats, backoffUntil: backoffUntil > Date.now() ? backoffUntil : null };
+  }
+
+  return { face, stats: faceStats };
 }

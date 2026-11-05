@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
 import sharp from "sharp";
-import { mkdtempSync } from "node:fs";
+import { existsSync, mkdtempSync, utimesSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createFaces, headFromSkin, skinUrlFromProfile } from "../src/lib/server/images/faces.ts";
@@ -66,6 +66,42 @@ test("faces: fetched once, cached on disk, failures fall back, stale beats defau
   const before = calls;
   expect((await faces.face(other)).kind).toBe("default");
   expect(calls).toBe(before); // negative cache
+});
+
+test("faces: an old head is served at once and refreshed behind it", async () => {
+  const dir = mkdtempSync(join(tmpdir(), "faces-"));
+  const png = await skin();
+  let calls = 0;
+  const fake = (async (url: string) => {
+    calls++;
+    return url.includes("sessionserver") ? Response.json(tex("https://textures.minecraft.net/texture/abc")) : new Response(png as unknown as BodyInit);
+  }) as unknown as typeof fetch;
+  const faces = createFaces({ dir, fetch: fake });
+  await faces.face(UUID);
+  expect(calls).toBe(2);
+  const file = join(dir, "069a79f444e94726a5befca90e38aaf5.png");
+  const old = new Date(Date.now() - 4 * 86_400_000);
+  utimesSync(file, old, old);
+  const r = await faces.face(UUID);
+  expect(r.kind === "face" && r.stale).toBe(true);
+  await Bun.sleep(50);
+  expect(calls).toBe(4);
+  const again = await faces.face(UUID);
+  expect(again.kind === "face" && again.stale).toBe(false);
+  expect(faces.stats().fetched).toBe(2);
+});
+
+test("faces: Mojang's 429 is counted, logged once, and not remembered as a miss", async () => {
+  const dir = mkdtempSync(join(tmpdir(), "faces-"));
+  const logs: string[] = [];
+  const faces = createFaces({ dir, fetch: (async () => new Response("", { status: 429 })) as unknown as typeof fetch, log: (l) => logs.push(l) });
+  expect((await faces.face(UUID)).kind).toBe("default");
+  expect((await faces.face(UUID)).kind).toBe("default"); // backing off: not asked again
+  const s = faces.stats();
+  expect(s.mojang429).toBe(1);
+  expect(s.backoffUntil).not.toBeNull();
+  expect(logs.length).toBe(1);
+  expect(existsSync(join(dir, "069a79f444e94726a5befca90e38aaf5.miss"))).toBe(false);
 });
 
 test("faces: offline mode never fetches", async () => {

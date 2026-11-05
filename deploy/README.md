@@ -77,7 +77,24 @@ curl -s http://127.0.0.1:3000/healthz        # {"status":"ok","cakeutils":{"reac
 
 `/healthz` answers 200 whenever the site runs (the health check must not flap with cakeutils); the
 body says whether cakeutils is reachable, since when it is not, when it rate-limited the site, and when
-the recorder started. Once Caddy is in front, the browser checks in `tests/e2e/` run against the live
+the recorder started.
+
+When the site shows "rate limited" notices or broken icons, the body says where the rejections come from:
+
+```sh
+curl -s http://127.0.0.1:3000/healthz | jq '.cakeutils.throttle, .faces'
+```
+
+- `cakeutils.throttle.upstream429` counts `429` answers from cakeutils. `tokenLimit` is the token's own
+  per-minute rate (cakeutils' `RateLimit-Limit`); the site paces itself at 90 % of it when
+  `CAKEUTILS_RATE` is higher (`ratePerMinute`, logged once). A `tokenLimit` of 120 means the token was
+  created without `--rate`: `cakectl token update <id> --rate 600/120` (the `cu_<id>` the site logs at start) and set
+  `CAKEUTILS_BURST` below the burst.
+- `localRefused` counts pages the site's own bucket turned away before asking cakeutils (a busy
+  minute); `refreshSkipped` counts background refreshes it skipped, serving the cached answer instead.
+- `faces.mojang429` counts Mojang's `429`s on skin lookups (those only cost a default head, never a page).
+
+Once Caddy is in front, the browser checks in `tests/e2e/` run against the live
 site from any machine with Bun and Playwright: `bun run e2e --base https://fishnet.haiiro.moe`.
 
 `./data` (the recorder's SQLite and the player opt-out list `data/hidden-players.txt`) is created
@@ -86,7 +103,8 @@ site works without it, the charts then say "Recording since" a later date.
 
 ## 2. Caddy
 
-Add `Caddyfile.example` to the host's Caddyfile and reload:
+Add `Caddyfile.example` to the host's Caddyfile and reload (it also gives the few files in `static/`
+a one-day browser cache; the Node server leaves them without one):
 
 ```sh
 sudo caddy reload --config /etc/caddy/Caddyfile

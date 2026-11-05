@@ -13,7 +13,8 @@ export const GET: RequestHandler = async ({ params, request, setHeaders }) => {
     error(404, "No such icon");
   }
   if (r.kind === "unavailable") {
-    setHeaders({ "cache-control": "no-store" });
+    // cakeutils down or throttling: a short browser cache, so a page full of icons does not ask again on every view
+    setHeaders({ "cache-control": "public, max-age=60", "retry-after": "60" });
     error(503, "Icons are unavailable");
   }
   return new Response(r.png as BodyInit, { headers: { ...immutable, "content-type": "image/png" } });

@@ -157,8 +157,9 @@ count on their real day, so the grid can reach back before recording began.
   the token is never logged (log its public id `cu_<id>` only).
 - Result type, not exceptions: `{ok:true, data, asOf}` | `{ok:false, kind:"not_found"|"empty"|"off"|"down"|"rate_limited"|"bad_request"}`,
   so every page decides on purpose what "not happened yet" and "cakeutils is down" look like.
-- Cache: in-memory LRU keyed by URL, TTL = the response's `max-age` (5 s) with a floor per route class
-  (network 5 s, leaderboards 15 s, catalogue 10 min, icons forever), stale-while-revalidate, ETag revalidation,
+- Cache: in-memory LRU keyed by URL, TTL = the response's `max-age` (5 s) with a floor per tier of data
+  (live 15 s, players 30 s, leaderboards and milestone feeds 1 min, catalogue 30 min, icons forever; table in
+  `policy.ts`), stale-while-revalidate per tier with refreshes that only take a spare token, ETag revalidation,
   single-flight for concurrent misses, and **serve-stale-on-error** (keep the last good answer up to 24 h
   and say "as of" on the page when cakeutils is unreachable).
 - A token bucket in front of the client, sized below the token's limit (env `CAKEUTILS_RATE`), with the

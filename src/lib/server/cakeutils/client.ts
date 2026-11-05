@@ -23,6 +23,8 @@ import { apiToken, config } from "../env.ts";
 import { mockFetch } from "./mock/index.ts";
 import { createClient, type Priority } from "./create.ts";
 import { createCore, type Core, type CoreStatus } from "./core.ts";
+import { hideServers, type ExclusionStatus } from "./hide.ts";
+import { hiddenServers } from "../hidden-servers.ts";
 
 export type Page = { limit?: number; offset?: number };
 export type PlayersQuery = Page & { online?: boolean; q?: string };
@@ -85,7 +87,7 @@ export interface Client {
 export { createClient, type ClientOptions, type Priority } from "./create.ts";
 export type { CoreStatus } from "./core.ts";
 
-let instance: Client | null = null;
+let instance: (Client & { exclusionStatus(): ExclusionStatus }) | null = null;
 let core: Core | null = null;
 let priorityOf: () => Priority = () => "page";
 
@@ -101,8 +103,15 @@ function shared(): Core {
 /** The site's one client, configured from the environment (mock fetch when FISHNET_MOCK is set). */
 export function api(): Client {
   if (instance) return instance;
-  instance = createClient({ baseUrl: "", token: "", core: shared(), priority: () => priorityOf() });
+  // hidden servers (hidden-servers.ts) leave every answer here, and network reads ask cakeutils without them
+  instance = hideServers(createClient({ baseUrl: "", token: "", core: shared(), priority: () => priorityOf(), exclude: () => hiddenServers().ids }), hiddenServers);
   return instance;
+}
+
+/** Whether servers are hidden and whether cakeutils leaves them out of network figures (D-113); for the layout. */
+export function exclusionStatus(): ExclusionStatus {
+  api();
+  return instance!.exclusionStatus();
 }
 
 /**

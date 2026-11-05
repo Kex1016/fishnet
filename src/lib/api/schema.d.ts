@@ -531,6 +531,8 @@ export interface components {
         };
         Playtime: {
             scope: string;
+            /** @description servers left out of the network figures in this answer (the request's exclude); empty when nothing was excluded or the scope is not the network */
+            excluded?: string[];
             total_ms: number;
             by_server: {
                 [key: string]: number;
@@ -573,10 +575,14 @@ export interface components {
             value: number;
             display: string;
             icon: string | null;
+            /** @description servers left out of the network figures in this answer (the request's exclude); empty when nothing was excluded or the scope is not the network */
+            excluded?: string[];
         };
         StatList: {
             uuid: string;
             scope: string;
+            /** @description servers left out of the network figures in this answer (the request's exclude); empty when nothing was excluded or the scope is not the network */
+            excluded?: string[];
             total: number;
             stats: components["schemas"]["StatValue"][];
         };
@@ -599,6 +605,8 @@ export interface components {
         };
         BatchResponse: {
             scope: string;
+            /** @description servers left out of the network figures in this answer (the request's exclude); empty when nothing was excluded or the scope is not the network */
+            excluded?: string[];
             players: {
                 ref: string;
                 uuid: string;
@@ -638,6 +646,8 @@ export interface components {
         Leaderboard: {
             metric: string;
             scope: string;
+            /** @description servers left out of the network figures in this answer (the request's exclude); empty when nothing was excluded or the scope is not the network */
+            excluded?: string[];
             unit: string;
             total: number;
             entries: {
@@ -705,6 +715,8 @@ export interface components {
         };
         AdvancementMilestoneList: {
             scope: string;
+            /** @description servers left out of the network figures in this answer (the request's exclude); empty when nothing was excluded or the scope is not the network */
+            excluded?: string[];
             total: number;
             milestones: {
                 /** @description namespaced advancement id */
@@ -727,6 +739,8 @@ export interface components {
             uuid: string;
             name: string;
             scope: string;
+            /** @description servers left out of the network figures in this answer (the request's exclude); empty when nothing was excluded or the scope is not the network */
+            excluded?: string[];
             total: number;
             milestones: {
                 /** @description namespaced advancement id */
@@ -746,6 +760,8 @@ export interface components {
         AdvancementMilestone: {
             advancement: string;
             title: string | null;
+            /** @description servers left out of the network figures in this answer (the request's exclude); empty when nothing was excluded or the scope is not the network */
+            excluded?: string[];
             network: {
                 uuid: string;
                 name: string;
@@ -986,7 +1002,10 @@ export interface operations {
     };
     getPlayer: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Server ids, comma-separated, left out of network-scope figures (D-113): each value becomes the network value minus those servers' values, rows that only came from them are dropped. Ignored for a server or mini scope. The answer's excluded field lists what was applied. */
+                exclude?: string;
+            };
             header?: never;
             path: {
                 /** @description Player UUID (dashed or undashed) or exact name (case-insensitive). */
@@ -1013,6 +1032,7 @@ export interface operations {
                 };
                 content?: never;
             };
+            400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
@@ -1025,6 +1045,8 @@ export interface operations {
             query?: {
                 /** @description network (default), server:<id> or mini:<server-id>/<mini-id>. A private mini-server (public:false) answers exactly like one that was never seen, for every token. */
                 scope?: string;
+                /** @description Server ids, comma-separated, left out of network-scope figures (D-113): each value becomes the network value minus those servers' values, rows that only came from them are dropped. Ignored for a server or mini scope. The answer's excluded field lists what was applied. */
+                exclude?: string;
             };
             header?: never;
             path: {
@@ -1065,6 +1087,8 @@ export interface operations {
             query?: {
                 /** @description network (default), server:<id> or mini:<server-id>/<mini-id>. A private mini-server (public:false) answers exactly like one that was never seen, for every token. */
                 scope?: string;
+                /** @description Server ids, comma-separated, left out of network-scope figures (D-113): each value becomes the network value minus those servers' values, rows that only came from them are dropped. Ignored for a server or mini scope. The answer's excluded field lists what was applied. */
+                exclude?: string;
             };
             header?: never;
             path?: never;
@@ -1098,6 +1122,8 @@ export interface operations {
             query?: {
                 /** @description network (default), server:<id> or mini:<server-id>/<mini-id>. A private mini-server (public:false) answers exactly like one that was never seen, for every token. */
                 scope?: string;
+                /** @description Server ids, comma-separated, left out of network-scope figures (D-113): each value becomes the network value minus those servers' values, rows that only came from them are dropped. Ignored for a server or mini scope. The answer's excluded field lists what was applied. */
+                exclude?: string;
                 /** @description Only this stat type (minecraft: may be omitted). */
                 type?: string;
                 /** @description Case-insensitive substring. */
@@ -1146,6 +1172,8 @@ export interface operations {
             query?: {
                 /** @description network (default), server:<id> or mini:<server-id>/<mini-id>. A private mini-server (public:false) answers exactly like one that was never seen, for every token. */
                 scope?: string;
+                /** @description Server ids, comma-separated, left out of network-scope figures (D-113): each value becomes the network value minus those servers' values, rows that only came from them are dropped. Ignored for a server or mini scope. The answer's excluded field lists what was applied. */
+                exclude?: string;
             };
             header?: never;
             path: {
@@ -1375,6 +1403,8 @@ export interface operations {
             query?: {
                 /** @description network (default), server:<id> or mini:<server-id>/<mini-id>. A private mini-server (public:false) answers exactly like one that was never seen, for every token. */
                 scope?: string;
+                /** @description Server ids, comma-separated, left out of network-scope figures (D-113): each value becomes the network value minus those servers' values, rows that only came from them are dropped. Ignored for a server or mini scope. The answer's excluded field lists what was applied. */
+                exclude?: string;
                 /** @description Page size. */
                 limit?: number;
                 /** @description Rows to skip. */
@@ -1421,6 +1451,8 @@ export interface operations {
             query?: {
                 /** @description network (default), server:<id> or mini:<server-id>/<mini-id>. A private mini-server (public:false) answers exactly like one that was never seen, for every token. */
                 scope?: string;
+                /** @description Server ids, comma-separated, left out of network-scope figures (D-113): each value becomes the network value minus those servers' values, rows that only came from them are dropped. Ignored for a server or mini scope. The answer's excluded field lists what was applied. */
+                exclude?: string;
                 /** @description Page size. */
                 limit?: number;
                 /** @description Rows to skip. */
@@ -1591,6 +1623,8 @@ export interface operations {
             query?: {
                 /** @description network (default), server:<id> or mini:<server-id>/<mini-id>. A private mini-server (public:false) answers exactly like one that was never seen, for every token. */
                 scope?: string;
+                /** @description Server ids, comma-separated, left out of network-scope figures (D-113): each value becomes the network value minus those servers' values, rows that only came from them are dropped. Ignored for a server or mini scope. The answer's excluded field lists what was applied. */
+                exclude?: string;
                 /** @description Page size. */
                 limit?: number;
                 /** @description Rows to skip. */
@@ -1631,6 +1665,8 @@ export interface operations {
             query?: {
                 /** @description Namespaced advancement id, e.g. minecraft:story/mine_diamond (minecraft: may be omitted). Required. */
                 id?: string;
+                /** @description Server ids, comma-separated, left out of network-scope figures (D-113): each value becomes the network value minus those servers' values, rows that only came from them are dropped. Ignored for a server or mini scope. The answer's excluded field lists what was applied. */
+                exclude?: string;
             };
             header?: never;
             path?: never;
@@ -1668,6 +1704,8 @@ export interface operations {
             query?: {
                 /** @description network (default), server:<id> or mini:<server-id>/<mini-id>. A private mini-server (public:false) answers exactly like one that was never seen, for every token. */
                 scope?: string;
+                /** @description Server ids, comma-separated, left out of network-scope figures (D-113): each value becomes the network value minus those servers' values, rows that only came from them are dropped. Ignored for a server or mini scope. The answer's excluded field lists what was applied. */
+                exclude?: string;
                 /** @description Page size. */
                 limit?: number;
                 /** @description Rows to skip. */

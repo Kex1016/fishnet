@@ -6,6 +6,7 @@
   import ScopeSwitch from "#lib/design/ScopeSwitch.svelte";
   import Slot from "#lib/design/Slot.svelte";
   import { MilestoneLadder } from "#lib/milestones/index.ts";
+  import HiddenServersNote from "#lib/milestones/HiddenServersNote.svelte";
   import { boardHref } from "#lib/api/metric.ts";
   import { group } from "#lib/format/stat-display.ts";
   import { withParams } from "#lib/url.ts";
@@ -74,7 +75,7 @@
               {/each}
             </nav>
           {/if}
-          {#if data.ladder}<MilestoneLadder result={data.ladder} statName={data.label} />{/if}
+          {#if data.ladder}<MilestoneLadder result={data.ladder} statName={data.label} /><HiddenServersNote scope={data.scope} />{/if}
         </section>
       {:else if data.miniScope}
         <p class="t-small t-muted">Milestones are kept per server and for the whole network, not per mini-server.</p>

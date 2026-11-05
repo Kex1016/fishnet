@@ -6,6 +6,7 @@
   import Notice from "#lib/design/Notice.svelte";
   import { BarList, Heatmap, ViewSwitch, viewParam } from "#lib/charts/index.ts";
   import { MilestoneFeed } from "#lib/milestones/index.ts";
+  import HiddenServersNote from "#lib/milestones/HiddenServersNote.svelte";
   import { dayGrid } from "#lib/milestones/helpers.ts";
   import { group } from "#lib/format/stat-display.ts";
   let { data } = $props();
@@ -47,6 +48,7 @@
   <div class="fp-two">
     <div class="fp-ms-feed">
       <MilestoneFeed result={data.feed} title="Feed" limit={data.limit} />
+      <HiddenServersNote scope={data.scope} />
       {#if data.feed.ok}<Pager url={page.url} total={data.feed.data.total} limit={data.limit} offset={data.offset} what="milestones" />{/if}
     </div>
 

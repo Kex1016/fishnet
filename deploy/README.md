@@ -97,7 +97,8 @@ curl -s http://127.0.0.1:3000/healthz | jq '.cakeutils.throttle, .faces'
 Once Caddy is in front, the browser checks in `tests/e2e/` run against the live
 site from any machine with Bun and Playwright: `bun run e2e --base https://fishnet.haiiro.moe`.
 
-`./data` (the recorder's SQLite and the player opt-out list `data/hidden-players.txt`) is created
+`./data` (the recorder's SQLite, the player opt-out list `data/hidden-players.txt` and the server hide
+list `data/hidden-servers.txt`, README "Hiding a server") is created
 next to the checkout and owned by the deploy user. Back it up if you care about the history; the
 site works without it, the charts then say "Recording since" a later date.
 

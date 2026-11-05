@@ -36,7 +36,7 @@ type Server = { proc: ReturnType<typeof Bun.spawn>; dir: string; base: string };
 async function start(scenario: Scenario, port: number): Promise<Server> {
   const dir = mkdtempSync(join(tmpdir(), `fishnet-e2e-${scenario}-`));
   const proc = Bun.spawn(["node", "build/index.js"], {
-    env: { ...process.env, FISHNET_MOCK: scenario, FISHNET_ALLOW_MOCK: "1", PORT: String(port), HOST: "127.0.0.1", FISHNET_DATA_DIR: dir, HIDDEN_PLAYERS_FILE: join(dir, "hidden.txt") },
+    env: { ...process.env, FISHNET_MOCK: scenario, FISHNET_ALLOW_MOCK: "1", PORT: String(port), HOST: "127.0.0.1", FISHNET_DATA_DIR: dir, HIDDEN_PLAYERS_FILE: join(dir, "hidden.txt"), HIDDEN_SERVERS_FILE: join(dir, "hidden-servers.txt") },
     stdout: "pipe",
     stderr: "pipe"
   });

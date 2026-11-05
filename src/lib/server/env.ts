@@ -2,7 +2,7 @@
 // nothing baked into the build. The token is never logged or exported: only its public id
 // (`cu_<id>`) leaves this module.
 import {
-  CAKEUTILS_API_TOKEN, CAKEUTILS_API_URL, CAKEUTILS_BURST, CAKEUTILS_RATE, FISHNET_ALLOW_MOCK, FISHNET_DATA_DIR, FISHNET_MOCK, HIDDEN_PLAYERS_FILE, NODE_ENV, ORIGIN
+  CAKEUTILS_API_TOKEN, CAKEUTILS_API_URL, CAKEUTILS_BURST, CAKEUTILS_RATE, FISHNET_ALLOW_MOCK, FISHNET_DATA_DIR, FISHNET_MOCK, HIDDEN_PLAYERS_FILE, HIDDEN_SERVERS_FILE, NODE_ENV, ORIGIN
 } from "$app/env/private";
 import { building, dev } from "$app/env";
 import type { Scenario } from "./cakeutils/mock/index.ts";
@@ -20,6 +20,7 @@ export type Config = {
   origin: string;
   dataDir: string;
   hiddenPlayersFile: string;
+  hiddenServersFile: string;
   production: boolean;
 };
 
@@ -38,6 +39,7 @@ export function config(): Config {
     origin: ORIGIN,
     dataDir: FISHNET_DATA_DIR,
     hiddenPlayersFile: HIDDEN_PLAYERS_FILE,
+    hiddenServersFile: HIDDEN_SERVERS_FILE,
     production
   };
   return cached;

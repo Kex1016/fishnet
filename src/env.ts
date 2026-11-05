@@ -26,6 +26,7 @@ export const variables = defineEnvVars({
   ORIGIN: { schema: str("http://localhost:3000"), description: "Public origin" },
   FISHNET_DATA_DIR: { schema: str("data"), description: "Recorder SQLite file and caches" },
   HIDDEN_PLAYERS_FILE: { schema: str("data/hidden-players.txt"), description: "Opted-out players, one per line" },
+  HIDDEN_SERVERS_FILE: { schema: str("data/hidden-servers.txt"), description: "Servers the site never shows, one id per line" },
   FISHNET_MOCK: {
     schema: (v) => {
       const m = v?.trim();

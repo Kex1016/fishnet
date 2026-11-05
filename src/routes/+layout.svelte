@@ -19,6 +19,7 @@
   import { NAV, SITE, here, pageTitle, type Crumb } from "#lib/nav.ts";
   import Mark from "#lib/design/Mark.svelte";
   import ThemeToggle from "#lib/design/ThemeToggle.svelte";
+  import Notice from "#lib/design/Notice.svelte";
 
   let { children, data } = $props();
 
@@ -109,7 +110,18 @@
       </div>
     </header>
     <div class="fp-shell__scroll">
+      {#if data.exclusionUnsupported}
+        <div class="fp-page fp-page--notice">
+          <Notice kind="warning">Network totals on this site still include servers that are not listed here, because cakeutils is older than this site. Per-server figures are not affected.</Notice>
+        </div>
+      {/if}
       {@render children()}
     </div>
   </div>
 </div>
+
+<style>
+  .fp-page--notice {
+    padding-bottom: 0;
+  }
+</style>

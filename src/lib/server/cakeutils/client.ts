@@ -25,6 +25,8 @@ import { createClient, type Priority } from "./create.ts";
 import { createCore, type Core, type CoreStatus } from "./core.ts";
 import { hideServers, type ExclusionStatus } from "./hide.ts";
 import { hiddenServers } from "../hidden-servers.ts";
+import { ServerList } from "../hidden-servers-list.ts";
+import { standaloneExclude, standaloneIds } from "../onesoul/standalone.ts";
 
 export type Page = { limit?: number; offset?: number };
 export type PlayersQuery = Page & { online?: boolean; q?: string };
@@ -88,6 +90,7 @@ export { createClient, type ClientOptions, type Priority } from "./create.ts";
 export type { CoreStatus } from "./core.ts";
 
 let instance: (Client & { exclusionStatus(): ExclusionStatus }) | null = null;
+let section: Client | null = null;
 let core: Core | null = null;
 let priorityOf: () => Priority = () => "page";
 
@@ -103,9 +106,38 @@ function shared(): Core {
 /** The site's one client, configured from the environment (mock fetch when FISHNET_MOCK is set). */
 export function api(): Client {
   if (instance) return instance;
-  // hidden servers (hidden-servers.ts) leave every answer here, and network reads ask cakeutils without them
-  instance = hideServers(createClient({ baseUrl: "", token: "", core: shared(), priority: () => priorityOf(), exclude: () => hiddenServers().ids }), hiddenServers);
+  // hidden servers (hidden-servers.ts) and the One Soul servers (onesoul/standalone.ts) leave every answer
+  // here, and network reads ask cakeutils without them (One Soul only while cakeutils still rolls it up)
+  instance = hideServers(
+    createClient({ baseUrl: "", token: "", core: shared(), priority: () => priorityOf(), exclude: () => [...new Set([...hiddenServers().ids, ...standaloneExclude()])] }),
+    regularList
+  );
   return instance;
+}
+
+let listMemo: { hidden: ServerList; ids: readonly string[]; list: ServerList } | null = null;
+/** The hide list of the regular site: the owner's hidden servers plus every One Soul server. */
+function regularList(): ServerList {
+  const hidden = hiddenServers();
+  const ids = standaloneIds();
+  if (listMemo && listMemo.hidden === hidden && listMemo.ids === ids) return listMemo.list;
+  listMemo = { hidden, ids, list: ids.length ? new ServerList([...hidden.ids, ...ids]) : hidden };
+  return listMemo.list;
+}
+
+/**
+ * The client of the One Soul section: the owner's hidden servers still leave it, the One Soul servers do not
+ * (its pages read scope=server:<id> and round:<server>/<cycle>, never the network).
+ */
+export function sectionApi(): Client {
+  if (section) return section;
+  section = hideServers(createClient({ baseUrl: "", token: "", core: shared(), priority: () => priorityOf(), exclude: () => hiddenServers().ids }), hiddenServers);
+  return section;
+}
+
+/** The shared transport (one cache and one request budget for every client). */
+export function sharedCore(): Core {
+  return shared();
 }
 
 /** Whether servers are hidden and whether cakeutils leaves them out of network figures (D-113); for the layout. */

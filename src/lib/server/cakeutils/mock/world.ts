@@ -8,6 +8,7 @@
 // rolls them up mini → server → network exactly like cakeutils does (I3), so no scope is ever a
 // sum of another one in the fixture itself.
 import type { Kind, Segment, StatType, Unit } from "#lib/api/types.ts";
+import { generateOneSoulBusy, generateOneSoulFresh, type OneSoulWorld } from "../../onesoul/mock/world.ts";
 
 export type Scenario = "fresh" | "busy";
 
@@ -59,8 +60,10 @@ export type WorldPlayer = {
     by_mini: Record<string, number>;
     /** time between servers: counts for the network only */
     between_ms: number;
+    /** per One Soul round "<server>/<cycle>" (inside that server's time, a breakdown) */
+    by_round?: Record<string, number>;
   };
-  /** leaf scope ("server:<id>" own play, or "mini:<server>/<mini>") → "<type>|<subject>" → value */
+  /** leaf scope ("server:<id>" own play, "mini:<server>/<mini>", or "round:<server>/<cycle>" for One Soul) → "<type>|<subject>" → value */
   stats: Record<string, Record<string, number>>;
   /**
    * advancements completed, per server id → advancement id → how long ago (D-111). Server scopes only:
@@ -78,6 +81,13 @@ export type WorldAdvancement = {
 
 export type World = {
   scenario: Scenario;
+  /** One Soul at a Time (cakeutils /v2/onesoul*); absent = a proxy without it */
+  onesoul?: OneSoulWorld;
+  /**
+   * servers cakeutils keeps out of the network scope and marks `standalone` on /v2/network (API-EXPANSION
+   * M1); absent = an older proxy that rolls every server up and has no flag
+   */
+  standalone?: string[];
   /** whether /v2/milestones exists on this proxy (false = older proxy, 404) */
   milestones: boolean;
   /** milestone tracking began this long ago; rows reached earlier are backfilled */
@@ -306,8 +316,11 @@ export function generateFresh(): World {
     servers: [
       { id: "lobby", display_name: "Lobby", mc_version: "26.3", platform: "paper", waiting: 0 },
       { id: "survival", display_name: "Survival", mc_version: "26.3", platform: "paper", waiting: 0 },
-      { id: "creative", display_name: "Creative", mc_version: null, platform: null, waiting: 0 }
+      { id: "creative", display_name: "Creative", mc_version: null, platform: null, waiting: 0 },
+      { id: "onesoul", display_name: "One Soul at a Time", mc_version: "26.3", platform: "fabric", waiting: 0 }
     ],
+    onesoul: generateOneSoulFresh(),
+    standalone: ["onesoul"],
     minis: [],
     types: [],
     subjects: [],
@@ -321,7 +334,8 @@ export function generateBusy(): World {
     { id: "lobby", display_name: "Lobby", mc_version: "26.3", platform: "paper", waiting: 0 },
     { id: "survival", display_name: "Survival", mc_version: "26.3", platform: "paper", waiting: 2 },
     { id: "creative", display_name: "Creative", mc_version: "26.3", platform: "fabric", waiting: 0 },
-    { id: "events", display_name: "Events", mc_version: null, platform: null, waiting: 0 }
+    { id: "events", display_name: "Events", mc_version: null, platform: null, waiting: 0 },
+    { id: "onesoul", display_name: "One Soul at a Time", mc_version: "26.3", platform: "fabric", waiting: 0 }
   ];
   const minis: WorldMini[] = [
     { id: "skyblock-1", display_name: "Skyblock 1", server: "survival", public: true },
@@ -469,9 +483,36 @@ export function generateBusy(): World {
     stats: { "server:survival": { "minecraft:mined|minecraft:stone": 17, "minecraft:custom|minecraft:walk_one_cm": 84_000 } }
   });
 
+  // One Soul: the first eleven players sign up; each soul's run stats are its round scope's leaf, every
+  // sign-up spectates (playtime on the server, per round), the soul who plays now is online there
+  const onesoul = generateOneSoulBusy(players.slice(0, 11).map((p) => ({ uuid: p.uuid, name: p.name })));
+  for (const p of players) {
+    const regs = onesoul.registrations.filter((r) => r.uuid === p.uuid);
+    if (!regs.length) continue;
+    const by_round: Record<string, number> = {};
+    for (const r of regs) by_round[`onesoul/${r.round}`] = Math.round((2 + (fnv1a(`os:${p.name}:${r.round}`) % 20)) * HOUR);
+    for (const s of onesoul.souls.filter((x) => x.uuid === p.uuid)) {
+      const key = `round:onesoul/${s.cycle}`;
+      const bag = (p.stats[key] ??= {});
+      for (const st of s.stats) bag[`${st.type}|${st.subject}`] = (bag[`${st.type}|${st.subject}`] ?? 0) + st.value;
+      by_round[`onesoul/${s.cycle}`] += s.ended_ago === null ? s.started_ago : s.started_ago - s.ended_ago;
+    }
+    p.playtime.by_round = by_round;
+    p.playtime.by_server.onesoul = Object.values(by_round).reduce((a, b) => a + b, 0) + HOUR; // + prep time in the void
+    const playing = onesoul.souls.find((x) => x.outcome === "playing");
+    if (playing?.uuid === p.uuid) {
+      p.online = true;
+      p.server = "onesoul";
+      p.mini = null;
+      p.last_seen_ago_ms = 0;
+    }
+  }
+
   const earned = new Set(players.flatMap((p) => Object.values(p.advancements ?? {}).flatMap((bag) => Object.keys(bag))));
   return {
     scenario: "busy",
+    onesoul,
+    standalone: ["onesoul"],
     milestones: true,
     milestones_since_ago_ms: 21 * DAY,
     advancements: true,

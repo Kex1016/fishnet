@@ -54,6 +54,9 @@ export function policyFor(path: string): Policy {
   if (p.startsWith("/v2/leaderboards/")) return POLICIES.board;
   if (p === "/v2/stats/types" || p.startsWith("/v2/stats/subjects")) return POLICIES.catalogue;
   if (p === "/v2/milestones" || p.startsWith("/v2/milestones/")) return POLICIES.feed;
+  // One Soul: the status and the live card are live data; the lists and journals change at a feed's pace
+  if (p.startsWith("/v2/onesoul/") && p !== "/v2/onesoul/live") return POLICIES.feed;
+  if (/^\/v2\/players\/[^/]+\/onesoul$/.test(p)) return POLICIES.player;
   if (p === "/v2/players" || p.startsWith("/v2/players/") || p.startsWith("/v2/players:")) return POLICIES.player;
   return POLICIES.live;
 }

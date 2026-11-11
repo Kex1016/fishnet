@@ -27,7 +27,47 @@
    "mc_version": null,
    "platform": null,
    "waiting": 0
+  },
+  {
+   "id": "onesoul",
+   "display_name": "One Soul at a Time",
+   "mc_version": "26.3",
+   "platform": "fabric",
+   "waiting": 0
   }
+ ],
+ "onesoul": {
+  "server": "onesoul",
+  "display_name": "One Soul at a Time",
+  "features": {
+   "live": true,
+   "tracking": true,
+   "map": true,
+   "rounds_scope": true
+  },
+  "cycle": 1,
+  "state": "prep",
+  "phase_ends_ago": -172800000,
+  "current": null,
+  "spawn": null,
+  "rounds": [
+   {
+    "cycle": 1,
+    "prep_started_ago": 86400000,
+    "started_ago": null,
+    "ended_ago": null,
+    "seed": null,
+    "archive": null
+   }
+  ],
+  "souls": [],
+  "graves": [],
+  "registrations": [],
+  "pranks": [],
+  "waystones": []
+ },
+ "standalone": [
+  "onesoul"
  ],
  "minis": [],
  "types": [],

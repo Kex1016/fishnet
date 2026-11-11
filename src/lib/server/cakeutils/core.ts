@@ -287,7 +287,7 @@ export function createCore(o: CoreOptions): Core {
       lastError = `refused (${status})`;
       if (t - lastRefusedLog > 10 * 60_000) {
         lastRefusedLog = t;
-        log(`cakeutils refused ${tokenId(o.token)}: ${status} (check the token and its scopes: read:players read:stats)`);
+        log(`cakeutils refused ${tokenId(o.token)}: ${status} (check the token and its scopes: read:players read:stats read:onesoul)`);
       }
       return fallback<T>(key, policy, "down", { status, problem: await readProblem(res) }, t + cooldown);
     }

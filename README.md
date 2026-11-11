@@ -90,6 +90,12 @@ Create the token on the proxy with the read scopes and the rate the site uses:
 cakectl token create fishnet read:players read:stats read:onesoul --rate 600/120
 ```
 
+Journals are drawn as the game's book with the book texture, page arrows and bitmap font from the
+Minecraft client jar, which David allowed bundling. They live in `static/mc/`, and the glyph advances are in
+`src/lib/onesoul/book/glyphs.json`. To refresh both from a newer jar, or to swap in a resource pack's book,
+run `python3 -I scripts/mc-assets.py <client.jar>` (it needs Pillow). Characters that are not in the bitmap
+fonts are drawn in a system font with Unifont's advance, because the client jar does not ship Unifont.
+
 ## Docker
 
 ```sh

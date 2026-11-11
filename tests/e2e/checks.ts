@@ -111,6 +111,9 @@ export const CHECKS: Check[] = [
         expect(!/Died in|Waited for this turn/.test(turn), "the living soul's page shows a position or a waiting time");
         const j = await ctx.get(`/one-soul/rounds/${m[1]}/${m[2]}/journal`);
         expect(j.status === 404, `the living soul's journal answered ${j.status}`);
+        const name = />([^<]+)<\/a>/.exec(row.slice(m.index))?.[1];
+        const map = await ctx.get(`/one-soul/map?round=${m[1]}`);
+        if (map.status === 200 && name) expect(!(await map.text()).includes(name), "the map names the living soul (a trail, a death or a waystone they found)");
       }
       return m ? `living soul at round ${m[1]} turn ${m[2]}` : "nobody playing";
     }

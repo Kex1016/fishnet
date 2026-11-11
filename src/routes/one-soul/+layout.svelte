@@ -12,6 +12,8 @@
     { href: "/one-soul/chronicle", label: "Chronicle" },
     { href: "/one-soul/rounds", label: "Rounds" },
     { href: "/one-soul/graveyard", label: "Graveyard" },
+    { href: "/one-soul/map", label: "Map", needs: "map" },
+    { href: "/one-soul/charts", label: "Charts" },
     { href: "/one-soul/timeline", label: "Timeline" },
     { href: "/one-soul/sign-ups", label: "Sign-ups" },
     { href: "/one-soul/records", label: "Records" }

@@ -4,6 +4,7 @@
   import Face from "#lib/design/Face.svelte";
   import { StatTile } from "#lib/charts/index.ts";
   import Outcome from "#lib/onesoul/Outcome.svelte";
+  import WorldMap from "#lib/onesoul/WorldMap.svelte";
   import { dimLabel, life, titleId } from "#lib/onesoul/format.ts";
   import { osHref } from "#lib/onesoul/links.ts";
   import { dateTime, day } from "#lib/format/dates.ts";
@@ -46,6 +47,15 @@
     <section class="fp-section">
       <h2 class="t-title-3">{data.playing ? "This life so far" : "This life"}</h2>
       <div class="fp-tiles os-tiles">{#each s.headline as h (h.id)}<StatTile label={h.title} value={h.display} />{/each}</div>
+    </section>
+  {/if}
+
+  {#if data.maps?.length}
+    <section class="fp-section">
+      <h2 class="t-title-3">Where this life went</h2>
+      <div class="os-maps">
+        {#each data.maps as m (m.dim)}<div class="fp-card os-mapcard"><WorldMap map={m} /></div>{/each}
+      </div>
     </section>
   {/if}
 
@@ -120,6 +130,14 @@
   }
   .os-tiles {
     grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  }
+  .os-maps {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 360px), 1fr));
+    gap: var(--space-4);
+  }
+  .os-mapcard {
+    padding: var(--space-4);
   }
   .os-grave {
     display: flex;

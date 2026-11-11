@@ -116,6 +116,26 @@ export const CHECKS: Check[] = [
     }
   },
   {
+    name: "a journal opens as the game's book, page by page, with its assets served",
+    on: ALL,
+    run: async (ctx) => {
+      if ((await ctx.get("/one-soul")).status !== 200) return "One Soul off";
+      const rec = await ctx.html("/one-soul/records");
+      const m = /href="(\/one-soul\/rounds\/\d+\/\d+\/journal)"/.exec(rec);
+      if (!m) return "no journal yet";
+      const h = await ctx.html(m[1]);
+      expect(/class="mcb[ "]/.test(h), "the journal is not drawn as a book");
+      expect(/aria-label="Next page"[^>]*>|href="[^"]*page=2"/.test(h) || !/Page 1 of [2-9]/.test(h), "a multi-page journal has no link to page 2");
+      const two = await ctx.html(`${m[1]}?page=2`);
+      expect(/, page 2 of \d+"/.test(two), "?page=2 does not open page 2");
+      for (const a of ["/mc/book.png", "/mc/font/ascii.png", "/mc/font/accented.png", "/mc/font/nonlatin_european.png", "/mc/page_forward.png"]) {
+        const r = await ctx.get(a);
+        expect(r.status === 200 && (r.headers.get("content-type") ?? "").startsWith("image/png"), `${a} answered ${r.status}`);
+      }
+      return m[1];
+    }
+  },
+  {
     name: "/healthz describes the site",
     on: ALL,
     run: async (ctx) => {

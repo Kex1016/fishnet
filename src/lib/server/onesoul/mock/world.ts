@@ -284,7 +284,7 @@ export function generateOneSoulBusy(people: Who[]): OneSoulWorld {
       sc_result: null,
       outcome,
       grave_id: gid,
-      journal: playing ? { title: "Do not read", pages: ["A living soul's journal: never served."], published_ago: 0 } : i === 1 ? null : { title: `${who.name}'s notes`, pages: ["Round two.\n\nThe nether is loud.", "If you find my grave, take the bread."], published_ago: (end ?? 0) - MIN },
+      journal: playing ? { title: "Do not read", pages: ["A living soul's journal: never served."], published_ago: 0 } : i === 1 ? null : { title: `${who.name}'s notes`, pages: ["Round two.\n\nThe nether is loud.", "If you find my grave, take the bread.", "Ελληνικά, русский, 日本語のページ.\n\u0007Bell and\ttab dropped.", ""], published_ago: (end ?? 0) - MIN },
       waited_ms: playing ? null : Math.round((i + 2) * 5 * HOUR),
       stats: runStats(r, playing ? t / HOUR : hours),
       trail: trailOf(r, t, end ?? 0, playing ? [OW, NE] : dim === END ? [OW, END] : [OW], playing ? null : { x: pos.x, z: pos.z })

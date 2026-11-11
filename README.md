@@ -30,7 +30,7 @@ Copy `.env.example` to `.env` and set the values. `.env` is never committed.
 | Variable | What it does | Default |
 |---|---|---|
 | `CAKEUTILS_API_URL` | The cakeutils v2 API, `scheme://host:port` | `http://127.0.0.1:8085` |
-| `CAKEUTILS_API_TOKEN` | Bearer token with `read:players read:stats`; never logged, never sent to a browser | none |
+| `CAKEUTILS_API_TOKEN` | Bearer token with `read:players read:stats read:onesoul` (One Soul section; without `read:onesoul` it is hidden); never logged, never sent to a browser | none |
 | `CAKEUTILS_RATE` | Requests per minute the site allows itself, below the token's own limit | `400` |
 | `ORIGIN` | The public origin, for absolute links and the origin check | `http://localhost:3000` |
 | `FISHNET_DATA_DIR` | Recorder database and caches | `data` |
@@ -75,10 +75,19 @@ says so where they show:
 History the recorder took before the server was hidden is kept but no longer shown for that server;
 network charts from before then still count its players.
 
+### One Soul
+
+One Soul at a Time has its own section at `/one-soul`, with its own look. The rest of the site never shows
+it. Servers that cakeutils marks `standalone` in `/v2/network`, and the servers `/v2/onesoul` lists, are
+hidden everywhere outside that section, the same way as the hide list. If cakeutils is too old to keep them
+out of network figures itself, the site asks for network figures with `exclude=` instead. The section shows
+up only when the proxy has `/v2/onesoul` and the token has `read:onesoul`. Newer routes, such as the live
+card, rounds and maps, are found by probing: a widget whose route answers 404 is left out.
+
 Create the token on the proxy with the read scopes and the rate the site uses:
 
 ```sh
-cakectl token create fishnet read:players read:stats --rate 600/120
+cakectl token create fishnet read:players read:stats read:onesoul --rate 600/120
 ```
 
 ## Docker

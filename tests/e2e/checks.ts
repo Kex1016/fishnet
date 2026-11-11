@@ -71,6 +71,25 @@ export const CHECKS: Check[] = [
     }
   },
   {
+    name: "One Soul has its own section and never shows in the regular one",
+    on: ALL,
+    run: async (ctx) => {
+      const r = await ctx.get("/one-soul");
+      if (ctx.scenario !== "live") expect(r.status === 200, `/one-soul answered ${r.status}`);
+      const on = r.status === 200;
+      const home = await ctx.html("/");
+      expect(/href="\/one-soul"/.test(home) === on, on ? "One Soul is on but the nav has no entry" : "One Soul is off but the nav links to it");
+      expect(/<html[^>]*data-realm=""/.test(home), "the regular site is not in the regular realm");
+      if (on) expect(/<html[^>]*data-realm="onesoul"/.test(await ctx.html("/one-soul")), "a direct load of /one-soul is not in the One Soul realm on first paint");
+      for (const p of ["/", "/servers", "/leaderboards", "/stats"]) {
+        const h = await ctx.html(p);
+        expect(!/href="\/servers\/onesoul"|scope=server(:|%3A)onesoul/.test(h), `${p} links to the One Soul server`);
+      }
+      expect((await ctx.get("/servers/onesoul")).status === 404, "the One Soul server has a page in the regular section");
+      return ctx.scenario === "live" ? `One Soul ${on ? "on" : "off"}` : undefined;
+    }
+  },
+  {
     name: "/healthz describes the site",
     on: ALL,
     run: async (ctx) => {

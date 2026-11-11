@@ -10,18 +10,24 @@
   import "#lib/design/tokens.css";
   import "#lib/design/base.css";
   import "#lib/design/components.css";
+  import "@fontsource/cormorant-garamond/latin-700.css";
+  import "#lib/onesoul/realm.css";
   import "../app.css";
 
   import { afterNavigate } from "$app/navigation";
   import { page } from "$app/state";
   import { onMount, untrack } from "svelte";
   import { PanelLeft, Search } from "@lucide/svelte";
-  import { NAV, SITE, here, pageTitle, type Crumb } from "#lib/nav.ts";
+  import { NAV, SITE, here, pageTitle, type Crumb, type NavItem } from "#lib/nav.ts";
   import Mark from "#lib/design/Mark.svelte";
   import ThemeToggle from "#lib/design/ThemeToggle.svelte";
   import Notice from "#lib/design/Notice.svelte";
 
   let { children, data } = $props();
+
+  // the animated switch into and out of the One Soul section (WEBSITE-BRIEF §4)
+  import { installRealmTransition } from "#lib/onesoul/transition.ts";
+  installRealmTransition();
 
   // the owner's stat names (admin.db): the same set the server used, so hydration matches
   import { setLabelOverrides } from "#lib/format/labels.ts";
@@ -61,6 +67,7 @@
     }
   }
 
+  const shows = (n: NavItem) => (!n.needsMilestones || data.milestones) && (!n.needsAdvancements || data.advancements) && (!n.needsOneSoul || data.onesoul);
   const crumbs = $derived((page.data.crumbs ?? []) as Crumb[]);
   const title = $derived(pageTitle(page.data.title ?? crumbs.at(-1)?.label));
 </script>
@@ -74,15 +81,13 @@
   <aside class="fp-side" data-state={side}>
     <div class="fp-side__in">
       <a class="fp-brand" href="/" aria-label="{SITE.name} home"><Mark class="fp-brand__mark" /><span class="fp-brand__name">{SITE.name}</span></a>
-      {#each NAV as group, gi (gi)}
+      {#each NAV.map((g) => ({ ...g, items: g.items.filter(shows) })).filter((g) => g.items.length) as group, gi (gi)}
         <nav class="fp-nav-group" aria-label={group.label ?? "Main"}>
           {#if group.label}<span class="fp-nav-group__label">{group.label}</span>{/if}
           {#each group.items as n (n.href)}
-            {#if (!n.needsMilestones || data.milestones) && (!n.needsAdvancements || data.advancements)}
-              <a class="fp-nav" href={n.href} aria-current={here(n.href, page.url.pathname) ? "page" : undefined} title={n.label}>
-                <n.icon class="fp-ico" strokeWidth={1.4} /><span class="fp-nav__label">{n.label}</span>
-              </a>
-            {/if}
+            <a class="fp-nav" href={n.href} aria-current={here(n.href, page.url.pathname) ? "page" : undefined} title={n.label}>
+              <n.icon class="fp-ico" strokeWidth={1.4} /><span class="fp-nav__label">{n.label}</span>
+            </a>
           {/each}
         </nav>
       {/each}

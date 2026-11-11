@@ -7,12 +7,15 @@ import { apiToken } from "#lib/server/env.ts";
 import { startRecorder } from "#lib/server/recorder/index.ts";
 import { labelOverrides } from "#lib/server/admin/index.ts";
 import { setLabelOverrides } from "#lib/format/labels.ts";
+import { ensureStandalone } from "#lib/server/onesoul/index.ts";
+import { realmOf } from "#lib/onesoul/realm.ts";
 
 export const init: ServerInit = async () => {
   const c = config(); // throws (fishnet is NOT running: ...) when FISHNET_MOCK is set on a production build
   if (c.mock) console.info(`fishnet: mock mode "${c.mock}", no cakeutils calls`);
   else console.info(`fishnet: cakeutils at ${displayUrl(c.apiUrl)} as ${tokenId(apiToken())}`);
   startRecorder(); // W2: the recorder's scheduler (PLAN §3.3)
+  void ensureStandalone(); // which servers are One Soul, before the recorder's first network read
 };
 
 export const handle: Handle = async ({ event, resolve }) => {
@@ -22,8 +25,13 @@ export const handle: Handle = async ({ event, resolve }) => {
   // the owner's stat names (src/routes/admin/names), before any load builds a label; the root layout
   // hands the same set to the browser
   setLabelOverrides(labelOverrides());
+  // One Soul servers leave the regular site (onesoul/standalone.ts): known before any load reads the network
+  await ensureStandalone();
+  // the realm is on the server-rendered <html>, so a direct load of a One Soul page never flashes the other theme
+  const realm = realmOf(event.url.pathname);
   const response = await resolve(event, {
-    transformPageChunk: ({ html }) => html.replace("%fishnet.theme%", event.locals.theme === "system" ? "" : event.locals.theme)
+    transformPageChunk: ({ html }) =>
+      html.replace("%fishnet.theme%", event.locals.theme === "system" ? "" : event.locals.theme).replace("%fishnet.realm%", realm)
   });
   response.headers.set("referrer-policy", "strict-origin-when-cross-origin");
   response.headers.set("x-content-type-options", "nosniff");

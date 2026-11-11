@@ -32,7 +32,7 @@ const TOKEN = /\bcu_[a-z0-9]+_[a-z0-9]+/i;
 const LEAK = (s: string) => TOKEN.test(s) || s.includes("CAKEUTILS_API_TOKEN");
 
 /** The pages a crawl always visits, plus a few links discovered from each hub page. */
-const HUBS = ["/", "/servers", "/players", "/leaderboards", "/stats", "/milestones", "/about"];
+const HUBS = ["/", "/servers", "/players", "/leaderboards", "/stats", "/milestones", "/about", "/one-soul"];
 const PER_HUB = 6;
 
 export class Ctx {

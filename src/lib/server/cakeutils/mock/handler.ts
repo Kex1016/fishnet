@@ -11,8 +11,9 @@ import type {
 } from "#lib/api/types.ts";
 import { formatStat, durationMs } from "#lib/format/stat-display.ts";
 import { fnv1a, hex, type World, type WorldPlayer, type WorldSubject } from "./world.ts";
+import { handleOneSoul } from "../../onesoul/mock/handler.ts";
 
-const SCOPE_RE = /^(network|server:[A-Za-z0-9._-]{1,64}|mini:[A-Za-z0-9._-]{1,64}\/[^/]{1,64})$/;
+const SCOPE_RE = /^(network|server:[A-Za-z0-9._-]{1,64}|mini:[A-Za-z0-9._-]{1,64}\/[^/]{1,64}|round:[A-Za-z0-9._-]{1,64}\/[0-9]{1,9})$/;
 
 export const COUNT_THRESHOLDS = [1, 10, 50, 100, 250, 500, 1_000, 2_500, 5_000, 10_000, 25_000, 50_000, 100_000, 250_000, 500_000, 1_000_000, 2_500_000, 5_000_000];
 export const DISTANCE_THRESHOLDS = [10_000, 50_000, 100_000, 500_000, 1_000_000, 2_500_000, 5_000_000, 10_000_000, 25_000_000, 50_000_000, 100_000_000, 250_000_000, 500_000_000, 1_000_000_000];
@@ -36,6 +37,8 @@ function rollup(world: World): Rolled {
   const recordedTypes = new Set<string>();
   const subjectsByType = new Map<string, Set<string>>();
   const miniToServer = new Map(world.minis.map((m) => [`${m.server}/${m.id}`, m.server]));
+  // standalone servers (API-EXPANSION M1) stay in their own scopes, never in the network
+  const standalone = new Set(world.standalone ?? []);
   for (const p of world.players) {
     const scopes = new Map<string, Values>();
     const add = (scope: string, key: string, v: number) => {
@@ -51,14 +54,22 @@ function rollup(world: World): Rolled {
         recordedTypes.add(type);
         if (!subjectsByType.has(type)) subjectsByType.set(type, new Set());
         subjectsByType.get(type)!.add(subject);
+        let server: string;
         if (leaf.startsWith("mini:")) {
           const m = leaf.slice(5);
+          server = miniToServer.get(m) ?? m.split("/")[0];
           add(leaf, key, v);
-          add(`server:${miniToServer.get(m) ?? m.split("/")[0]}`, key, v);
+          add(`server:${server}`, key, v);
+        } else if (leaf.startsWith("round:")) {
+          // a One Soul round is a breakdown of its server, like a mini (I3)
+          server = leaf.slice(6).split("/")[0];
+          add(leaf, key, v);
+          add(`server:${server}`, key, v);
         } else {
+          server = leaf.slice(7);
           add(leaf, key, v);
         }
-        add("network", key, v);
+        if (!standalone.has(server)) add("network", key, v);
       }
     }
     byPlayer.set(p.uuid, scopes);
@@ -106,12 +117,19 @@ function paging(url: URL): { limit: number; offset: number } | Response {
   return { limit, offset };
 }
 
-type ScopeInfo = { scope: string; seen: boolean; server?: string; mini?: string };
+type ScopeInfo = { scope: string; seen: boolean; server?: string; mini?: string; round?: number };
 
 function scopeOf(world: World, url: URL): ScopeInfo | Response {
   const s = url.searchParams.get("scope") ?? "network";
   if (!SCOPE_RE.test(s)) return problem(400, "bad_request", "scope must be network, server:<id> or mini:<server>/<mini>");
   if (s === "network") return { scope: s, seen: true };
+  if (s.startsWith("round:")) {
+    // round scopes exist on a proxy with WE-10 only; an older one answers 400 like any unknown scope kind
+    if (!world.onesoul?.features.rounds_scope) return problem(400, "bad_request", "scope must be network, server:<id> or mini:<server>/<mini>");
+    const [server, cycle] = s.slice(6).split("/");
+    const seen = world.onesoul.server === server && world.onesoul.rounds.some((r) => r.cycle === Number(cycle) && r.started_ago !== null);
+    return { scope: s, seen, server, round: Number(cycle) };
+  }
   if (s.startsWith("server:")) {
     const id = s.slice(7);
     return { scope: s, seen: world.servers.some((x) => x.id === id), server: id };
@@ -155,6 +173,10 @@ function valuesIn(world: World, p: WorldPlayer, scope: ScopeInfo): Values {
 
 function playtimeOf(world: World, p: WorldPlayer, scope: ScopeInfo, excluded: string[] = []): Playtime {
   const publicMini = (k: string) => world.minis.some((m) => `${m.server}/${m.id}` === k && m.public);
+  if (scope.round !== undefined) {
+    const v = scope.seen ? (p.playtime.by_round?.[`${scope.server}/${scope.round}`] ?? 0) : 0;
+    return { scope: scope.scope, excluded: [], total_ms: v, by_server: v ? { [scope.server!]: v } : {}, by_mini: {} };
+  }
   if (scope.mini) {
     const v = scope.seen ? (p.playtime.by_mini[`${scope.server}/${scope.mini}`] ?? 0) : 0;
     return { scope: scope.scope, excluded: [], total_ms: v, by_server: {}, by_mini: v ? { [`${scope.server}/${scope.mini}`]: v } : {} };
@@ -165,7 +187,8 @@ function playtimeOf(world: World, p: WorldPlayer, scope: ScopeInfo, excluded: st
     for (const [k, ms] of Object.entries(p.playtime.by_mini)) if (k.startsWith(`${scope.server}/`) && publicMini(k)) by_mini[k] = ms;
     return { scope: scope.scope, excluded: [], total_ms: v, by_server: v ? { [scope.server]: v } : {}, by_mini: scope.seen ? by_mini : {} };
   }
-  const total = Object.values(p.playtime.by_server).reduce((a, b) => a + b, 0) + p.playtime.between_ms;
+  const standalone = new Set(world.standalone ?? []);
+  const total = Object.entries(p.playtime.by_server).reduce((a, [id, ms]) => a + (standalone.has(id) ? 0 : ms), 0) + p.playtime.between_ms;
   const by_mini: Record<string, number> = {};
   for (const [k, ms] of Object.entries(p.playtime.by_mini)) if (publicMini(k)) by_mini[k] = ms;
   return { scope: "network", excluded, total_ms: total, by_server: { ...p.playtime.by_server }, by_mini };
@@ -373,8 +396,8 @@ function worldWithout(world: World, ex: string[]): World {
   if (hit) return hit;
   const gone = new Set(ex);
   const onGone = (leaf: string) => {
-    const m = /^(?:server:([^/]+)|mini:([^/]+)\/.+)$/.exec(leaf);
-    return !!m && gone.has(m[1] ?? m[2]);
+    const m = /^(?:server:([^/]+)|mini:([^/]+)\/.+|round:([^/]+)\/.+)$/.exec(leaf);
+    return !!m && gone.has(m[1] ?? m[2] ?? m[3]);
   };
   const w: World = {
     ...world,
@@ -421,6 +444,16 @@ export async function handleMock(world: World, req: Request): Promise<Response> 
   }
   const seg = path.slice(4).split("/").filter(Boolean).map(decodeURIComponent);
 
+  // One Soul (built and planned routes): its own world, its own rules
+  const os = handleOneSoul(all.onesoul, req, url, seg, {
+    json,
+    problem,
+    paging,
+    statRow: (type, subject, value) => statValue(all, type, subject, value),
+    findPlayer: (ref) => findPlayer(all, ref)
+  });
+  if (os) return os;
+
   if (seg[0] === "openapi.json" && seg.length === 1) {
     const { default: doc } = await import("../../../../../openapi.json", { with: { type: "json" } });
     return json(req, doc);
@@ -434,7 +467,9 @@ export async function handleMock(world: World, req: Request): Promise<Response> 
       online: world.players.filter((p) => p.online && p.server === s.id).length,
       waiting: s.waiting,
       mc_version: s.mc_version,
-      platform: s.platform
+      platform: s.platform,
+      // API-EXPANSION M1: only a proxy that has the flag sends it
+      ...(world.standalone ? { standalone: world.standalone.includes(s.id), game: world.onesoul?.server === s.id ? "onesoul" : null } : {})
     }));
     const data: Network = { servers, total_online: world.players.filter((p) => p.online).length };
     return json(req, data);

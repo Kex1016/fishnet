@@ -1,0 +1,121 @@
+/* The One Soul realm (WEBSITE-BRIEF §4): candle light and soul flame on near-black, with a parchment light
+   variant. Only tokens change; every component keeps reading var(--…), so the whole UI switches with the
+   attribute `data-realm="onesoul"` on <html>. Sharp "pixel craft" corners (0 to 2 px), harder shadows, a
+   serif display face for headings. Contrast: text, muted and faint pass AA on bg and surface in both
+   variants; states always carry a word or an icon, never colour alone. */
+
+/* Registered so the colours interpolate when the realm changes without the View Transitions API. */
+@property --bg { syntax: "<color>"; inherits: true; initial-value: #171613; }
+@property --sunk { syntax: "<color>"; inherits: true; initial-value: #100f0d; }
+@property --surface { syntax: "<color>"; inherits: true; initial-value: #1f1d1a; }
+@property --raised { syntax: "<color>"; inherits: true; initial-value: #2a2723; }
+@property --line { syntax: "<color>"; inherits: true; initial-value: #37332d; }
+@property --line-soft { syntax: "<color>"; inherits: true; initial-value: #2b2824; }
+@property --text { syntax: "<color>"; inherits: true; initial-value: #ece7df; }
+@property --muted { syntax: "<color>"; inherits: true; initial-value: #aaa397; }
+@property --faint { syntax: "<color>"; inherits: true; initial-value: #867d71; }
+@property --acc { syntax: "<color>"; inherits: true; initial-value: #7fc4d9; }
+@property --acc-ink { syntax: "<color>"; inherits: true; initial-value: #8fd0e3; }
+@property --acc-viz { syntax: "<color>"; inherits: true; initial-value: #6fb9cf; }
+
+:root {
+  transition-property: --bg, --sunk, --surface, --raised, --line, --line-soft, --text, --muted, --faint, --acc, --acc-ink, --acc-viz;
+  transition-duration: 400ms;
+  transition-timing-function: cubic-bezier(0.2, 0.6, 0.2, 1);
+}
+/* during a view transition the browser animates snapshots: no token interpolation under it */
+:root.realm-vt, :root.realm-vt-fade { transition: none; }
+@media (prefers-reduced-motion: reduce) {
+  :root { transition: none; }
+}
+
+/* ---- the realm, dark (default) */
+:root[data-realm="onesoul"] {
+  color-scheme: dark;
+  --font-head: "Cormorant Garamond", "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+
+  --bg: #121014;
+  --sunk: #0b0a0d;
+  --surface: #1a171c;
+  --raised: #252027;
+  --line: #3b3239;
+  --line-soft: #2a2329;
+  --text: #ece2cc;
+  --muted: #b9aa90;
+  --faint: #9a8c75;
+
+  /* candle light is the accent; soul flame marks the living soul */
+  --acc: #e6b45e;
+  --acc-ink: #f0c47a;
+  --acc-soft: rgba(230, 180, 94, 0.15);
+  --acc-viz: #d9a24a;
+  --acc-heat-1: #3a2c1a;
+  --acc-heat-2: #6a4b22;
+  --acc-heat-3: #a5722e;
+  --acc-heat-4: #f0c47a;
+  --on-acc: #1b1206;
+  --soul: #5fd8d2;
+  --soul-ink: #7fe6e0;
+  --soul-soft: rgba(95, 216, 210, 0.14);
+
+  --success: #9ccf8f; --success-ink: #b0dca4; --success-soft: rgba(156, 207, 143, 0.14);
+  --warning: #e6b45e; --warning-ink: #f0c47a; --warning-soft: rgba(230, 180, 94, 0.14);
+  --error: #e0806e; --error-ink: #ee9a8a; --error-soft: rgba(224, 128, 110, 0.15);
+
+  --radius-xs: 0px; --radius-sm: 1px; --radius-md: 2px; --radius-lg: 2px; --radius-xl: 2px; --radius-2xl: 2px; --radius-3xl: 2px;
+  --shadow-card: 0 0 0 1px rgba(0, 0, 0, 0.5), 3px 3px 0 rgba(0, 0, 0, 0.45);
+  --shadow-pill: 2px 2px 0 rgba(0, 0, 0, 0.45);
+  --shadow-float: 4px 4px 0 rgba(0, 0, 0, 0.55);
+  --shadow-modal: 6px 6px 0 rgba(0, 0, 0, 0.6);
+  --hover-tint: rgba(236, 226, 204, 0.08);
+  --press-tint: rgba(236, 226, 204, 0.16);
+  --focus-ring: 0 0 0 2px var(--bg), 0 0 0 4px var(--acc-ink);
+  --duration-base: 180ms; --duration-slow: 260ms;
+}
+
+/* ---- the realm, light: parchment */
+@media (prefers-color-scheme: light) {
+  :root[data-realm="onesoul"]:not([data-theme="dark"]) {
+    color-scheme: light;
+    --bg: #efe5cf; --sunk: #e4d8bd; --surface: #f7efdc; --raised: #e9dcc0;
+    --line: #c9b691; --line-soft: #dccca9;
+    --text: #2a1f14; --muted: #5e4c35; --faint: #6c5841;
+    --acc: #b07a22; --acc-ink: #7a4f0e; --acc-soft: rgba(122, 79, 14, 0.13); --acc-viz: #9a6619;
+    --acc-heat-1: #e6d3ac; --acc-heat-2: #cfae6e; --acc-heat-3: #a87a2c; --acc-heat-4: #6e4609; --on-acc: #fff8e8;
+    --soul: #1f8f8a; --soul-ink: #146a66; --soul-soft: rgba(20, 106, 102, 0.12);
+    --success: #4f8a3f; --success-ink: #33642a; --success-soft: rgba(51, 100, 42, 0.12);
+    --warning: #b07a22; --warning-ink: #7a4f0e; --warning-soft: rgba(122, 79, 14, 0.12);
+    --error: #b4483a; --error-ink: #8e2f22; --error-soft: rgba(142, 47, 34, 0.12);
+    --shadow-card: 0 0 0 1px rgba(80, 55, 20, 0.18), 3px 3px 0 rgba(80, 55, 20, 0.14);
+    --shadow-pill: 2px 2px 0 rgba(80, 55, 20, 0.16);
+    --shadow-float: 4px 4px 0 rgba(80, 55, 20, 0.2);
+    --hover-tint: rgba(42, 31, 20, 0.07); --press-tint: rgba(42, 31, 20, 0.14);
+  }
+}
+:root[data-realm="onesoul"][data-theme="light"] {
+  color-scheme: light;
+  --bg: #efe5cf; --sunk: #e4d8bd; --surface: #f7efdc; --raised: #e9dcc0;
+  --line: #c9b691; --line-soft: #dccca9;
+  --text: #2a1f14; --muted: #5e4c35; --faint: #6c5841;
+  --acc: #b07a22; --acc-ink: #7a4f0e; --acc-soft: rgba(122, 79, 14, 0.13); --acc-viz: #9a6619;
+  --acc-heat-1: #e6d3ac; --acc-heat-2: #cfae6e; --acc-heat-3: #a87a2c; --acc-heat-4: #6e4609; --on-acc: #fff8e8;
+  --soul: #1f8f8a; --soul-ink: #146a66; --soul-soft: rgba(20, 106, 102, 0.12);
+  --success: #4f8a3f; --success-ink: #33642a; --success-soft: rgba(51, 100, 42, 0.12);
+  --warning: #b07a22; --warning-ink: #7a4f0e; --warning-soft: rgba(122, 79, 14, 0.12);
+  --error: #b4483a; --error-ink: #8e2f22; --error-soft: rgba(142, 47, 34, 0.12);
+  --shadow-card: 0 0 0 1px rgba(80, 55, 20, 0.18), 3px 3px 0 rgba(80, 55, 20, 0.14);
+  --shadow-pill: 2px 2px 0 rgba(80, 55, 20, 0.16);
+  --shadow-float: 4px 4px 0 rgba(80, 55, 20, 0.2);
+  --hover-tint: rgba(42, 31, 20, 0.07); --press-tint: rgba(42, 31, 20, 0.14);
+}
+
+/* headings take the serif display face a little larger; numbers stay in the mono face */
+:root[data-realm="onesoul"] :is(h1, h2, .fp-card__title, .t-display, .t-title) { letter-spacing: 0.01em; }
+
+/* ---- the reveal (transition.ts): the new realm grows in a circle over the old one */
+:root.realm-vt::view-transition-old(root),
+:root.realm-vt::view-transition-new(root) { animation: none; mix-blend-mode: normal; }
+:root.realm-vt::view-transition-new(root) { z-index: 1; }
+:root.realm-vt-fade::view-transition-old(root),
+:root.realm-vt-fade::view-transition-new(root) { animation-duration: 150ms; }
+::view-transition { pointer-events: none; }

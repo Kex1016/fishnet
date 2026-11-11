@@ -7,7 +7,15 @@
   let { children, data } = $props();
 
   type Tab = { href: string; label: string; needs?: "tracking" | "map" };
-  const TABS: Tab[] = [{ href: "/one-soul", label: "Overview" }];
+  const TABS: Tab[] = [
+    { href: "/one-soul", label: "Overview" },
+    { href: "/one-soul/chronicle", label: "Chronicle" },
+    { href: "/one-soul/rounds", label: "Rounds" },
+    { href: "/one-soul/graveyard", label: "Graveyard" },
+    { href: "/one-soul/timeline", label: "Timeline" },
+    { href: "/one-soul/sign-ups", label: "Sign-ups" },
+    { href: "/one-soul/records", label: "Records" }
+  ];
   const tabs = $derived(TABS.filter((t) => !t.needs || data.osFeatures[t.needs]));
   const at = (href: string) => (href === "/one-soul" ? page.url.pathname === href : page.url.pathname === href || page.url.pathname.startsWith(`${href}/`));
 </script>

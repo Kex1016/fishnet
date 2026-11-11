@@ -90,6 +90,32 @@ export const CHECKS: Check[] = [
     }
   },
   {
+    name: "One Soul pages keep the living soul's secrets and never show a turn order",
+    on: ALL,
+    run: async (ctx) => {
+      if ((await ctx.get("/one-soul")).status !== 200) return "One Soul off";
+      for (const p of ["/one-soul/chronicle", "/one-soul/rounds", "/one-soul/graveyard", "/one-soul/timeline", "/one-soul/sign-ups", "/one-soul/records"]) {
+        const r = await ctx.get(p);
+        expect(r.status === 200, `${p} answered ${r.status}`);
+        const h = await r.text();
+        expect(!/next up|up next|in the queue|queue position/i.test(h), `${p} hints at the turn order`);
+      }
+      const signups = await ctx.html("/one-soul/sign-ups");
+      expect(!/<ol[^>]*class="[^"]*os-signups/.test(signups), "sign-ups are an ordered list");
+      // the soul playing now: its turn page has no position and its journal is refused
+      const chron = await ctx.html("/one-soul/chronicle");
+      const row = chron.split("<tr").find((r) => />\s*Playing\s*</.test(r)) ?? "";
+      const m = /href="\/one-soul\/rounds\/(\d+)\/(\d+)"/.exec(row);
+      if (m) {
+        const turn = await ctx.html(`/one-soul/rounds/${m[1]}/${m[2]}`);
+        expect(!/Died in|Waited for this turn/.test(turn), "the living soul's page shows a position or a waiting time");
+        const j = await ctx.get(`/one-soul/rounds/${m[1]}/${m[2]}/journal`);
+        expect(j.status === 404, `the living soul's journal answered ${j.status}`);
+      }
+      return m ? `living soul at round ${m[1]} turn ${m[2]}` : "nobody playing";
+    }
+  },
+  {
     name: "/healthz describes the site",
     on: ALL,
     run: async (ctx) => {

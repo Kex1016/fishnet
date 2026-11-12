@@ -34,6 +34,24 @@
   untrack(() => setLabelOverrides(data.labelOverrides)); // server render and first client render
   $effect.pre(() => setLabelOverrides(data.labelOverrides)); // after a navigation brings a new set
 
+  // the visitor's time zone (dates.ts): the server's guess (the `tz` cookie, else UTC) for hydration, then the
+  // browser's own zone, remembered in the cookie so the next page is rendered in it. Dates re-render when it changes.
+  import { browser } from "$app/env";
+  import { setZoneSource, validZone } from "#lib/format/dates.ts";
+  let tz = $state(untrack(() => data.tz));
+  if (browser) setZoneSource(() => tz);
+  onMount(() => {
+    let mine: string | null = null;
+    try {
+      mine = validZone(Intl.DateTimeFormat().resolvedOptions().timeZone);
+    } catch {
+      /* an old browser: stay on the server's zone */
+    }
+    if (!mine || mine === tz) return;
+    tz = mine;
+    document.cookie = `tz=${encodeURIComponent(mine)}; path=/; max-age=31536000; samesite=lax${location.protocol === "https:" ? "; secure" : ""}`;
+  });
+
   // Sidebar: full, icons only (rail) or hidden, cycled by the TopBar's toggle and remembered per
   // device. "auto" until mounted: CSS shows the rail on phones, full otherwise. On phones the full
   // sidebar opens over the page on a scrim and closes on navigation.

@@ -23,10 +23,10 @@ for engineering sessions and the work units of PLAN §7. The goal in David's wor
   has done this yet"; empty list / `total: 0` → EmptyState; a player without the stat → `0` or missing.
   Milestones: `tracked:false` → "No milestones for this stat"; `off` → the section is not rendered at
   all; backfilled → "Reached before tracking began".
-- **cakeutils down** → last good data with "as of <time> UTC" and a Notice; never a blank or a 500.
+- **cakeutils down** → last good data with "as of <time> <zone>" and a Notice; never a blank or a 500.
 - **Untrusted text is text.** Names, prefixes, suffixes render through Svelte (escaped); segments map to
   an allow-list (`src/lib/players/Segments.svelte`). Never parse MiniMessage, never `{@html}` API data.
-- Copy: English, sentence case, no exclamation marks, no emoji. Dates "4 Nov 2026", times UTC and say so.
+- Copy: English, sentence case, no exclamation marks, no emoji. Dates "4 Nov 2026". Data is stored and sent in UTC; a moment is shown in the visitor's time zone and names it ("17:44 CET", `src/lib/format/dates.ts`, David 12 Nov 2026), UTC until the browser has set the `tz` cookie. Charts bucketed by UTC day or hour keep UTC labels and say so.
 - Unknown fields, units, kinds, types: ignored or shown generically, never a crash. Never hard-code
   the stat list.
 

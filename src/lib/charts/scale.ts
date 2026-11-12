@@ -3,7 +3,7 @@
 // so bun:test covers them (tests/charts.test.ts).
 import type { Unit } from "#lib/api/types.ts";
 import { formatStat } from "#lib/format/stat-display.ts";
-import { day, hm } from "#lib/format/dates.ts";
+import { utcDay as day, utcHm as hm } from "#lib/format/dates.ts";
 import type { TimePoint } from "./types.ts";
 
 /** A "nice" step (1, 2, 2.5, 5 × 10^k) so that `max / step` lands between about 2 and `count` ticks. */

@@ -5,7 +5,7 @@
   import type { UptimeStripProps } from "./types.ts";
   import ChartCard from "./ChartCard.svelte";
   import DataTable from "./DataTable.svelte";
-  import { dateTime, hm, day } from "#lib/format/dates.ts";
+  import { dateTime, utcDay as day, utcHm as hm } from "#lib/format/dates.ts";
   import { heatLevel, linkedShare, uptimeBuckets } from "./scale.ts";
   import "./charts.css";
 

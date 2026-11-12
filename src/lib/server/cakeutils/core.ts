@@ -248,7 +248,7 @@ export function createCore(o: CoreOptions): Core {
           size = png.byteLength + 200;
         } else {
           const text = await res.text();
-          data = JSON.parse(text);
+          data = parseJson(text);
           size = text.length * 2 + 200;
         }
       } catch (e) {
@@ -390,4 +390,16 @@ export function createCore(o: CoreOptions): Core {
       throttle: { ...throttle, ratePerMinute: bucket.ratePerMinute, tokenLimit, last429At }
     })
   };
+}
+
+/**
+ * JSON.parse that keeps integers past 2^53 exact, as their digits in a string: a One Soul world seed is a
+ * 64-bit long (-4172144997902289642 would read as ...9700 otherwise). Needs the reviver's `source` (Node 21+,
+ * Bun); without it the number stays as parsed. Only texts with such a long run of digits pay for the reviver.
+ */
+export function parseJson(text: string): unknown {
+  if (!/\d{16}/.test(text)) return JSON.parse(text);
+  return JSON.parse(text, (_k, v, ctx?: { source?: string }) =>
+    typeof v === "number" && Number.isInteger(v) && !Number.isSafeInteger(v) && ctx?.source && /^-?\d+$/.test(ctx.source) ? ctx.source : v
+  );
 }

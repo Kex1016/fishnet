@@ -6,7 +6,8 @@ import { titleCase } from "#lib/players/names.ts";
 
 /** A row's title: the API's, else the id's last path segment title-cased (`minecraft:story/mine_diamond` → "Mine Diamond"). */
 export function advTitle(m: Pick<AdvancementRow, "advancement" | "title">): string {
-  if (m.title && m.title.trim()) return m.title;
+  // a backend that has not seen the advancement's display name reports the id itself as the title
+  if (m.title && m.title.trim() && m.title.trim() !== m.advancement) return m.title;
   const path = m.advancement.slice(m.advancement.indexOf(":") + 1);
   return titleCase(path.slice(path.lastIndexOf("/") + 1));
 }

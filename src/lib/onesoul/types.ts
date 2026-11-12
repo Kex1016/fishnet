@@ -258,6 +258,7 @@ export type PlayerOneSoul = PlayerRef & {
   graves_left_open: number;
   journals: number;
   registrations: { round: number; registered_at: number; played: boolean }[];
-  pranks: { total: number; by_round?: Record<string, number> };
-  best: { duration_ms: number; cycle: number; turn: number } | null;
+  /** finished rounds only */
+  pranks: { total: number; by_round?: { server: string; cycle: number; count: number }[] };
+  best: { duration_ms: number; server?: string; cycle: number; turn: number } | null;
 };

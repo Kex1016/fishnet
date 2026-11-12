@@ -7,7 +7,7 @@
   import Notice from "#lib/design/Notice.svelte";
   import Pager from "#lib/design/Pager.svelte";
   import ScopeSwitch from "#lib/design/ScopeSwitch.svelte";
-  import { FIRST_KINDS, firstKind } from "#lib/network/words.ts";
+  import { FIRST_KINDS, firstKind, firstLine } from "#lib/network/words.ts";
   import { dateTime } from "#lib/format/dates.ts";
   import { withParams } from "#lib/url.ts";
   let { data } = $props();
@@ -39,10 +39,11 @@
       <ol class="fx-list">
         {#each data.feed.data.firsts as f, i (`${f.kind}-${f.uuid}-${f.title}-${i}`)}
           {@const Icon = ICONS[f.kind] ?? Sparkles}
+          {@const line = firstLine(f)}
           <li class="fx-row">
             <span class="fx-ico" title={firstKind(f.kind)}><Icon class="fp-ico" strokeWidth={1.4} aria-hidden="true" /></span>
             <div class="fx-body">
-              <div class="fx-title">{f.title}</div>
+              <div class="fx-title">{#if line.href}<a href={line.href}>{line.text}</a>{:else}{line.text}{/if}</div>
               <div class="t-small t-muted">
                 <span class="visually-hidden">{firstKind(f.kind)}: </span><a href="/players/{encodeURIComponent(f.name)}">{f.name}</a>{#if data.scope === "network" && f.server}{" "}on {data.serverNames[f.server] ?? f.server}{/if}
               </div>

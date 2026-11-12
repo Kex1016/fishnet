@@ -33,12 +33,11 @@ export function handleOneSoul(os: OneSoulWorld | undefined, req: Request, url: U
     if (!p) return problem(404, "not_found", "no such player");
     const turns = os.souls.filter((s) => s.uuid === p.uuid).map((s) => soulRow(os, s));
     const finished = new Set(os.rounds.filter((r) => r.ended_ago !== null).map((r) => r.cycle));
-    const by_round: Record<string, number> = {};
-    let total = 0;
-    for (const pr of os.pranks.filter((x) => x.uuid === p.uuid)) {
-      total += pr.count;
-      if (finished.has(pr.cycle)) by_round[String(pr.cycle)] = (by_round[String(pr.cycle)] ?? 0) + pr.count;
-    }
+    // finished rounds only, like the total (API-EXPANSION §7.4)
+    const per = new Map<number, number>();
+    for (const pr of os.pranks.filter((x) => x.uuid === p.uuid && finished.has(x.cycle))) per.set(pr.cycle, (per.get(pr.cycle) ?? 0) + pr.count);
+    const by_round = [...per].map(([cycle, count]) => ({ server: os.server, cycle, count }));
+    const total = by_round.reduce((a, r) => a + r.count, 0);
     const ended = turns.filter((t) => t.duration_ms !== null);
     const best = ended.reduce<Soul | null>((a, s) => (!a || (s.duration_ms ?? 0) > (a.duration_ms ?? 0) ? s : a), null);
     const data: PlayerOneSoul = {
@@ -50,7 +49,7 @@ export function handleOneSoul(os: OneSoulWorld | undefined, req: Request, url: U
       journals: turns.filter((t) => t.has_journal).length,
       registrations: os.registrations.filter((r) => r.uuid === p.uuid).map((r) => ({ round: r.round, registered_at: at(r.registered_ago), played: r.played })),
       pranks: { total, by_round },
-      best: best ? { duration_ms: best.duration_ms!, cycle: best.cycle, turn: best.turn } : null
+      best: best ? { duration_ms: best.duration_ms!, server: os.server, cycle: best.cycle, turn: best.turn } : null
     };
     return json(req, data);
   }

@@ -105,3 +105,26 @@ describe("words", () => {
     expect(causeOf({ ...base, cause: "something new happened" } as Death)).toBe("Other");
   });
 });
+
+describe("real cakeutils answers (claude/onesoul captures)", () => {
+  test("a first reads from its detail, never as a bare id", async () => {
+    const { firstLine } = await import("#lib/network/words.ts");
+    const base = { uuid: "u", name: "Bea", at: 1, server: "onesoul", backfilled: false, imported: false };
+    // rows as captured from /v2/firsts?scope=round:onesoul/1
+    const crit = firstLine({ ...base, kind: "criterion", title: "minecraft:adventure/adventuring_time", detail: { advancement: "minecraft:adventure/adventuring_time", criterion: "minecraft:plains" } });
+    expect(crit).toEqual({ text: "Adventuring Time: Plains", href: "/advancements/minecraft%3Aadventure/adventuring_time" });
+    const stat = firstLine({ ...base, kind: "stat", title: "Number of Deaths", detail: { metric: "custom:minecraft:deaths", type: "minecraft:custom", subject: "minecraft:deaths", threshold: 1, unit: "count", display: "1" } });
+    expect(stat.text.endsWith(": 1")).toBe(true);
+    expect(stat.href).toStartWith("/leaderboards/");
+    expect(firstLine({ ...base, kind: "biome", title: "minecraft:cherry_grove", detail: { biome: "minecraft:cherry_grove" } }).text).toBe("First into Cherry grove");
+    expect(firstLine({ ...base, kind: "item", title: "", detail: { item: "minecraft:elytra", via: "crafted" } }).text).toBe("First to craft Elytra");
+    expect(firstLine({ ...base, kind: "something_new", title: "Did a new thing", detail: null }).text).toBe("Did a new thing");
+  });
+  test("a 64-bit world seed survives parsing exactly", async () => {
+    const { parseJson } = await import("#lib/server/cakeutils/core.ts");
+    const d = parseJson('{"seed": -4172144997902289642, "archive": "world", "small": 12, "ms": 1794463781803}') as Record<string, unknown>;
+    expect(d.seed).toBe("-4172144997902289642");
+    expect(d.small).toBe(12);
+    expect(d.ms).toBe(1794463781803);
+  });
+});

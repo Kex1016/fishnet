@@ -91,7 +91,8 @@ function problem(status: number, code: string, detail: string): Response {
 }
 
 function json(req: Request, data: unknown): Response {
-  const body = JSON.stringify(data);
+  // cakeutils sends a world seed as a JSON integer (a 64-bit long, past 2^53); the world keeps it as digits
+  const body = JSON.stringify(data).replace(/"seed":"(-?\d+)"/g, '"seed":$1');
   const etag = `W/"${hex(`etag:${body}`, 16)}"`;
   const headers = { "content-type": "application/json", "cache-control": "private, max-age=5", etag, "ratelimit-limit": "600", "ratelimit-remaining": "119" };
   const inm = req.headers.get("if-none-match");

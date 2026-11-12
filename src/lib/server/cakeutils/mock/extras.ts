@@ -145,25 +145,29 @@ function firsts(w: World, s: Scope, kinds: string[] | null) {
     for (const [ms, f] of firstToThreshold(w, s)) {
       const display = THRESHOLDS.find(([x]) => x === ms)![1];
       const back = f.ago > w.milestones_since_ago_ms;
-      out.push({ kind: "playtime", at: back ? null : t - f.ago, uuid: f.p.uuid, name: f.p.name, server: null, title: `First to ${display} played`, detail: { threshold_ms: ms }, backfilled: back, imported: false });
+      out.push({ kind: "playtime", at: back ? null : t - f.ago, uuid: f.p.uuid, name: f.p.name, server: null, title: `First to ${display} played`, detail: { threshold_ms: ms, display }, backfilled: back, imported: false });
     }
-  if (want("criterion")) for (const c of criteria(w, s, null).slice(0, 8)) out.push({ kind: "criterion", at: c.earned_at, uuid: c.uuid, name: c.name, server: c.server, title: `${c.title}: ${String(c.criterion).replace(/^minecraft:/, "").replace(/_/g, " ")}`, detail: { advancement: c.advancement, criterion: c.criterion }, backfilled: false, imported: false });
+  if (want("criterion")) for (const c of criteria(w, s, null).slice(0, 8)) out.push({ kind: "criterion", at: c.earned_at, uuid: c.uuid, name: c.name, server: c.server, title: c.title ?? c.advancement, detail: { advancement: c.advancement, criterion: c.criterion }, backfilled: false, imported: false });
   const r = rng(`firsts:${s.kind === "server" ? s.id : "network"}`);
   const active = w.players.filter((p) => servers.some((id) => (p.playtime.by_server[id] ?? 0) > 20 * H));
   if (active.length) {
     if (want("dimension"))
       for (const [dim, title] of DIM_FIRSTS) {
         const p = active[Math.floor(r() * active.length)];
-        out.push({ kind: "dimension", at: t - Math.floor(r() * 35 * DAY), uuid: p.uuid, name: p.name, server: servers[0], title, detail: { dim }, backfilled: false, imported: false });
+        out.push({ kind: "dimension", at: t - Math.floor(r() * 35 * DAY), uuid: p.uuid, name: p.name, server: servers[0], title, detail: { dimension: dim }, backfilled: false, imported: false });
       }
     if (want("item"))
       for (const [item, label] of RARE.slice(0, Math.min(RARE.length, Math.ceil(active.length / 4)))) {
         const p = active[Math.floor(r() * active.length)];
-        out.push({ kind: "item", at: t - Math.floor(r() * 25 * DAY), uuid: p.uuid, name: p.name, server: servers[Math.floor(r() * servers.length)], title: `First ${label}`, detail: { subject: item }, backfilled: false, imported: false });
+        out.push({ kind: "item", at: t - Math.floor(r() * 25 * DAY), uuid: p.uuid, name: p.name, server: servers[Math.floor(r() * servers.length)], title: `First ${label}`, detail: { item, via: "picked_up" }, backfilled: false, imported: false });
       }
+    if (want("stat")) {
+      const p = active[Math.floor(r() * active.length)];
+      out.push({ kind: "stat", at: t - Math.floor(r() * 30 * DAY), uuid: p.uuid, name: p.name, server: servers[0], title: "Number of Deaths", detail: { metric: "custom:minecraft:deaths", type: "minecraft:custom", subject: "minecraft:deaths", threshold: 1, unit: "count", display: "1" }, backfilled: false, imported: false });
+    }
     if (want("biome")) {
       const p = active[Math.floor(r() * active.length)];
-      out.push({ kind: "biome", at: t - Math.floor(r() * 20 * DAY), uuid: p.uuid, name: p.name, server: servers[0], title: "First into a Cherry Grove", detail: { subject: "minecraft:cherry_grove" }, backfilled: false, imported: false });
+      out.push({ kind: "biome", at: t - Math.floor(r() * 20 * DAY), uuid: p.uuid, name: p.name, server: servers[0], title: "First into a Cherry Grove", detail: { biome: "minecraft:cherry_grove" }, backfilled: false, imported: false });
     }
   }
   return out.sort((a, b) => (a.at === null ? 1 : 0) - (b.at === null ? 1 : 0) || ((b.at as number) ?? 0) - ((a.at as number) ?? 0));

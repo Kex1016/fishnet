@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { critLabel } from "#lib/network/words.ts";
   import { Award } from "@lucide/svelte";
   import AsOf from "#lib/design/AsOf.svelte";
   import EmptyState from "#lib/design/EmptyState.svelte";
@@ -9,10 +10,6 @@
   import { titleCase } from "#lib/players/names.ts";
   let { data } = $props();
   /** "minecraft:cherry_grove" → "Cherry grove"; free-form criteria stay as the game names them */
-  const critLabel = (c: string) => {
-    const t = (c.includes(":") ? c.slice(c.indexOf(":") + 1) : c).replace(/[_/]+/g, " ").trim();
-    return t ? t[0].toUpperCase() + t.slice(1) : c;
-  };
   const serverName = (id: string) => data.serverNames[id] ?? titleCase(id);
   const players = (n: number) => `${group(n)} player${n === 1 ? "" : "s"}`;
 </script>

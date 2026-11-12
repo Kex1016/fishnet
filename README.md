@@ -94,7 +94,11 @@ Journals are drawn as the game's book with the book texture, page arrows and bit
 Minecraft client jar, which David allowed bundling. They live in `static/mc/`, and the glyph advances are in
 `src/lib/onesoul/book/glyphs.json`. To refresh both from a newer jar, or to swap in a resource pack's book,
 run `python3 -I scripts/mc-assets.py <client.jar>` (it needs Pillow). Characters that are not in the bitmap
-fonts are drawn in a system font with Unifont's advance, because the client jar does not ship Unifont.
+fonts come from GNU Unifont, as in the game (the client jar does not ship it): `static/mc/unifont/` holds one
+glyph sheet per 256 code points, and `src/lib/server/onesoul/unifont-data.ts` the ink box of
+each glyph, which sets its advance. The server sends a journal page only the metrics for characters it uses.
+To refresh them from a newer Unifont, run `python3 -I scripts/unifont.py <unifont.otf>` (it needs Pillow and
+fontTools). The bundled build is Unifont 15.0.01 (GPL 2+ with the font embedding exception, or SIL OFL 1.1).
 
 ## Docker
 

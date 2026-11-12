@@ -40,3 +40,29 @@ describe("book layout (the game's font metrics)", () => {
     expect(indicator(2, 7).glyphs.map((g) => g.ch).join("")).toBe("Page 2 of 7");
   });
 });
+
+describe("Unifont fallback (scripts/unifont.py)", () => {
+  test("the server sends metrics only for characters the bitmap fonts lack", async () => {
+    const { unifontFor } = await import("#lib/server/onesoul/unifont.ts");
+    const uni = unifontFor(["Hi é ж 日本語", "日"]);
+    expect(Object.keys(uni).sort()).toEqual(["日", "本", "語"].sort());
+    for (const [l, w] of Object.values(uni)) {
+      expect(l).toBeGreaterThanOrEqual(0);
+      expect(w).toBeGreaterThan(0);
+      expect(l + w).toBeLessThanOrEqual(16);
+    }
+  });
+  test("a Unifont glyph advances by half its ink width plus one and points into its page", async () => {
+    const { unifontFor } = await import("#lib/server/onesoul/unifont.ts");
+    const uni = unifontFor(["日"]);
+    const g = glyph("日", uni)!;
+    const [left, w] = uni["日"];
+    expect(g.adv).toBe(w / 2 + 1);
+    expect(g.u).toEqual({ page: "65", sx: (0xe5 % 16) * 16 + left, sy: (0xe5 >> 4) * 16, w });
+    // the same text wraps differently with real metrics than with the fixed fallback
+    expect(textWidth("日日日", uni)).toBe(3 * (w / 2 + 1));
+  });
+  test("without metrics a character keeps its cell's width", () => {
+    expect(glyph("日", {})?.adv).toBe(9);
+  });
+});

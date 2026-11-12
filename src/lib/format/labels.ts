@@ -56,7 +56,11 @@ const VANILLA: Record<string, TypeWords> = {
   "minecraft:killed_by": { label: "Killed by", title: "Killed by {subject}", phrase: "{player} was killed by {subject} for the {nth} time" },
   // general stats are already named for what they count ("Jumps", "Distance Walked"); the common ones
   // have their own sentence in STAT_PHRASES, distances read "1st km walked by ..."
-  "minecraft:custom": { label: "General", title: "{subject}", phrase: "{player} reached {n} in {subject}" }
+  "minecraft:custom": { label: "General", title: "{subject}", phrase: "{player} reached {n} in {subject}" },
+  // cakeutils' own discovery stats (one per biome, structure or dimension entered at least once)
+  "cakeutils:entered_biome": { label: "Biomes entered", title: "{subject} entered", phrase: "{player} entered {subject}" },
+  "cakeutils:entered_structure": { label: "Structures entered", title: "{subject} entered", phrase: "{player} entered {subject}" },
+  "cakeutils:entered_dimension": { label: "Dimensions entered", title: "{subject} entered", phrase: "{player} entered {subject}" }
 };
 
 /** Built-in sentences for single stats and type totals, keyed like the stat overrides (criterion form). */

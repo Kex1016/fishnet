@@ -67,7 +67,7 @@
     }
   }
 
-  const shows = (n: NavItem) => (!n.needsMilestones || data.milestones) && (!n.needsAdvancements || data.advancements) && (!n.needsOneSoul || data.onesoul);
+  const shows = (n: NavItem) => (!n.needsMilestones || data.milestones) && (!n.needsAdvancements || data.advancements) && (!n.needsOneSoul || data.onesoul) && (!n.needs || data[n.needs]);
   const crumbs = $derived((page.data.crumbs ?? []) as Crumb[]);
   const title = $derived(pageTitle(page.data.title ?? crumbs.at(-1)?.label));
 </script>

@@ -8,6 +8,11 @@
   import { group } from "#lib/format/stat-display.ts";
   import { titleCase } from "#lib/players/names.ts";
   let { data } = $props();
+  /** "minecraft:cherry_grove" → "Cherry grove"; free-form criteria stay as the game names them */
+  const critLabel = (c: string) => {
+    const t = (c.includes(":") ? c.slice(c.indexOf(":") + 1) : c).replace(/[_/]+/g, " ").trim();
+    return t ? t[0].toUpperCase() + t.slice(1) : c;
+  };
   const serverName = (id: string) => data.serverNames[id] ?? titleCase(id);
   const players = (n: number) => `${group(n)} player${n === 1 ? "" : "s"}`;
 </script>
@@ -80,6 +85,27 @@
         </div>
       {/if}
     </section>
+
+    {#if data.criteria && data.criteria.length}
+      <section class="fp-section">
+        <div class="fp-section__head"><h2 class="t-title-2">First to each part</h2><span class="t-caption t-faint">the network; each criterion on its own</span></div>
+        <div class="fp-table__wrap">
+          <table class="fp-table">
+            <thead><tr><th>Part</th><th>First</th><th>When</th><th class="num">Players with it</th></tr></thead>
+            <tbody>
+              {#each data.criteria as c (c.criterion)}
+                <tr>
+                  <td>{critLabel(c.criterion)}</td>
+                  <td><PlayerName uuid={c.uuid} name={c.name} /></td>
+                  <td class="fp-adv-when">{#if c.earned_at}<time datetime={iso(c.earned_at)} title={dateTime(c.earned_at)}>{ago(c.earned_at)}</time>{:else}<span class="t-muted">before tracking began</span>{/if}{#if c.imported}<span class="fp-tag">Imported</span>{/if}</td>
+                  <td class="num">{c.earners === undefined ? "–" : group(c.earners)}</td>
+                </tr>
+              {/each}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    {/if}
   {/if}
 </div>
 

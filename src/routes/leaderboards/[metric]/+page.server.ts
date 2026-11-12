@@ -3,7 +3,7 @@
 // one URL. The page gets only what it draws (top 10, one table page, the numbers), never the whole board.
 import { error, redirect } from "@sveltejs/kit";
 import type { PageServerLoad } from "./$types";
-import { api } from "#lib/server/cakeutils/client.ts";
+import { api, extras } from "#lib/server/cakeutils/client.ts";
 import { boardHref, fullType, metricKey, parseMetric, type Metric } from "#lib/api/metric.ts";
 import { scopeParam } from "#lib/api/scope.ts";
 import { findComposite, findFeatured } from "#lib/boards.ts";
@@ -31,12 +31,15 @@ export const load: PageServerLoad = async ({ params, url }) => {
 
   const offset = Math.max(0, Math.floor(Number(url.searchParams.get("offset") ?? 0)) || 0);
   const stat = metric?.kind === "stat" ? metric : null;
-  const [network, minis, types, subject, full] = await Promise.all([
+  // the leader per day (cakeutils history route); feature-detected, never for composite boards or mini scopes
+  const wantHistory = metric !== null && !scope.startsWith("mini:");
+  const [network, minis, types, subject, full, hist] = await Promise.all([
     c.network(),
     c.miniServers(),
     stat ? c.statTypes() : null,
     stat && stat.subject !== "*" ? c.subject(stat.subject) : null,
-    composite ? compositeBoard(c, composite, scope) : loadBoard(c, metric!, scope)
+    composite ? compositeBoard(c, composite, scope) : loadBoard(c, metric!, scope),
+    wantHistory ? extras().history(metric!, { scope, limit: 5 }) : null
   ]);
 
   // names: the catalogue's, with the title-cased key as the fallback (PLAN §2.2)
@@ -79,7 +82,8 @@ export const load: PageServerLoad = async ({ params, url }) => {
     offset
   };
 
-  if (!full.ok) return { ...head, board: full as Failure };
+  const history = leaderSeries(hist);
+  if (!full.ok) return { ...head, history, board: full as Failure };
 
   // numbers for the tiles come from the loaded players; a capped board says so instead of guessing
   const d = full.data;
@@ -95,6 +99,7 @@ export const load: PageServerLoad = async ({ params, url }) => {
   }
   return {
     ...head,
+    history,
     board: {
       ok: true as const,
       asOf: full.asOf,
@@ -114,3 +119,18 @@ export const load: PageServerLoad = async ({ params, url }) => {
     }
   };
 };
+
+/** The leader's value each day, or null when the route is off, the stat is not tracked or nothing is recorded. */
+function leaderSeries(r: Awaited<ReturnType<ReturnType<typeof extras>["history"]>> | null) {
+  if (!r?.ok || r.data.tracked === false) return null;
+  const points: { t: number; v: number; label?: string }[] = [];
+  for (const d of r.data.days) {
+    const t = typeof d.day === "number" ? d.day : Date.parse(`${d.day}T00:00:00Z`);
+    // players who opted out never show, so the leader is the best-ranked visible player that day
+    const top = withoutHidden(d.entries).sort((a, b) => a.rank - b.rank)[0];
+    if (!Number.isFinite(t) || !top || !Number.isFinite(top.value)) continue;
+    points.push({ t, v: top.value });
+  }
+  points.sort((a, b) => a.t - b.t);
+  return points.length ? { points, unit: r.data.unit ?? null, asOf: r.asOf, stale: r.stale } : null;
+}

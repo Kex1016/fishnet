@@ -24,6 +24,7 @@ import { mockFetch } from "./mock/index.ts";
 import { createClient, type Priority } from "./create.ts";
 import { createCore, type Core, type CoreStatus } from "./core.ts";
 import { hideServers, type ExclusionStatus } from "./hide.ts";
+import { createExtras, type Extras } from "./extras.ts";
 import { hiddenServers } from "../hidden-servers.ts";
 import { ServerList } from "../hidden-servers-list.ts";
 import { standaloneExclude, standaloneIds } from "../onesoul/standalone.ts";
@@ -133,6 +134,14 @@ export function sectionApi(): Client {
   if (section) return section;
   section = hideServers(createClient({ baseUrl: "", token: "", core: shared(), priority: () => priorityOf(), exclude: () => hiddenServers().ids }), hiddenServers);
   return section;
+}
+
+let extrasInstance: Extras | null = null;
+/** The planned network routes (firsts, deaths, activity, ...), feature-detected, with the regular hide list. */
+export function extras(): Extras {
+  if (extrasInstance) return extrasInstance;
+  extrasInstance = createExtras(shared(), { priority: () => priorityOf(), hidden: regularList, exclude: () => [...new Set([...hiddenServers().ids, ...standaloneExclude()])] });
+  return extrasInstance;
 }
 
 /** The shared transport (one cache and one request budget for every client). */

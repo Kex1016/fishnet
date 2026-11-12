@@ -66,7 +66,7 @@
       </ol>
     {:else}
       <section class="fp-section os-book">
-        <Book pages={j.pages} label={caption} />
+        <Book pages={j.pages} label={caption} uni={data.uni} />
         <p class="t-small t-muted os-hint">Turn pages with the arrows, the arrow keys or a swipe. Text can be selected and copied.</p>
       </section>
     {/if}

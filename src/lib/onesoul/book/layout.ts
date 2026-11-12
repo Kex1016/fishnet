@@ -15,8 +15,12 @@ export const BOOK = {
 } as const;
 
 export type Sheet = { file: string; w: number; h: number; cw: number; ch: number; height: number; ascent: number; cols: number };
-/** One drawn character. `g` is its cell in a font sheet; without `g` it is a space or a fallback glyph. */
-export type Glyph = { ch: string; adv: number; g?: { sheet: number; sx: number; sy: number; top: number } };
+/** One drawn character. `g` is its cell in a font sheet, `u` its cell in a Unifont page (static/mc/unifont/);
+ * with neither it is a space or a character no font here has. */
+export type Glyph = { ch: string; adv: number; g?: { sheet: number; sx: number; sy: number; top: number }; u?: { page: string; sx: number; sy: number; w: number } };
+/** Unifont metrics for the characters a text uses, from the server (src/lib/server/onesoul/unifont.ts):
+ * leftmost ink column and ink width, in Unifont's 16 px cells. */
+export type Uni = Record<string, [left: number, width: number]>;
 export type Line = { glyphs: Glyph[]; width: number };
 
 type Raw = { spaces: Record<string, number>; sheets: (Sheet & { chars: string; adv: number[] })[] };
@@ -37,19 +41,30 @@ for (const [ch, adv] of Object.entries(raw.spaces)) table.set(ch, { ch, adv });
 // East Asian wide and fullwidth ranges: drawn twice as wide by the game's Unifont fallback
 const WIDE = /[ᄀ-ᅟ⺀-〾ぁ-㏿㐀-䶿一-鿿ꀀ-꓏가-힣豈-﫿︰-﹏＀-｠￠-￦]|[\u{20000}-\u{3fffd}]|[\u{1f300}-\u{1faff}]/u;
 
+/** Whether a character is drawn from the bundled bitmap fonts (or is a space the game defines). */
+export function inBitmap(ch: string): boolean {
+  return table.has(ch);
+}
+
 /** The glyph for one character; null for a dropped control character. */
-export function glyph(ch: string): Glyph | null {
+export function glyph(ch: string, uni?: Uni): Glyph | null {
   const hit = table.get(ch);
   if (hit) return hit;
   const cp = ch.codePointAt(0) ?? 0;
   if (cp < 0x20 || (cp >= 0x7f && cp < 0xa0) || (cp >= 0x200b && cp <= 0x200f) || (cp >= 0x2028 && cp <= 0x202e) || (cp >= 0x2060 && cp <= 0x2064) || cp === 0xfeff) return null;
-  // not in the bitmap fonts: the game draws it from Unifont (8 or 16 pixels at half size, plus one)
+  // not in the bitmap fonts: the game draws it from Unifont at half size, trimmed to its ink, plus one
+  const m = uni?.[ch];
+  if (m && m[1] > 0) {
+    const i = cp & 0xff;
+    return { ch, adv: m[1] / 2 + 1, u: { page: (cp >> 8).toString(16), sx: (i % 16) * 16 + m[0], sy: (i >> 4) * 16, w: m[1] } };
+  }
+  // a blank Unifont glyph, or no metrics: the cell's own width (8 or 16 pixels at half size, plus one)
   return { ch, adv: WIDE.test(ch) ? 9 : 5 };
 }
 
-export function textWidth(s: string): number {
+export function textWidth(s: string, uni?: Uni): number {
   let w = 0;
-  for (const ch of s) w += glyph(ch)?.adv ?? 0;
+  for (const ch of s) w += glyph(ch, uni)?.adv ?? 0;
   return w;
 }
 
@@ -58,7 +73,7 @@ function line(glyphs: Glyph[]): Line {
 }
 
 /** One book page as lines, every line the game would draw (the caller cuts at 14). */
-export function layoutPage(text: string, width: number = BOOK.text.width): Line[] {
+export function layoutPage(text: string, width: number = BOOK.text.width, uni?: Uni): Line[] {
   const chars: Glyph[] = [];
   const hard: number[] = []; // one entry per `\n`, so `\n\n` leaves an empty line
   for (const ch of text.replace(/\r\n?/g, "\n")) {
@@ -66,7 +81,7 @@ export function layoutPage(text: string, width: number = BOOK.text.width): Line[
       hard.push(chars.length);
       continue;
     }
-    const g = glyph(ch);
+    const g = glyph(ch, uni);
     if (g) chars.push(g);
   }
   const out: Line[] = [];

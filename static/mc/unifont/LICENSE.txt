@@ -1,0 +1,3 @@
+These glyph sheets are drawn from GNU Unifont 15.0.01 (https://unifoundry.com/unifont/), by Roman Czyborra,
+Paul Hardy and contributors. Unifont is free software: GNU GPL version 2 or later with the GNU font embedding
+exception, or the SIL Open Font License 1.1, at your choice.

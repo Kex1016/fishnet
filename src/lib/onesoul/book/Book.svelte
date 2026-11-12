@@ -5,10 +5,10 @@
   // bitmap), so a page can be selected and copied. Player text is only ever text.
   import { page } from "$app/state";
   import { replaceState } from "$app/navigation";
-  import { BOOK, SHEETS, indicator, layoutPage, type Line } from "./layout.ts";
+  import { BOOK, SHEETS, indicator, layoutPage, type Line, type Uni } from "./layout.ts";
   import { withParams } from "#lib/url.ts";
 
-  let { pages, label }: { pages: string[]; label: string } = $props();
+  let { pages, label, uni }: { pages: string[]; label: string; uni?: Uni } = $props();
 
   const total = $derived(Math.max(1, pages.length));
   const fromUrl = () => {
@@ -17,7 +17,7 @@
   };
   let index = $state(fromUrl());
   const at = $derived(Math.min(index, total - 1));
-  const lines = $derived(layoutPage(pages[at] ?? ""));
+  const lines = $derived(layoutPage(pages[at] ?? "", BOOK.text.width, uni));
   const shown = $derived(lines.slice(0, BOOK.text.lines));
   const extra = $derived(lines.slice(BOOK.text.lines));
   let more = $state(false);
@@ -57,11 +57,12 @@
 
   /** inline style for one glyph: its advance and, for bitmap glyphs, its cell in the sheet */
   function gs(g: Line["glyphs"][number]): string {
+    if (g.u) return `--a:${g.adv};--ux:${g.u.sx};--uy:${g.u.sy};--uw:${g.u.w};--ui:url(/mc/unifont/${g.u.page}.png)`;
     if (!g.g) return `--a:${g.adv}`;
     const s = SHEETS[g.g.sheet];
     return `--a:${g.adv};--sx:${g.g.sx};--sy:${g.g.sy};--t:${g.g.top};--cw:${s.cw};--ch:${s.ch};--bw:${s.w};--bh:${s.h}`;
   }
-  const kind = (g: Line["glyphs"][number]) => (g.g ? `g f${g.g.sheet}` : g.ch === " " || g.adv === 0 ? "g sp" : "g u");
+  const kind = (g: Line["glyphs"][number]) => (g.g ? `g f${g.g.sheet}` : g.u ? "g uf" : g.ch === " " || g.adv === 0 ? "g sp" : "g u");
 </script>
 
 <svelte:window onkeydown={key} />
@@ -177,7 +178,7 @@
     background: rgba(48, 96, 200, 0.35);
     color: transparent;
   }
-  .g:not(.sp):not(.u)::before {
+  .g:not(.sp):not(.u):not(.uf)::before {
     content: "";
     position: absolute;
     left: 0;
@@ -199,7 +200,19 @@
   .f2::before {
     background-image: var(--f2);
   }
-  /* a character the bitmap fonts lack: the game would use Unifont; a system font stands in */
+  /* a character the bitmap fonts lack, from its Unifont page: 16 px cells drawn at half size, from the ink's left */
+  .uf::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: calc(var(--uw) * var(--s) / 2);
+    height: calc(8 * var(--s));
+    background: var(--ui) no-repeat calc(var(--ux) * var(--s) / -2) calc(var(--uy) * var(--s) / -2) / calc(128 * var(--s)) calc(128 * var(--s));
+    image-rendering: pixelated;
+    pointer-events: none;
+  }
+  /* a character no font here has (Unifont metrics missing): a system font stands in */
   .u {
     color: #000;
     font-family: var(--font-text), system-ui, sans-serif;

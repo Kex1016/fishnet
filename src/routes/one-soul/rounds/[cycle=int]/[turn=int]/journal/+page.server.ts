@@ -3,6 +3,7 @@
 import { error } from "@sveltejs/kit";
 import type { PageServerLoad } from "./$types";
 import { oneSoul } from "#lib/server/onesoul/index.ts";
+import { unifontFor } from "#lib/server/onesoul/unifont.ts";
 
 export const load: PageServerLoad = async ({ parent, params }) => {
   const { os } = await parent();
@@ -15,7 +16,7 @@ export const load: PageServerLoad = async ({ parent, params }) => {
     return { title: `Journal, round ${cycle} turn ${turn}`, crumbs: crumbs(cycle, turn), cycle, turn, journal: null };
   }
   if (r.data.soul.cycle !== cycle || r.data.soul.turn !== turn) error(404, "Not found");
-  return { title: `${r.data.soul.name}'s journal`, crumbs: crumbs(cycle, turn), cycle, turn, journal: r.data, asOf: r.asOf, stale: r.stale };
+  return { title: `${r.data.soul.name}'s journal`, crumbs: crumbs(cycle, turn), cycle, turn, journal: r.data, uni: unifontFor(r.data.pages), asOf: r.asOf, stale: r.stale };
 };
 
 function crumbs(cycle: number, turn: number) {

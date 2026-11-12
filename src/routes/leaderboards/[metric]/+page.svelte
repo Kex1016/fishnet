@@ -7,7 +7,7 @@
   import Pager from "#lib/design/Pager.svelte";
   import ScopeSwitch from "#lib/design/ScopeSwitch.svelte";
   import Slot from "#lib/design/Slot.svelte";
-  import { BarList, ColumnChart, StatTile, ViewSwitch, viewParam } from "#lib/charts/index.ts";
+  import { BarList, ColumnChart, LineChart, StatTile, ViewSwitch, viewParam } from "#lib/charts/index.ts";
   import { problemCode } from "#lib/api/result.ts";
   import { group } from "#lib/format/stat-display.ts";
   import { barRows, playerHref, playerLabel } from "../board.ts";
@@ -90,6 +90,21 @@
           emptyLine="The spread appears once players are in more than one step."
         />
       </div>
+
+      {#if data.history}
+        <LineChart
+          title="Top of the board over time"
+          sub="{data.scopeName} · the leader's total at the end of each day, UTC"
+          {view}
+          points={data.history.points}
+          unit={board.unit}
+          zero={false}
+          asOf={data.history.asOf}
+          stale={data.history.stale}
+          emptyTitle="No history yet"
+          emptyLine="The line fills in a day at a time."
+        />
+      {/if}
 
       <section class="fp-card fp-chart" aria-labelledby="all-players">
         <header class="fp-card__head">

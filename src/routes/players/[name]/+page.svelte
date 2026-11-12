@@ -67,6 +67,26 @@
       </div>
     </section>
 
+    {#if data.activity?.ok}
+      {@const a = data.activity.data}
+      <section class="fp-section">
+        <div class="fp-section__head"><h2 class="t-title-2">Activity</h2><span class="t-caption t-faint">the whole network, UTC days</span></div>
+        <div class="fp-tiles">
+          <StatTile label="Sessions" value={group(a.sessions)} note={a.first_session_at ? `since ${day(a.first_session_at)}` : undefined} />
+          <StatTile label="Days played" value={group(a.days_active)} />
+          {#if a.longest_session}<StatTile label="Longest session" value={durationMs(a.longest_session.ms)} note={`${day(a.longest_session.started_at)}${a.longest_session.server ? `, ${data.serverNames[a.longest_session.server] ?? a.longest_session.server}` : ""}`} />{/if}
+          {#if a.streak}<StatTile label="Best streak" value={`${a.streak.best_days} day${a.streak.best_days === 1 ? "" : "s"}`} note={a.streak.current_days > 0 ? `now on ${a.streak.current_days} day${a.streak.current_days === 1 ? "" : "s"}` : undefined} />{/if}
+        </div>
+        {#if a.playtime_milestones.length}
+          <ul class="fp-pt-miles">
+            {#each a.playtime_milestones as m (m.threshold_ms)}
+              <li class="fp-tag {m.first ? 'fp-tag--acc' : ''}">{m.display}{m.reached_at ? `, ${day(m.reached_at)}` : ", before tracking began"}{#if m.first} · first on the network{/if}</li>
+            {/each}
+          </ul>
+        {/if}
+      </section>
+    {/if}
+
     <div class="fp-filters fp-scopebar">
       <span class="t-kicker">Scope</span>
       <ScopeSwitch url={page.url} scope={data.scope} servers={data.network.ok ? data.network.data.servers : []} minis={data.miniOptions} />
@@ -126,6 +146,14 @@
 </div>
 
 <style>
+  .fp-pt-miles {
+    list-style: none;
+    margin: var(--space-3) 0 0;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+  }
   .fp-who { display: grid; grid-template-columns: 64px minmax(0, 1fr) auto; gap: var(--space-2) var(--space-5); align-items: center; }
   .fp-who__text { display: flex; flex-direction: column; gap: var(--space-1); min-width: 0; }
   .fp-who__name { overflow-wrap: anywhere; }

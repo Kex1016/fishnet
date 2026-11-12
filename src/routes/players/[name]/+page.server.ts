@@ -5,7 +5,7 @@
 // Hidden players are a 404 before any other call (PLAN §3.4, §8.5).
 import { error } from "@sveltejs/kit";
 import type { PageServerLoad } from "./$types";
-import { api } from "#lib/server/cakeutils/client.ts";
+import { api, extras } from "#lib/server/cakeutils/client.ts";
 import { isHidden } from "#lib/server/hidden.ts";
 import { parseScope, scopeOf, type Scope } from "#lib/api/scope.ts";
 import { fail, ok, type Result } from "#lib/api/result.ts";
@@ -61,6 +61,7 @@ export const load: PageServerLoad = async ({ params, url }) => {
   const offset = Math.max(0, Math.floor(Number(url.searchParams.get("offset") ?? 0) || 0));
   const miniScope = parsed?.kind === "mini";
 
+  const activity = player.ok ? extras().playerActivity(ref) : Promise.resolve(null);
   const [network, types, minis, stats, firsts, advFirsts, me, ...boards] = await Promise.all([
     c.network(),
     c.statTypes(),
@@ -118,6 +119,8 @@ export const load: PageServerLoad = async ({ params, url }) => {
     stats,
     firsts: (firsts ?? fail("bad_request")) as Result<PlayerMilestones>,
     advFirsts: (advFirsts ?? fail("bad_request")) as Result<PlayerAdvancements>,
+    /** sessions, streaks and play time milestones (cakeutils B5), network-wide; null or off when absent */
+    activity: await activity,
     showFirsts: !miniScope,
     standings,
     boardsDown,

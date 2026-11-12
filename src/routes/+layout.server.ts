@@ -2,7 +2,7 @@
 // mock scenario (dev banner), and whether servers are hidden (src/lib/server/hidden-servers.ts).
 import { error } from "@sveltejs/kit";
 import type { LayoutServerLoad } from "./$types";
-import { api, exclusionStatus } from "#lib/server/cakeutils/client.ts";
+import { api, exclusionStatus, extras } from "#lib/server/cakeutils/client.ts";
 import { hiddenServers } from "#lib/server/hidden-servers.ts";
 import { labelOverrides } from "#lib/server/admin/index.ts";
 import { oneSoul } from "#lib/server/onesoul/index.ts";
@@ -17,7 +17,15 @@ export const load: LayoutServerLoad = async ({ locals, url }) => {
     const m = /^\/servers\/([^/]+)\/?$/.exec(url.pathname);
     if (hidden.hidesScope(url.searchParams.get("scope")) || (m && hidden.has(decodeURIComponent(m[1])))) error(404, "Not found");
   }
-  const [milestones, advancements, onesoul] = await Promise.all([api().milestonesEnabled(), api().advancementsEnabled(), oneSoul().enabled("status")]);
+  const x = extras();
+  const [milestones, advancements, onesoul, firsts, deaths, activity] = await Promise.all([
+    api().milestonesEnabled(),
+    api().advancementsEnabled(),
+    oneSoul().enabled("status"),
+    x.enabled("firsts"),
+    x.enabled("deaths"),
+    x.enabled("activity")
+  ]);
   const ex = exclusionStatus();
   return {
     theme: locals.theme,
@@ -28,6 +36,10 @@ export const load: LayoutServerLoad = async ({ locals, url }) => {
     serversHidden: hiddenServers().size > 0 || standaloneExclude().length > 0,
     /** the proxy has One Soul and the token may read it: the section's nav entry */
     onesoul,
+    /** the planned network routes this proxy has (nav entries; each page probes its own widgets too) */
+    firsts,
+    deaths,
+    activity,
     /** cakeutils is older than D-113: its network stats still count the hidden servers */
     exclusionUnsupported: ex.unsupported,
     /** the owner's stat names (admin.db), for labels.ts in the browser */

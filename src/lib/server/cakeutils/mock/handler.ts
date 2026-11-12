@@ -11,6 +11,7 @@ import type {
 } from "#lib/api/types.ts";
 import { formatStat, durationMs } from "#lib/format/stat-display.ts";
 import { fnv1a, hex, type World, type WorldPlayer, type WorldSubject } from "./world.ts";
+import { handleExtras } from "./extras.ts";
 import { handleOneSoul } from "../../onesoul/mock/handler.ts";
 
 const SCOPE_RE = /^(network|server:[A-Za-z0-9._-]{1,64}|mini:[A-Za-z0-9._-]{1,64}\/[^/]{1,64}|round:[A-Za-z0-9._-]{1,64}\/[0-9]{1,9})$/;
@@ -453,6 +454,10 @@ export async function handleMock(world: World, req: Request): Promise<Response> 
     findPlayer: (ref) => findPlayer(all, ref)
   });
   if (os) return os;
+
+  // the planned network routes (firsts, deaths, activity, ...): network reads honour exclude= via `world`
+  const ex2 = handleExtras(world, url, seg, req, { json, problem, paging });
+  if (ex2) return ex2;
 
   if (seg[0] === "openapi.json" && seg.length === 1) {
     const { default: doc } = await import("../../../../../openapi.json", { with: { type: "json" } });

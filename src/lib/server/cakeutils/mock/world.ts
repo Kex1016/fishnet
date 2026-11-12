@@ -88,6 +88,8 @@ export type World = {
    * M1); absent = an older proxy that rolls every server up and has no flag
    */
   standalone?: string[];
+  /** whether the planned network routes exist (firsts, deaths, activity, ...); false = an older proxy (404) */
+  extras?: boolean;
   /** whether /v2/milestones exists on this proxy (false = older proxy, 404) */
   milestones: boolean;
   /** milestone tracking began this long ago; rows reached earlier are backfilled */

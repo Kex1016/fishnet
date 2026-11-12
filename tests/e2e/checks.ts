@@ -71,6 +71,28 @@ export const CHECKS: Check[] = [
     }
   },
   {
+    name: "firsts, deaths and activity follow their own feature check and show their empty states",
+    on: ALL,
+    run: async (ctx) => {
+      const home = await ctx.html("/");
+      const out: string[] = [];
+      for (const [p, empty] of [["/firsts", "No firsts yet"], ["/deaths", "Nobody has died yet"], ["/activity", "Nobody online yet"]] as const) {
+        const r = await ctx.get(p);
+        if (ctx.scenario !== "live") expect(r.status === 200, `${p} answered ${r.status}`);
+        const on = r.status === 200;
+        expect(new RegExp(`href="${p}"`).test(home) === on, on ? `${p} is on but the nav has no entry` : `${p} is off but the nav links to it`);
+        if (!on) { out.push(`${p} off`); continue; }
+        const html = await r.text();
+        expect(!/href="\/servers\/onesoul"|scope=server(:|%3A)onesoul/.test(html), `${p} links to the One Soul server`);
+        if (ctx.scenario === "fresh") expect(html.includes(empty), `${p} does not say "${empty}" on a fresh network`);
+        if (ctx.scenario === "busy") expect(!html.includes(empty), `${p} shows its empty state on the busy fixtures`);
+        expect((await ctx.get(`${p}?scope=server:onesoul`)).status === 404, `${p} answers for the One Soul server`);
+        out.push(`${p} on`);
+      }
+      return ctx.scenario === "live" ? out.join(", ") : undefined;
+    }
+  },
+  {
     name: "One Soul has its own section and never shows in the regular one",
     on: ALL,
     run: async (ctx) => {

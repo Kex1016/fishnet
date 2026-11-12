@@ -30,7 +30,7 @@
 <div class="fp-page">
   <header class="fp-hero">
     <h1 class="t-display">Activity</h1>
-    <p class="fp-lede">When the network is busy: players online, time played per day and the busiest hours of the week. Times are UTC.</p>
+    <p class="fp-lede">When the network is busy: players online, time played per day and the busiest hours of the week. Charts count in UTC days and hours.</p>
   </header>
   <div class="ax-bar">
     {#if data.network.ok}<ScopeSwitch url={page.url} scope={data.scope} servers={data.network.data.servers} />{/if}

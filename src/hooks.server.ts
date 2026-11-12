@@ -9,6 +9,13 @@ import { labelOverrides } from "#lib/server/admin/index.ts";
 import { setLabelOverrides } from "#lib/format/labels.ts";
 import { ensureStandalone } from "#lib/server/onesoul/index.ts";
 import { realmOf } from "#lib/onesoul/realm.ts";
+import { AsyncLocalStorage } from "node:async_hooks";
+import { setZoneSource, validZone } from "#lib/format/dates.ts";
+
+// the visitor's time zone (the `tz` cookie +layout.svelte sets), per request: loads and the render format
+// moments in it (dates.ts); stored data stays UTC
+const zoneOfRequest = new AsyncLocalStorage<string>();
+setZoneSource(() => zoneOfRequest.getStore() ?? "UTC");
 
 export const init: ServerInit = async () => {
   const c = config(); // throws (fishnet is NOT running: ...) when FISHNET_MOCK is set on a production build
@@ -22,6 +29,7 @@ export const handle: Handle = async ({ event, resolve }) => {
   const t = event.cookies.get("theme");
   event.locals.theme = t === "dark" || t === "light" ? t : "system";
   event.locals.mock = config().mock;
+  event.locals.tz = validZone(event.cookies.get("tz")) ?? "UTC";
   // the owner's stat names (src/routes/admin/names), before any load builds a label; the root layout
   // hands the same set to the browser
   setLabelOverrides(labelOverrides());
@@ -29,10 +37,10 @@ export const handle: Handle = async ({ event, resolve }) => {
   await ensureStandalone();
   // the realm is on the server-rendered <html>, so a direct load of a One Soul page never flashes the other theme
   const realm = realmOf(event.url.pathname);
-  const response = await resolve(event, {
+  const response = await zoneOfRequest.run(event.locals.tz, () => resolve(event, {
     transformPageChunk: ({ html }) =>
       html.replace("%fishnet.theme%", event.locals.theme === "system" ? "" : event.locals.theme).replace("%fishnet.realm%", realm)
-  });
+  }));
   response.headers.set("referrer-policy", "strict-origin-when-cross-origin");
   response.headers.set("x-content-type-options", "nosniff");
   response.headers.set("permissions-policy", "camera=(), microphone=(), geolocation=()");

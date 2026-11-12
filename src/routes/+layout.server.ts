@@ -29,6 +29,7 @@ export const load: LayoutServerLoad = async ({ locals, url }) => {
   const ex = exclusionStatus();
   return {
     theme: locals.theme,
+    tz: locals.tz,
     mock: locals.mock,
     milestones,
     advancements,

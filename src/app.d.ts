@@ -8,6 +8,8 @@ declare global {
       theme: "dark" | "light" | "system";
       /** Mock scenario in use, or null against a real cakeutils. */
       mock: "fresh" | "busy" | null;
+      /** The visitor's IANA time zone from the `tz` cookie, "UTC" until the browser has set it. */
+      tz: string;
     }
     interface PageData {
       /** Breadcrumbs for the TopBar; every page's server load returns them (nav.ts). */

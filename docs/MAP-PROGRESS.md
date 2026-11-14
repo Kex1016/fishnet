@@ -20,7 +20,7 @@ everything else after cakeutils GMAP2 (cakeutils `v2/map/PROGRESS.md` on `claude
 | FM-8 show on map | waiting (FM-4) | Sonnet 5.5 / medium | | | | |
 | FM-7 integration, QA, go-live | waiting (all) | Fable 5.2 / high | | | | |
 
-Gates: GFM0 open, GFM1 open, GFM2 open. Screenshots thread ("Map screenshots"): requested.
+Gates: GFM0 open, GFM1 open, GFM2 open. Screenshots thread ("Map screenshots"): cmsg_017jXErfLmkLcYLSb5FKAVcMADw8BDRoVvuMRhAtXTp9cP.
 
 ## Decisions
 

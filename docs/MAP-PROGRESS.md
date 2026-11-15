@@ -16,7 +16,7 @@ everything else after cakeutils GMAP2 (cakeutils `v2/map/PROGRESS.md` on `claude
 | FM-4 pages | in progress | Sonnet 5.5 / high | cmsg_017jXErfLmkLcYLSb5FKAVcMHrvYSaXiUfeQmTLGZk1awV | | | |
 | FM-5 layers, One Soul rounds | in progress | Sonnet 5.5 / medium | cmsg_017jXErfLmkLcYLSb5FKAVcMJT7uHxrgGEJ3gBYJcm4wPK | | | |
 | FM-6 deploy, docs | waiting (FM-2) | Haiku 5.5 / low | | | | |
-| FM-0b fixture sync | review: sent back 1× (mini label uses name) | Sonnet 5.5 / low | cmsg_017jXErfLmkLcYLSb5FKAVcM5ftpf5BqgSVQMmVoD8A8oa | | | MAP-43 follow-up (brief §7) |
+| FM-0b fixture sync | **merged** 6cb11c9 | Sonnet 5.5 / low | cmsg_017jXErfLmkLcYLSb5FKAVcM5ftpf5BqgSVQMmVoD8A8oa | | #41 | MAP-43 follow-up (brief §7) |
 | FM-m mini worlds | waiting (FM-4) | Sonnet 5.5 / medium | | | | |
 | FM-8 show on map | waiting (FM-4) | Sonnet 5.5 / medium | | | | |
 | FM-7 integration, QA, go-live | waiting (all) | Fable 5.2 / high | | | | |
@@ -64,3 +64,4 @@ Gates: GFM0 **passed** 2026-11-15, GFM1 open, GFM2 open. Screenshots thread ("Ma
 - 2026-11-15 10:05Z: FM-3 reviewed (check 0 errors, 340 tests, build + leak check pass, screenshots read: full-bleed per David) and merged (#40, 41d016b). Early units done; rest waits for cakeutils GMAP2.
 - 2026-11-15 12:35Z: cakeutils GMAP2 passed (PROGRESS 12:30Z; PR #109 claude/map → main open for David). No shape change in openapi since MAP-C0. FM-0b, FM-2, FM-4, FM-5 requested.
 - 2026-11-15 12:45Z: FM-0b #41 reviewed (check, 348 tests, build pass); sent back once: mini world label must use `name` (mini display name, MAP §8), mock mini id like the real one.
+- 2026-11-15 12:50Z: FM-0b fix 0b8cb59 re-checked (check, 348 tests, build pass) and merged (#41, 6cb11c9). worlds.ts (sortWorlds, worldLabel) available to FM-4/FM-m; busy mini world cakeutils_miniservers_skyblock-1_overworld.

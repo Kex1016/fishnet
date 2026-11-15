@@ -7,7 +7,9 @@ type S = components["schemas"];
 
 export type Problem = S["Problem"];
 export type Health = S["Health"];
-export type Network = S["Network"];
+// `standalone` and `game` came with API-EXPANSION M1: an older proxy does not send them (onesoul/index.ts)
+type NetworkServer = Omit<S["Network"]["servers"][number], "standalone" | "game"> & Partial<Pick<S["Network"]["servers"][number], "standalone" | "game">>;
+export type Network = Omit<S["Network"], "servers"> & { servers: NetworkServer[] };
 export type Server = Network["servers"][number];
 export type PlayerSummary = S["PlayerSummary"];
 export type PlayerList = S["PlayerList"];
@@ -97,3 +99,20 @@ export type AdvancementDetail = S["AdvancementMilestone"];
 
 /** GET /v2/players/{ref}/advancement-milestones: what this player was first to complete. */
 export type PlayerAdvancements = Omit<S["PlayerAdvancementMilestoneList"], "milestones"> & { milestones: AdvancementRow[] };
+
+// ---- The web map (cakeutils v2/MAP.md §5.2, frozen by MAP-C0; FM-0). Scope read:map; the round routes read:onesoul.
+
+/** GET /v2/map: servers with a map, ordered by id. `online: false` = gone less than 10 min ago, last known worlds. */
+export type MapIndex = S["MapIndex"];
+export type MapServer = MapIndex["servers"][number];
+/** A world as /v2/map lists it: `id` is squaremap's web name (minecraft_overworld); `mini`/`area` both or neither. */
+export type MapWorldRef = MapServer["worlds"][number];
+/** GET /v2/map/{server}/worlds/{world}: tile size, zoom range, spawn, update interval; `stale` = cakeutils' last kept answer. */
+export type MapWorld = S["MapWorld"];
+/** GET /v2/map/{server}/worlds/{world}/changes: `tiles` rows are [seq, z, x, y], oldest first. */
+export type MapChanges = S["MapChanges"];
+/** GET /v2/map/{server}/players: positions in whole blocks; names are plain text. */
+export type MapPlayers = S["MapPlayers"];
+export type MapPlayer = MapPlayers["players"][number];
+/** GET /v2/onesoul/rounds/{cycle}/map/worlds/{world}?server=: a finished round's archived map. */
+export type RoundMapWorld = S["OneSoulRoundMapWorld"];

@@ -1,7 +1,7 @@
 // Every page of the site (PLAN §3.4), the sidebar and the breadcrumbs. Shared file: minimal
 // additive edits only, named in the unit's report. Milestones only show when the proxy has them.
 import type { Component } from "svelte";
-import { Activity, Award, ChartColumn, Flame, House, Info, Flag, Server, Skull, Sparkles, Trophy, Users } from "@lucide/svelte";
+import { Activity, Award, ChartColumn, Flame, House, Info, Flag, Map as MapIcon, Server, Skull, Sparkles, Trophy, Users } from "@lucide/svelte";
 
 export type Crumb = { label: string; href?: string };
 
@@ -16,7 +16,7 @@ export type NavItem = {
   /** only rendered when the proxy has One Soul and the token may read it (layout data `onesoul`) */
   needsOneSoul?: boolean;
   /** only rendered when the proxy has that planned network route (layout data `firsts`, `deaths`, `activity`) */
-  needs?: "firsts" | "deaths" | "activity";
+  needs?: "firsts" | "deaths" | "activity" | "map";
 };
 
 export type NavGroup = { label?: string; items: NavItem[] };
@@ -26,6 +26,7 @@ export const NAV: NavGroup[] = [
     items: [
       { href: "/", label: "Home", icon: House },
       { href: "/servers", label: "Servers", icon: Server },
+      { href: "/map", label: "Map", icon: MapIcon, needs: "map" },
       { href: "/players", label: "Players", icon: Users }
     ]
   },

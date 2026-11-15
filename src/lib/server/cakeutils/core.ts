@@ -11,7 +11,7 @@ import { fail, listIsEmpty, ok, type Failure, type FailureKind, type Result } fr
 import type { Problem } from "#lib/api/types.ts";
 import { TokenBucket, type Priority } from "./bucket.ts";
 import { Lru } from "./lru.ts";
-import { policyFor, swrMs, ttlMs, type Policy } from "./policy.ts";
+import { isMapPath, policyFor, swrMs, ttlMs, type Policy } from "./policy.ts";
 import { displayUrl, scrub, tokenId } from "./redact.ts";
 import type { FetchLike } from "./mock/index.ts";
 
@@ -40,6 +40,8 @@ export type CoreOptions = {
   staleMaxMs?: number;
   /** after a failed connection, how long to answer from cache without trying again; default 5 s */
   downCooldownMs?: number;
+  /** the scopes named in the "refused" log line; default "read:players read:stats read:onesoul" */
+  scopeHint?: string;
 };
 
 export type Request = {
@@ -81,8 +83,33 @@ export type CoreStatus = {
   };
 };
 
+/** A request answered without the LRU (map tiles, positions, change logs: MAP §5.3, brief §4). */
+export type DirectRequest = {
+  path: string;
+  /** a tile: the answer is bytes */
+  binary?: boolean;
+  /** revalidate: cakeutils answers 304 when it still has this ETag */
+  ifNoneMatch?: string | null;
+  /** how long to wait for a token from the bucket; default the priority's wait */
+  waitMs?: number;
+};
+
+/** What cakeutils sent: 200 with the body, or 304 (the caller's copy is still good, `body` null). */
+export type DirectAnswer<T> = {
+  status: 200 | 304;
+  body: T | null;
+  etag: string | null;
+  cacheControl: string | null;
+  lastModified: string | null;
+};
+
 export interface Core {
   get<T>(req: Request, priority: Priority): Promise<Result<T>>;
+  /**
+   * One request past the LRU: the bucket, the timeout, the problem mapping and the reachability state as in
+   * get(), but no cache, no single-flight and no stale answer (the caller keeps its own copy).
+   */
+  direct<T>(req: DirectRequest, priority: Priority): Promise<Result<DirectAnswer<T>>>;
   milestonesEnabled(priority: Priority): Promise<boolean>;
   /** D-111: true when /v2/milestones/advancements exists on this proxy (a D-109 proxy without it answers 404). */
   advancementsEnabled(priority: Priority): Promise<boolean>;
@@ -117,6 +144,7 @@ export function createCore(o: CoreOptions): Core {
   const cooldown = o.downCooldownMs ?? 5_000;
   const base = o.baseUrl.replace(/\/+$/, "");
   const who = `${displayUrl(base)} as ${tokenId(o.token)}`;
+  const scopeHint = o.scopeHint ?? "read:players read:stats read:onesoul";
 
   const cache = new Lru<Entry>(o.maxEntries ?? 20_000, o.maxBytes ?? 64 * 1024 * 1024);
   const flights = new Map<string, Promise<Result<unknown>>>();
@@ -262,6 +290,13 @@ export function createCore(o: CoreOptions): Core {
       return answer<T>(entry);
     }
 
+    const mapped = isMapPath(req.path) ? await mapProblem(res) : null;
+    if (mapped) {
+      markUp();
+      if (mapped.kind === "off") cache.set(key, { good: false, failure: mapped, expires: t + policy.negativeMs }, 400);
+      return mapped.kind === "down" ? fallback<T>(key, policy, "down", { status, problem: mapped.problem, retryAfter: mapped.retryAfter }, t + (mapped.retryAfter ?? 1) * 1000) : { ...mapped };
+    }
+
     if (status === 404 || status === 400) {
       markUp();
       const failure = fail(status === 404 ? "not_found" : "bad_request", { status, problem: await readProblem(res) });
@@ -287,7 +322,7 @@ export function createCore(o: CoreOptions): Core {
       lastError = `refused (${status})`;
       if (t - lastRefusedLog > 10 * 60_000) {
         lastRefusedLog = t;
-        log(`cakeutils refused ${tokenId(o.token)}: ${status} (check the token and its scopes: read:players read:stats read:onesoul)`);
+        log(`cakeutils refused ${tokenId(o.token)}: ${status} (check the token and its scopes: ${scopeHint})`);
       }
       return fallback<T>(key, policy, "down", { status, problem: await readProblem(res) }, t + cooldown);
     }
@@ -312,6 +347,103 @@ export function createCore(o: CoreOptions): Core {
     }
   }
 
+  /**
+   * The map's own answers that are not "cakeutils is down" (MAP §5.4): `404 off` (positions off) and
+   * `404 not_supported` (no change log) and every 501 (map_format_unsupported, not_implemented) are `off`;
+   * `503 map_offline` / `map_busy` are `down` for that server only, with Retry-After. cakeutils answered, so
+   * none of them marks cakeutils unreachable. null for every other answer.
+   */
+  async function mapProblem(res: Response): Promise<Failure | null> {
+    const st = res.status;
+    if (st !== 404 && st !== 501 && st !== 503) return null;
+    const problem = await readProblem(res.clone());
+    const code = problem?.type?.startsWith("urn:cakeutils:problem:") ? problem.type.slice("urn:cakeutils:problem:".length) : null;
+    if (st === 404) return code === "off" || code === "not_supported" ? fail("off", { status: st, problem }) : null;
+    if (st === 501) return fail("off", { status: st, problem });
+    if (code === "map_offline" || code === "map_busy") return fail("down", { status: st, problem, retryAfter: retryAfterSeconds(res.headers.get("retry-after")) });
+    return null;
+  }
+
+  async function direct<T>(req: DirectRequest, priority: Priority): Promise<Result<DirectAnswer<T>>> {
+    try {
+      counters.misses++;
+      const t0 = now();
+      if (t0 < blockedUntil) return fail("rate_limited", { retryAfter: Math.max(1, Math.ceil((blockedUntil - t0) / 1000)) });
+      if (t0 < downUntil) return fail("down");
+      if (!(await bucket.take(priority, req.waitMs ?? wait[priority]))) {
+        throttle.localRefused++;
+        return fail("rate_limited", { retryAfter: Math.max(1, Math.ceil(bucket.waitFor(priority) / 1000)) });
+      }
+      const headers: Record<string, string> = { accept: req.binary ? "image/png" : "application/json" };
+      if (o.token) headers.authorization = `Bearer ${o.token}`;
+      if (req.ifNoneMatch) headers["if-none-match"] = req.ifNoneMatch;
+      let res: Response;
+      try {
+        res = await f(`${base}${req.path}`, { method: "GET", headers, signal: AbortSignal.timeout(timeout[priority]) });
+      } catch (e) {
+        const err = e as Error;
+        markDown(err?.name === "TimeoutError" || err?.name === "AbortError" ? `no answer within ${timeout[priority] / 1000} s` : String(err?.message ?? e));
+        return fail("down");
+      }
+      const t = now();
+      const remaining = res.headers.get("ratelimit-remaining");
+      bucket.observeRemaining(remaining === null ? null : Number(remaining));
+      observeLimit(res.headers.get("ratelimit-limit"));
+      const status = res.status;
+      const meta = { etag: res.headers.get("etag"), cacheControl: res.headers.get("cache-control"), lastModified: res.headers.get("last-modified") };
+      if (status === 304) {
+        markUp();
+        return ok({ status: 304, body: null, ...meta }, t);
+      }
+      if (status >= 200 && status < 300) {
+        let body: unknown;
+        try {
+          body = req.binary ? new Uint8Array(await res.arrayBuffer()) : parseJson(await res.text());
+        } catch (e) {
+          lastError = scrub(`unreadable answer from GET (${(e as Error).message})`);
+          return fail("down", { status });
+        }
+        markUp();
+        return ok({ status: 200, body: body as T, ...meta }, t);
+      }
+      const mapped = await mapProblem(res);
+      if (mapped) {
+        markUp();
+        return mapped;
+      }
+      if (status === 404 || status === 400) {
+        markUp();
+        return fail(status === 404 ? "not_found" : "bad_request", { status, problem: await readProblem(res) });
+      }
+      if (status === 429) {
+        markUp();
+        throttle.upstream429++;
+        last429At = t;
+        const ra = retryAfterSeconds(res.headers.get("retry-after"));
+        blockedUntil = t + ra * 1000;
+        if (t - lastThrottleLog > 60_000) {
+          lastThrottleLog = t;
+          log(`cakeutils rate-limited ${tokenId(o.token)}: waiting ${ra} s (CAKEUTILS_RATE / CAKEUTILS_BURST may be above the token's limit)`);
+        }
+        return fail("rate_limited", { status, retryAfter: ra, problem: await readProblem(res) });
+      }
+      if (status === 401 || status === 403) {
+        markUp();
+        lastError = `refused (${status})`;
+        if (t - lastRefusedLog > 10 * 60_000) {
+          lastRefusedLog = t;
+          log(`cakeutils refused ${tokenId(o.token)}: ${status} (check the token and its scopes: ${scopeHint})`);
+        }
+        return fail("down", { status, problem: await readProblem(res) });
+      }
+      markDown(`HTTP ${status}`);
+      return fail("down", { status, problem: await readProblem(res) });
+    } catch (e) {
+      lastError = scrub(String((e as Error)?.message ?? e));
+      return fail("down");
+    }
+  }
+
   function flight<T>(key: string, run: () => Promise<Result<T>>): Promise<Result<T>> {
     const existing = flights.get(key);
     if (existing) return existing as Promise<Result<T>>;
@@ -329,6 +461,11 @@ export function createCore(o: CoreOptions): Core {
     try {
       const key = req.method === "POST" ? `POST ${req.path} ${req.body ?? ""}` : req.path;
       const policy = policyFor(req.path);
+      if (policy.cls === "map-direct") {
+        // never in the LRU (policy.ts): one plain request
+        const r = await direct<T>({ path: req.path, binary: req.binary }, priority);
+        return r.ok ? { ...r, data: r.data.body as T } : r;
+      }
       const e = cache.get(key);
       const t = now();
       if (e) {
@@ -377,6 +514,7 @@ export function createCore(o: CoreOptions): Core {
 
   return {
     get,
+    direct,
     milestonesEnabled: feature("/v2/milestones?limit=1"),
     advancementsEnabled: feature("/v2/milestones/advancements?limit=1"),
     status: () => ({

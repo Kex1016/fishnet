@@ -9,6 +9,7 @@
 // sum of another one in the fixture itself.
 import type { Kind, Segment, StatType, Unit } from "#lib/api/types.ts";
 import { generateOneSoulBusy, generateOneSoulFresh, type OneSoulWorld } from "../../onesoul/mock/world.ts";
+import { generateMapBusy, generateMapFresh, type MockMap } from "./map.ts";
 
 export type Scenario = "fresh" | "busy";
 
@@ -88,6 +89,8 @@ export type World = {
    * M1); absent = an older proxy that rolls every server up and has no flag
    */
   standalone?: string[];
+  /** the web map (cakeutils MAP-C0, /v2/map*); absent = a proxy without it (404) */
+  map?: MockMap;
   /** whether the planned network routes exist (firsts, deaths, activity, ...); false = an older proxy (404) */
   extras?: boolean;
   /** whether /v2/milestones exists on this proxy (false = older proxy, 404) */
@@ -315,6 +318,7 @@ export function generateFresh(): World {
     advancements_since_ago_ms: 0,
     advancements_imported: [],
     advancement_titles: [],
+    map: generateMapFresh(),
     servers: [
       { id: "lobby", display_name: "Lobby", mc_version: "26.3", platform: "paper", waiting: 0 },
       { id: "survival", display_name: "Survival", mc_version: "26.3", platform: "paper", waiting: 0 },
@@ -521,6 +525,7 @@ export function generateBusy(): World {
     advancements_since_ago_ms: advSince,
     advancements_imported: advImported,
     advancement_titles: ADVANCEMENTS.filter((a) => earned.has(a.id)).map(({ id, title }) => ({ id, title })),
+    map: generateMapBusy(players),
     servers,
     minis,
     types,

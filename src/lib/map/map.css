@@ -1,0 +1,203 @@
+/* The map canvas (FM-3, brief §5). Leaflet's stylesheet is not loaded: the first block is the layout its panes
+   need to work at all, written for this site; everything after is the Fishnet look. Classes: `mc-` ours,
+   `leaflet-` the library's own hooks. */
+
+/* ---- what Leaflet needs */
+.mc .leaflet-pane, .mc .leaflet-tile, .mc .leaflet-tile-container, .mc .leaflet-marker-icon,
+.mc .leaflet-pane > svg, .mc .leaflet-pane > canvas, .mc .leaflet-zoom-box, .mc .leaflet-layer { position: absolute; left: 0; top: 0; }
+.mc .leaflet-container { overflow: hidden; -webkit-tap-highlight-color: transparent; }
+.mc .leaflet-container.leaflet-touch-drag { touch-action: none; }
+.mc .leaflet-container.leaflet-touch-zoom { touch-action: pan-x pan-y; }
+.mc .leaflet-container.leaflet-touch-drag.leaflet-touch-zoom { touch-action: none; }
+.mc .leaflet-tile, .mc .leaflet-marker-icon { user-select: none; -webkit-user-select: none; -webkit-user-drag: none; }
+.mc .leaflet-pane { z-index: 400; }
+.mc .leaflet-tile-pane { z-index: 200; }
+.mc .leaflet-overlay-pane { z-index: 400; }
+.mc .leaflet-mc-marks-pane { z-index: 550; }
+.mc .leaflet-marker-pane { z-index: 600; }
+.mc .leaflet-mc-players-pane { z-index: 620; }
+.mc .leaflet-pane > svg { z-index: 200; overflow: visible; max-width: none; }
+.mc .leaflet-zoom-box { width: 0; height: 0; z-index: 800; border: 1px dashed var(--acc-ink); background: var(--acc-soft); border-radius: var(--radius-xs); }
+/* base.css gives every img max-width: 100% and display: block; a tile is exactly its own size */
+.mc .leaflet-container img.leaflet-tile { max-width: none; max-height: none; padding: 0; border: 0; visibility: hidden; }
+.mc .leaflet-container img.leaflet-tile-loaded { visibility: inherit; }
+.mc .leaflet-tile-container { pointer-events: none; }
+.mc .leaflet-zoom-animated { transform-origin: 0 0; }
+.mc .leaflet-zoom-anim .leaflet-zoom-animated { will-change: transform; transition: transform 250ms cubic-bezier(0, 0, 0.25, 1); }
+.mc .leaflet-zoom-anim .leaflet-tile, .mc .leaflet-pan-anim .leaflet-tile { transition: none; }
+.mc .leaflet-zoom-anim .leaflet-zoom-hide { visibility: hidden; }
+.mc .leaflet-fade-anim .leaflet-tile { will-change: opacity; }
+.mc .leaflet-marker-icon, .mc .leaflet-pane > svg path { pointer-events: none; }
+.mc .leaflet-marker-icon.leaflet-interactive, .mc .leaflet-pane > svg path.leaflet-interactive { pointer-events: auto; cursor: pointer; }
+.mc .leaflet-grab { cursor: grab; }
+.mc .leaflet-dragging .leaflet-grab, .mc .leaflet-dragging .leaflet-interactive { cursor: grabbing; }
+
+/* ---- the frame */
+.mc {
+  position: relative; width: 100%; height: 100%; min-height: 240px; overflow: hidden; isolation: isolate;
+  border-radius: inherit; color: var(--text);
+  /* unmapped ground: the sunk tone with a faint chart-paper grid */
+  background-color: var(--sunk);
+  background-image: linear-gradient(var(--line-soft) 1px, transparent 1px), linear-gradient(90deg, var(--line-soft) 1px, transparent 1px);
+  background-size: 32px 32px; background-position: center;
+}
+.mc__map, .mc__still { position: absolute; inset: 0; }
+.mc__map { z-index: 0; background: transparent; outline: 0; font: inherit; }
+/* the focus ring sits inside the frame, where the frame's own overflow cannot clip it */
+.mc__map:focus-visible { box-shadow: none; }
+.mc__map:focus-visible::after {
+  content: ""; position: absolute; inset: 0; z-index: 900; pointer-events: none; border-radius: inherit;
+  box-shadow: inset 0 0 0 2px var(--bg), inset 0 0 0 4px var(--acc-ink);
+}
+/* crisp blocks once the tiles are scaled past one pixel per block */
+.mc[data-over] .leaflet-tile, .mc[data-over] .mc__still img.mc-still__tile { image-rendering: pixelated; }
+.mc .mc-tile--missing { visibility: hidden !important; }
+
+/* the server-rendered picture under the live map; gone once Leaflet has drawn */
+.mc__still { overflow: hidden; pointer-events: none; }
+.mc__still img.mc-still__tile { position: absolute; max-width: none; }
+.mc--live .mc__still { opacity: 0; visibility: hidden; transition: opacity var(--duration-slow) var(--ease-soft), visibility 0s var(--duration-slow); }
+
+/* ---- player dots */
+.mc-dot-icon { width: 28px; height: 28px; border-radius: var(--radius-sm); }
+.mc-dot-icon:focus-visible { outline: 0; box-shadow: none; }
+.mc-dot { position: relative; width: 28px; height: 28px; }
+.mc-dot--still { position: absolute; margin: -14px 0 0 -14px; }
+.mc-dot__face {
+  position: absolute; inset: 0; display: block; width: 28px; height: 28px; max-width: none; padding: 2px;
+  border-radius: var(--radius-sm); background: var(--surface); box-shadow: var(--shadow-pill), 0 0 0 1px var(--line);
+  image-rendering: pixelated; transition: box-shadow var(--duration-fast) var(--ease-soft);
+}
+/* the nose: a small wedge on a ring around the face, turned to the yaw (0° = south, down) */
+.mc-dot__nose { position: absolute; left: 50%; top: 50%; width: 0; height: 0; transition: transform var(--duration-slow) var(--ease-glide); }
+.mc-dot__nose::after {
+  content: ""; position: absolute; left: -5px; top: 15px; width: 10px; height: 7px;
+  background: var(--surface); clip-path: polygon(0 0, 100% 0, 50% 100%); filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.35));
+}
+/* the name tag: only on the followed player; everyone else's name is in the hover popup */
+.mc-dot__name {
+  position: absolute; left: 50%; top: calc(100% + 6px); transform: translateX(-50%); max-width: 160px; padding: 0 var(--space-1);
+  display: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; pointer-events: none;
+  font: 600 11px/16px var(--font-mono); border-radius: var(--radius-xs); box-shadow: var(--shadow-pill);
+}
+.mc-dot--followed .mc-dot__name { display: block; }
+/* the hover popup: face, name, world, coordinates */
+.mc-dot__tip {
+  position: absolute; left: 50%; bottom: calc(100% + 10px); transform: translateX(-50%); display: none; align-items: center; gap: var(--space-2);
+  width: max-content; max-width: 240px; padding: var(--space-2) var(--space-3) var(--space-2) var(--space-2); pointer-events: none;
+  color: var(--text); background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-lg); box-shadow: var(--shadow-float);
+}
+.mc-dot__tip-face { flex: none; width: 32px; height: 32px; max-width: none; border-radius: 3px; image-rendering: pixelated; background: var(--sunk); }
+.mc-dot__tip-lines { display: flex; flex-direction: column; min-width: 0; }
+.mc-dot__tip-name { font: 700 14px/20px var(--font-head); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mc-dot__tip-world { font: 400 12px/16px var(--font-text); color: var(--muted); }
+.mc-dot__tip-where { font: 500 12px/16px var(--font-mono); font-variant-numeric: tabular-nums; color: var(--text); }
+.mc-dot__tip-hint { font: 400 11px/16px var(--font-text); color: var(--faint); }
+.mc-dot-icon:hover .mc-dot__tip, .mc-dot-icon:focus-visible .mc-dot__tip { display: flex; animation: fp-rise var(--duration-fast) var(--ease-glide) both; }
+.mc-dot-icon:hover, .mc-dot-icon:focus-visible { z-index: 2000 !important; }
+.mc-dot-icon:hover .mc-dot__face { box-shadow: var(--shadow-pill), 0 0 0 1px var(--faint); }
+.mc-dot-icon:focus-visible .mc-dot__face { box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--acc-ink); }
+.mc-dot--followed .mc-dot__face { background: var(--acc); box-shadow: var(--shadow-pill), 0 0 0 1px var(--acc), 0 0 0 5px var(--acc-soft); }
+.mc-dot--followed .mc-dot__nose::after { background: var(--acc); }
+.mc-dot--followed .mc-dot__name { background: var(--acc); color: var(--on-acc); }
+@media (pointer: coarse) {
+  /* the face stays 28 px; the touch target around it is 44 px */
+  .mc-dot-icon::before { content: ""; position: absolute; inset: -8px; }
+}
+
+/* ---- layers: paths and marks (shapes, never colour alone) */
+.mc .mc-path { stroke: var(--acc-viz); stroke-width: 2px; stroke-linecap: round; stroke-linejoin: round; fill: none; }
+.mc-mark-icon { width: 0; height: 0; }
+.mc-mark { position: absolute; left: -11px; top: -11px; width: 22px; height: 22px; display: grid; place-items: center; pointer-events: auto; color: var(--acc-ink); border-radius: var(--radius-sm); }
+.mc-mark[data-muted] { opacity: 0.55; }
+.mc-mark__glyph { width: 12px; height: 12px; background: currentColor; box-shadow: 0 0 0 2px var(--surface); }
+.mc-mark[data-shape="circle"] .mc-mark__glyph, .mc-mark[data-shape="line"] .mc-mark__glyph { border-radius: 50%; }
+.mc-mark[data-shape="line"] .mc-mark__glyph { width: 8px; height: 8px; }
+.mc-mark[data-shape="diamond"] .mc-mark__glyph { transform: rotate(45deg); width: 10px; height: 10px; }
+.mc-mark[data-shape="triangle"] .mc-mark__glyph, .mc-mark[data-shape="cross"] .mc-mark__glyph { box-shadow: none; filter: drop-shadow(0 0 1px var(--surface)) drop-shadow(0 0 1px var(--surface)); }
+.mc-mark[data-shape="triangle"] .mc-mark__glyph { width: 14px; height: 12px; clip-path: polygon(50% 0, 100% 100%, 0 100%); }
+.mc-mark[data-shape="cross"] .mc-mark__glyph { width: 14px; height: 14px; clip-path: polygon(0 18%, 18% 0, 50% 32%, 82% 0, 100% 18%, 68% 50%, 100% 82%, 82% 100%, 50% 68%, 18% 100%, 0 82%, 32% 50%); }
+.mc-mark__tip {
+  position: absolute; left: 50%; bottom: calc(100% + 4px); transform: translateX(-50%); display: none; flex-direction: column;
+  width: max-content; max-width: 220px; padding: var(--space-1) var(--space-2); pointer-events: none;
+  font: 400 12px/16px var(--font-text); color: var(--text); background: var(--raised); border: 1px solid var(--line);
+  border-radius: var(--radius-sm); box-shadow: var(--shadow-float);
+}
+.mc-mark__tip span { color: var(--muted); }
+.mc-mark:hover .mc-mark__tip, .mc-mark:focus-visible .mc-mark__tip { display: flex; }
+.mc-mark:hover, .mc-mark:focus-visible { z-index: 1; text-decoration: none; }
+
+/* ---- controls on the map: Fishnet buttons on a raised plate */
+.mc__controls {
+  position: absolute; z-index: 5; top: var(--space-3); right: var(--space-3); display: flex; flex-direction: column;
+  padding: 2px; gap: 2px; border: 1px solid var(--line); border-radius: var(--radius-lg); background: var(--surface); box-shadow: var(--shadow-float);
+}
+.mc__controls .fp-ibtn { color: var(--text); border-radius: var(--radius-md); }
+.mc__controls .fp-ibtn:disabled { color: var(--faint); opacity: 0.6; cursor: default; background: transparent; }
+.mc__controls hr { margin: 0 var(--space-1); }
+.mc__follow { position: absolute; z-index: 5; bottom: calc(var(--space-3) + 32px); left: 50%; transform: translateX(-50%); max-width: calc(100% - var(--space-6)); box-shadow: var(--shadow-float); color: var(--text); background: var(--surface); }
+.mc__follow[aria-pressed="true"] { background: color-mix(in srgb, var(--surface), var(--acc) 18%); border-color: var(--acc-ink); color: var(--text); }
+.mc__follow .fp-face { width: 16px; height: 16px; border-radius: 2px; }
+.mc__follow span { overflow: hidden; text-overflow: ellipsis; }
+.mc__foot { position: absolute; z-index: 5; left: var(--space-3); right: var(--space-3); bottom: var(--space-3); display: flex; align-items: flex-end; justify-content: space-between; gap: var(--space-2); pointer-events: none; }
+.mc__readout, .mc__credit { padding: 2px var(--space-2); border-radius: var(--radius-sm); background: color-mix(in srgb, var(--surface), transparent 8%); box-shadow: var(--shadow-pill); white-space: nowrap; }
+.mc__readout { font: 500 12px/20px var(--font-mono); font-variant-numeric: tabular-nums; color: var(--text); min-width: 15ch; }
+.mc__credit { font: 400 11px/20px var(--font-text); color: var(--muted); }
+.mc__empty {
+  position: absolute; z-index: 4; left: 50%; top: 50%; transform: translate(-50%, -50%); display: flex; flex-direction: column; align-items: center;
+  gap: var(--space-3); width: max-content; max-width: calc(100% - var(--space-8)); padding: var(--space-4) var(--space-5); text-align: center;
+  border: 1px solid var(--line); border-radius: var(--radius-xl); background: var(--surface); box-shadow: var(--shadow-float);
+}
+.mc__empty p { font: 500 14px/20px var(--font-text); color: var(--muted); }
+
+@media (prefers-reduced-motion: reduce) {
+  .mc .leaflet-zoom-anim .leaflet-zoom-animated { transition: none; }
+  .mc-dot__nose, .mc-dot__face, .mc--live .mc__still { transition: none; }
+  .mc-dot-icon:hover .mc-dot__tip, .mc-dot-icon:focus-visible .mc-dot__tip { animation: none; }
+}
+
+/* ---- the full-bleed stage (David, 15 Nov 2026): the map fills the whole content area beside the site nav,
+   edge to edge, no page header or card; everything else floats over it. A page puts `mc-stage` straight into
+   the shell's scroll area, MapCanvas inside it and its popouts in `mc-over`. */
+.mc-stage { position: relative; height: 100%; min-height: 320px; overflow: hidden; background: var(--sunk); }
+.mc-over { position: absolute; inset: 0; z-index: 6; pointer-events: none; }
+.mc-over > * { pointer-events: auto; }
+/* popouts sit in a row at the top left, clear of the zoom plate at the top right */
+.mc-over__row { position: absolute; top: var(--space-3); left: var(--space-3); display: flex; flex-wrap: wrap; gap: var(--space-2); max-width: calc(100% - var(--size-control) - var(--space-3) * 3 - 6px); pointer-events: none; }
+.mc-over__row > * { pointer-events: auto; }
+/* a status line (live, as of, offline) floats at the top centre */
+.mc-over__status { position: absolute; top: var(--space-3); left: 50%; transform: translateX(-50%); max-width: calc(100% - var(--space-6)); }
+
+.mc-pop { position: relative; min-width: 0; }
+.mc-pop > summary { list-style: none; max-width: 100%; color: var(--text); box-shadow: var(--shadow-float); user-select: none; }
+.mc-pop > summary::-webkit-details-marker { display: none; }
+.mc-pop > summary > span { overflow: hidden; text-overflow: ellipsis; }
+.mc-pop > summary .mc-pop__count { font: 600 12px/16px var(--font-mono); color: var(--muted); }
+.mc-pop[open] > summary { background: color-mix(in srgb, var(--surface), var(--acc) 18%); border-color: var(--acc-ink); }
+.mc-pop__panel {
+  position: absolute; z-index: 1; top: calc(100% + var(--space-2)); left: 0; display: flex; flex-direction: column; gap: var(--space-3);
+  width: max-content; min-width: 240px; max-width: min(360px, calc(100vw - var(--space-8))); max-height: min(60vh, 480px); overflow-y: auto; overscroll-behavior: contain;
+  padding: var(--space-3); border: 1px solid var(--line); border-radius: var(--radius-xl); background: var(--surface); box-shadow: var(--shadow-float);
+  animation: fp-rise var(--duration-enter) var(--ease-glide) both;
+}
+.mc-pop__title { font: 600 11px/16px var(--font-mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--faint); }
+.mc-pop__list { display: flex; flex-direction: column; gap: 2px; }
+.mc-pop__item {
+  display: flex; align-items: center; gap: var(--space-2); width: 100%; min-height: var(--size-control); padding: var(--space-1) var(--space-2);
+  border: 0; border-radius: var(--radius-md); background: transparent; color: var(--text); font: 500 14px/20px var(--font-text); text-align: left; text-decoration: none; cursor: pointer;
+  transition: background-color var(--duration-fast) var(--ease-soft);
+}
+.mc-pop__item:hover { background: var(--raised); text-decoration: none; }
+.mc-pop__item[aria-current], .mc-pop__item[aria-pressed="true"] { background: var(--acc-soft); }
+.mc-pop__item > .mc-pop__grow { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mc-pop__item > .mc-pop__note { flex: none; font: 400 12px/16px var(--font-mono); font-variant-numeric: tabular-nums; color: var(--muted); white-space: nowrap; }
+.mc-pop__line { font: 400 13px/20px var(--font-text); color: var(--muted); }
+/* a layer's shape beside its name (the same glyphs as its marks) */
+.mc-pop__shape { position: relative; flex: none; width: 22px; height: 22px; display: grid; place-items: center; color: var(--acc-ink); }
+@media (max-width: 640px) {
+  /* a phone: the popout is a sheet across the bottom of the map */
+  .mc-over__row { position: static; margin: var(--space-3); }
+  .mc-pop { position: static; }
+  .mc-pop__panel { top: auto; left: var(--space-2); right: var(--space-2); bottom: calc(var(--space-3) + 32px); width: auto; max-width: none; max-height: 55%; }
+}
+@media (prefers-reduced-motion: reduce) { .mc-pop__panel { animation: fp-fade var(--duration-enter) var(--ease-soft) both; } }

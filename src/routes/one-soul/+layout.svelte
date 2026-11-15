@@ -43,6 +43,15 @@
 </div>
 
 <style>
+  /* a round drawn on its tiles (RoundMap, `rm-stage`) fills what the header leaves, edge to edge */
+  .os-frame:has(> :global(.rm-stage)) {
+    display: flex;
+    flex-direction: column;
+    min-height: 100%;
+  }
+  .os-frame:has(> :global(.rm-stage)) > .os-head {
+    flex: none;
+  }
   .os-head {
     padding-bottom: 0;
     display: flex;

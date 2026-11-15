@@ -95,5 +95,8 @@
       This site reads the cakeutils v2 API, the network's stats service. It holds the API token on the server, so the
       token never reaches your browser.
     </p>
+    <p>
+      Tiles by <a href="https://github.com/jpenilla/squaremap">squaremap</a>.
+    </p>
   </section>
 </div>

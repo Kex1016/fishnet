@@ -5,7 +5,7 @@
 // Hidden players are a 404 before any other call (PLAN §3.4, §8.5).
 import { error } from "@sveltejs/kit";
 import type { PageServerLoad } from "./$types";
-import { api, extras } from "#lib/server/cakeutils/client.ts";
+import { api, extras, mapApi } from "#lib/server/cakeutils/client.ts";
 import { isHidden } from "#lib/server/hidden.ts";
 import { parseScope, scopeOf, type Scope } from "#lib/api/scope.ts";
 import { fail, ok, type Result } from "#lib/api/result.ts";
@@ -13,6 +13,7 @@ import type { BatchPlayer, Leaderboard, PlayerAdvancements, PlayerMilestones, St
 import { COMPOSITES, FEATURED } from "#lib/boards.ts";
 import { batchIncludes, compositeValue, standing, type BoardStanding } from "#lib/players/ranks.ts";
 import { playerLabel, splitMini, titleCase } from "#lib/players/names.ts";
+import { showOnMap } from "#lib/map/showOnMap.ts";
 import { prepareFeed } from "#lib/milestones/prepare.server.ts";
 
 /** rows of a stat type shown per page in the explorer's type view */
@@ -62,6 +63,8 @@ export const load: PageServerLoad = async ({ params, url }) => {
   const miniScope = parsed?.kind === "mini";
 
   const activity = player.ok ? extras().playerActivity(ref) : Promise.resolve(null);
+  // "Show on map" (FM-8): only an online player on a server the map knows needs the map's server list
+  const maps = player.ok ? mapApi().mapServers() : Promise.resolve(null);
   const [network, types, minis, stats, firsts, advFirsts, me, ...boards] = await Promise.all([
     c.network(),
     c.statTypes(),
@@ -110,7 +113,21 @@ export const load: PageServerLoad = async ({ params, url }) => {
     : [];
 
   const label = playerLabel(name);
+  const mapList = await maps;
+  const onMap =
+    player.ok && mapList
+      ? showOnMap({
+          uuid: player.data.uuid,
+          name: label,
+          online: player.data.online,
+          server: player.data.server ?? null,
+          maps: mapList.ok ? mapList.data.servers : null,
+          mapOff: !mapList.ok && (mapList.kind === "off" || mapList.kind === "not_found"),
+          serverNames
+        })
+      : null;
   return {
+    onMap,
     title: label,
     crumbs: [{ label: "Players", href: "/players" }, { label }],
     player,

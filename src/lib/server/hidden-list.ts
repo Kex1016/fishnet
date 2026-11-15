@@ -15,6 +15,10 @@ export class HiddenList {
   hasPlayer(p: { uuid: string; name: string }): boolean {
     return this.has(p.uuid) || this.has(p.name);
   }
+  /** This list plus more entries (UUIDs or names). */
+  with(more: Iterable<string>): HiddenList {
+    return new HiddenList([...this.#keys, ...[...more].map(normalize)]);
+  }
 }
 
 export function normalize(s: string): string {

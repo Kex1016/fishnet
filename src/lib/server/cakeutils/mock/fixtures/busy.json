@@ -3015,6 +3015,231 @@
    "title": "Ready to Cook"
   }
  ],
+ "map": {
+  "servers": [
+   {
+    "server": "creative",
+    "display_name": "Creative",
+    "online": true,
+    "live_players": false,
+    "announced_ago_ms": 93600000,
+    "player_update_ms": 1000,
+    "worlds": [
+     {
+      "id": "minecraft_overworld",
+      "dimension": "minecraft:overworld",
+      "name": "minecraft:overworld",
+      "order": 0,
+      "zoom": {
+       "max": 3,
+       "default": 2,
+       "extra": 2
+      },
+      "spawn": {
+       "x": 0,
+       "z": 0
+      },
+      "palette": "flat",
+      "changes": false
+     }
+    ]
+   },
+   {
+    "server": "staff",
+    "display_name": "Staff",
+    "online": true,
+    "live_players": true,
+    "announced_ago_ms": 3600000,
+    "player_update_ms": 1000,
+    "worlds": [
+     {
+      "id": "minecraft_overworld",
+      "dimension": "minecraft:overworld",
+      "name": "minecraft:overworld",
+      "order": 0,
+      "zoom": {
+       "max": 3,
+       "default": 3,
+       "extra": 2
+      },
+      "spawn": {
+       "x": 0,
+       "z": 0
+      },
+      "palette": "overworld",
+      "changes": false
+     }
+    ]
+   },
+   {
+    "server": "survival",
+    "display_name": "Survival",
+    "online": true,
+    "live_players": true,
+    "announced_ago_ms": 10800000,
+    "player_update_ms": 1000,
+    "worlds": [
+     {
+      "id": "minecraft_overworld",
+      "dimension": "minecraft:overworld",
+      "name": "minecraft:overworld",
+      "order": 0,
+      "zoom": {
+       "max": 3,
+       "default": 3,
+       "extra": 2
+      },
+      "spawn": {
+       "x": 64,
+       "z": -32
+      },
+      "palette": "overworld",
+      "changes": true
+     },
+     {
+      "id": "minecraft_the_nether",
+      "dimension": "minecraft:the_nether",
+      "name": "minecraft:the_nether",
+      "order": 0,
+      "zoom": {
+       "max": 3,
+       "default": 2,
+       "extra": 2
+      },
+      "spawn": {
+       "x": 8,
+       "z": -4
+      },
+      "palette": "nether",
+      "changes": false
+     },
+     {
+      "id": "cakeutils_miniservers_skyblock-1_overworld",
+      "dimension": "minecraft:overworld",
+      "name": "Skyblock 1",
+      "order": 0,
+      "zoom": {
+       "max": 3,
+       "default": 3,
+       "extra": 2
+      },
+      "spawn": {
+       "x": 16,
+       "z": 16
+      },
+      "palette": "flat",
+      "changes": false,
+      "mini": "skyblock-1",
+      "area": "overworld"
+     },
+     {
+      "id": "minecraft_the_end",
+      "dimension": "minecraft:the_end",
+      "name": "minecraft:the_end",
+      "order": 0,
+      "zoom": {
+       "max": 3,
+       "default": 1,
+       "extra": 2
+      },
+      "spawn": {
+       "x": 100,
+       "z": 0
+      },
+      "palette": "end",
+      "changes": false
+     }
+    ]
+   }
+  ],
+  "movers": [
+   {
+    "uuid": "c1eb3d24-c2eb-4eb7-a3eb-404ac4eb41dd",
+    "name": "Finnegan_B",
+    "server": "creative",
+    "world": "minecraft_overworld",
+    "cx": -295,
+    "cz": -276,
+    "r": 77,
+    "period_ms": 143175,
+    "phase": 5.1
+   },
+   {
+    "uuid": "c478b64a-c578-47dd-a278-b324c378b4b7",
+    "name": "koi_pond",
+    "server": "survival",
+    "world": "minecraft_overworld",
+    "cx": 218,
+    "cz": -244,
+    "r": 48,
+    "period_ms": 121194,
+    "phase": 5.76
+   },
+   {
+    "uuid": "938d6b11-928d-497e-a18d-67eb908d6658",
+    "name": "tidepool",
+    "server": "creative",
+    "world": "minecraft_overworld",
+    "cx": 258,
+    "cz": -140,
+    "r": 31,
+    "period_ms": 60672,
+    "phase": 3.02
+   },
+   {
+    "uuid": "1d32fcaf-1c32-4b1c-af32-ffd51e32fe42",
+    "name": "MossyAnchor",
+    "server": "survival",
+    "world": "minecraft_the_nether",
+    "cx": 116,
+    "cz": -154,
+    "r": 74,
+    "period_ms": 83763,
+    "phase": 3.76
+   },
+   {
+    "uuid": "7b9643e0-7c96-4573-ad96-47067e964899",
+    "name": "Reedcutter",
+    "server": "creative",
+    "world": "minecraft_overworld",
+    "cx": 16,
+    "cz": -12,
+    "r": 42,
+    "period_ms": 64069,
+    "phase": 5
+   },
+   {
+    "uuid": "5a1c0de0-0000-4000-8000-00000000a11e",
+    "name": "quietgill",
+    "server": "survival",
+    "world": "minecraft_overworld",
+    "cx": 40,
+    "cz": 40,
+    "r": 30,
+    "period_ms": 90000,
+    "phase": 1
+   },
+   {
+    "uuid": "5a1c0de0-0000-4000-8000-00000000b05e",
+    "name": "Bosun",
+    "server": "staff",
+    "world": "minecraft_overworld",
+    "cx": 0,
+    "cz": 0,
+    "r": 20,
+    "period_ms": 60000,
+    "phase": 0
+   }
+  ],
+  "hidden": {
+   "servers": [
+    "staff"
+   ],
+   "players": [
+    "5a1c0de0-0000-4000-8000-00000000a11e"
+   ]
+  }
+ },
  "servers": [
   {
    "id": "lobby",

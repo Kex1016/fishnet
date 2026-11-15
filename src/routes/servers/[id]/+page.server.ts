@@ -3,11 +3,13 @@
 // server's minis; scopes are never added together (cakeutils I3).
 import { error } from "@sveltejs/kit";
 import type { PageServerLoad } from "./$types";
-import { api } from "#lib/server/cakeutils/client.ts";
+import { api, mapApi } from "#lib/server/cakeutils/client.ts";
 import { history } from "#lib/server/history.ts";
 import { withoutHidden } from "#lib/server/hidden.ts";
 import { FEATURED } from "#lib/boards.ts";
 import { boardHref, PLAYTIME } from "#lib/api/metric.ts";
+import { mapHref } from "#lib/map/links.ts";
+import { sortWorlds, worldLabel } from "#lib/map/worlds.ts";
 import { parseScope, type Scope } from "#lib/api/scope.ts";
 import { formatStat, group } from "#lib/format/stat-display.ts";
 import type { TimePoint } from "#lib/charts/index.ts";
@@ -22,8 +24,9 @@ export const load: PageServerLoad = async ({ params }) => {
   const h = history();
   const featured = FEATURED.filter((b) => b.metric.kind === "stat");
 
-  const [network, minis, online, playtime, stats, milestones, advancements, hist, onlineWeek, onlineRecent, presence, hours] = await Promise.all([
+  const [network, mapIndex, minis, online, playtime, stats, milestones, advancements, hist, onlineWeek, onlineRecent, presence, hours] = await Promise.all([
     c.network(),
+    mapApi().mapServers(),
     c.miniServers(),
     c.players({ online: true, limit: 100 }),
     boardSum(c, PLAYTIME, scope, withoutHidden),
@@ -39,6 +42,9 @@ export const load: PageServerLoad = async ({ params }) => {
   const server = network.ok ? network.data.servers.find((s) => s.id === id) : undefined;
   if (network.ok && !server) error(404, "No such server");
   const name = server?.display_name ?? id;
+  // a "Map" card when this server shares a web map (hidden, One Soul and map-less servers are not in the index)
+  const onMap = mapIndex.ok ? mapIndex.data.servers.find((m) => m.server === id) : undefined;
+  const map = onMap ? { href: mapHref(id), worlds: sortWorlds(onMap.worlds).map(worldLabel), live: onMap.live_players, online: onMap.online } : null;
 
   const here = online.ok ? withoutHidden(online.data.players).filter((p) => p.server === id) : [];
   const live = minis.ok ? minis.data.mini_servers.filter((m) => m.server === id && m.public) : [];
@@ -68,6 +74,7 @@ export const load: PageServerLoad = async ({ params }) => {
     scope,
     name,
     network,
+    map,
     server,
     faces: here.map((p) => ({ uuid: p.uuid, name: p.name })),
     live: live.map((m) => ({ id: m.id, name: m.display_name, count: m.player_count, players: withoutHidden(m.players) })),

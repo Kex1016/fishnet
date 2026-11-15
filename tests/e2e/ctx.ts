@@ -18,6 +18,8 @@ export type CrawledPage = {
   overflow: string[];
   /** a token or its env name in the HTML or in any text response the page loaded */
   leak: boolean;
+  /** a hidden player or server (the scenario's examples) in the HTML or in any text response the page loaded */
+  hidden: string | null;
 };
 
 export type Crawl = { pages: CrawledPage[]; foreign: string[]; bodiesChecked: number };
@@ -29,10 +31,44 @@ export function expect(cond: unknown, message: string): asserts cond {
 }
 
 const TOKEN = /\bcu_[a-z0-9]+_[a-z0-9]+/i;
-const LEAK = (s: string) => TOKEN.test(s) || s.includes("CAKEUTILS_API_TOKEN");
+/** A token, its env name, or where cakeutils lives (the mock's base URL; a real one is checked by the wire checks). */
+export const LEAK = (s: string) => TOKEN.test(s) || s.includes("CAKEUTILS_API_TOKEN") || s.includes("mock.invalid");
+
+/**
+ * The busy fixtures' examples of what the site must never show (mock/map.ts): the hidden server "staff", the
+ * player on it, and the opted-out player "quietgill". As ids, names and uuids, in any page, JSON or SSE frame.
+ */
+export const HIDDEN_BUSY = /quietgill|5a1c0de0-0000-4000-8000-0000|bosun|\bstaff\b/i;
+
+/**
+ * Chromium logs every failed request as a console error. An unrendered map tile answers 404 on purpose (the
+ * edge of the mapped area, MAP-PROGRESS 2026-11-15), so those lines are not errors of the page.
+ */
+export function isTileMiss(text: string, url: string, origin: string): boolean {
+  return /Failed to load resource/.test(text) && /status of 404/.test(text) && url.startsWith(`${origin}/map/t/`);
+}
+
+/** A page opened for one check: what it logged, what it asked for, and how to close it. */
+export type Opened = {
+  page: any;
+  /** console errors, page errors and CSP violations (unrendered tiles left out) */
+  errors: string[];
+  /** requests that left the site */
+  foreign: string[];
+  /** every request URL the page made, in order (path + query) */
+  requests: string[];
+  close(): Promise<void>;
+};
+
+export type OpenOptions = { width?: number; height?: number; theme?: Theme; js?: boolean; reducedMotion?: boolean; /** a phone: touch, a coarse pointer */ touch?: boolean; wait?: "networkidle" | "load" | "domcontentloaded"; before?: (page: any) => Promise<void> };
+
+/** A second site started for one check (other limits, another upstream); `stop` ends it and removes its data. */
+export type Booted = { base: string; dir: string; /** what the site has printed so far */ logs(): string; stop(): Promise<void> };
+/** `mock: null` starts the build against the cakeutils `env` names; `files` go into its data directory first. */
+export type Boot = (env: Record<string, string>, opt?: { mock?: Scenario | null; files?: Record<string, string> }) => Promise<Booted>;
 
 /** The pages a crawl always visits, plus a few links discovered from each hub page. */
-const HUBS = ["/", "/servers", "/players", "/leaderboards", "/stats", "/milestones", "/about", "/one-soul"];
+const HUBS = ["/", "/servers", "/players", "/leaderboards", "/stats", "/milestones", "/about", "/one-soul", "/map"];
 const PER_HUB = 6;
 
 export class Ctx {
@@ -42,8 +78,53 @@ export class Ctx {
   constructor(
     public readonly base: string,
     public readonly scenario: Scenario,
-    private readonly browser: Browser
+    private readonly browser: Browser,
+    /** starts another site for a check that needs its own settings; null against a site we did not start */
+    public readonly boot: Boot | null = null,
+    /** what must never show on this site (the busy fixtures' hidden examples, or --hidden on a live site) */
+    public readonly hidden: RegExp | null = scenario === "busy" ? HIDDEN_BUSY : null,
+    /** `abuse`: also run the checks that load a site we did not start (600 streams from this host) */
+    public readonly flags: { abuse: boolean } = { abuse: false }
   ) {}
+
+  get origin(): string {
+    return new URL(this.base).origin;
+  }
+
+  /** Opens `path` in a fresh browser context and records what the page logs and requests. */
+  async open(path: string, o: OpenOptions = {}, base: string = this.base): Promise<Opened> {
+    const origin = new URL(base).origin;
+    const width = o.width ?? 1440;
+    const ctx = await this.browser.newContext({
+      viewport: { width, height: o.height ?? (width < 600 ? 844 : 900) },
+      colorScheme: o.theme ?? "dark",
+      javaScriptEnabled: o.js ?? true,
+      reducedMotion: o.reducedMotion ? "reduce" : "no-preference",
+      hasTouch: !!o.touch,
+      isMobile: !!o.touch
+    });
+    if (o.theme) await ctx.addCookies([{ name: "theme", value: o.theme, url: base }]);
+    const page = await ctx.newPage();
+    page.setDefaultTimeout(15_000);
+    const errors: string[] = [];
+    const foreign: string[] = [];
+    const requests: string[] = [];
+    page.on("console", (m: any) => {
+      if (m.type() !== "error") return;
+      const url: string = m.location()?.url ?? "";
+      if (!isTileMiss(m.text(), url, origin)) errors.push(`${m.text()} ${url}`.trim());
+    });
+    page.on("pageerror", (e: unknown) => errors.push(String(e)));
+    page.on("request", (req: any) => {
+      const u: string = req.url();
+      if (u.startsWith(origin)) requests.push(u.slice(origin.length));
+      else if (!u.startsWith("data:") && !u.startsWith("blob:")) foreign.push(u);
+    });
+    await page.addInitScript(() => document.addEventListener("securitypolicyviolation", (e) => console.error(`CSP violation: ${e.violatedDirective} ${e.blockedURI}`)));
+    if (o.before) await o.before(page);
+    await page.goto(base + path, { waitUntil: o.wait ?? "networkidle" });
+    return { page, errors, foreign, requests, close: () => ctx.close() };
+  }
 
   get(path: string, init: RequestInit & { theme?: Theme } = {}): Promise<Response> {
     const { theme, ...rest } = init;
@@ -77,6 +158,22 @@ export class Ctx {
       for (const h of picked) out.add(h);
     }
     out.add("/?view=tables");
+    // the map (line FM): every server's map (the nav links crowd them out of the spread above), a second world,
+    // and the One Soul round map, which draws a finished round on tiles
+    const maps = await this.get("/map");
+    if (maps.status === 200) {
+      const html = await maps.text();
+      const servers = [...new Set((html.match(/href="(\/map\/[A-Za-z0-9._-]+)"/g) ?? []).map((m) => m.slice(6, -1)))].slice(0, 4);
+      // one server only: /map is that server's map (a redirect)
+      const landed = new URL(maps.url).pathname;
+      if (/^\/map\/[^/]+$/.test(landed)) servers.push(landed);
+      for (const sv of new Set(servers)) {
+        out.add(sv);
+        const worlds = [...new Set(((await this.html(sv)).match(/href="(\/map\/[^"?]+\?world=[a-z0-9_.-]+)"/g) ?? []).map((m) => m.slice(6, -1)))];
+        if (worlds.length > 1) out.add(worlds[worlds.length - 1]);
+      }
+    }
+    if ((await this.get("/one-soul/map")).status === 200) out.add("/one-soul/map");
     return [...out];
   }
 
@@ -100,9 +197,11 @@ export class Ctx {
     const errors: string[] = [];
     const foreign = new Set<string>();
     let leak = false;
+    let hidden: string | null = null;
     let bodiesChecked = 0;
+    const secret = this.hidden;
     page.on("console", (m: any) => {
-      if (m.type() === "error") errors.push(m.text());
+      if (m.type() === "error" && !isTileMiss(m.text(), m.location()?.url ?? "", origin)) errors.push(m.text());
     });
     page.on("pageerror", (e: unknown) => errors.push(String(e)));
     page.on("request", (req: any) => {
@@ -112,13 +211,16 @@ export class Ctx {
     const pending: Promise<void>[] = [];
     page.on("response", (res: any) => {
       const type: string = res.headers()["content-type"] ?? "";
-      if (!/text\/|javascript|json|svg/.test(type)) return;
+      // a live stream never ends: its frames are read by the map checks (map.ts), not here
+      if (!/text\/|javascript|json|svg/.test(type) || type.includes("event-stream")) return;
       pending.push(
         res
           .text()
           .then((t: string) => {
             bodiesChecked++;
             if (LEAK(t)) leak = true;
+            const m = secret ? secret.exec(t) : null;
+            if (m && !hidden) hidden = `${m[0]} in ${new URL(res.url()).pathname}`;
           })
           .catch(() => {})
       );
@@ -128,6 +230,7 @@ export class Ctx {
       for (const u of list) {
         errors.length = 0;
         leak = false;
+        hidden = null;
         pending.length = 0;
         const res = await page.goto(this.base + u, { waitUntil: "networkidle" });
         await Promise.all(pending);
@@ -155,7 +258,7 @@ export class Ctx {
           }
           return out;
         });
-        pages.push({ url: u, status: res?.status(), errors: [...errors], overflow, leak });
+        pages.push({ url: u, status: res?.status(), errors: [...errors], overflow, leak, hidden });
       }
     } finally {
       await ctx.close();

@@ -66,6 +66,9 @@ export const load: PageServerLoad = async ({ params, url }) => {
     base.follow = target.uuid;
   } else if (link.follow) {
     base.followNote = await followNote(entry, link.follow, wantPositions && !live?.ok ? "down" : wantPositions ? "absent" : "off");
+    // nobody the network knows: the follow leaves the link, exactly as it does for a hidden player above, so the
+    // page answers the same for "hidden" and "never existed" (FM-7: the share link must not tell them apart)
+    if (!base.followNote) link = { ...link, follow: null };
   }
   base.link = link;
   const ref = pickWorld(worlds, link.world);

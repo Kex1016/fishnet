@@ -7,6 +7,8 @@ import type { RequestHandler } from "./$types";
 import { apiStatus } from "#lib/server/cakeutils/client.ts";
 import { history } from "#lib/server/history.ts";
 import { faceService } from "#lib/server/images/index.ts";
+import { config } from "#lib/server/env.ts";
+import { liveHub } from "#lib/server/map/index.ts";
 
 const iso = (t: number | null) => (t === null ? null : new Date(t).toISOString());
 
@@ -14,6 +16,7 @@ export const GET: RequestHandler = async ({ locals }) => {
   const s = apiStatus();
   const recordingSince = await history().recordingSince();
   const f = faceService().stats();
+  const live = liveHub().stats();
   return json(
     {
       status: "ok",
@@ -30,6 +33,8 @@ export const GET: RequestHandler = async ({ locals }) => {
       // Mojang's skin lookups (the other place a 429 can come from)
       faces: { ...f, last429At: iso(f.last429At), backoffUntil: iso(f.backoffUntil) },
       cache: s.cache,
+      // the live map's streams against MAP_SSE_MAX (numbers only: no server, no player, no address)
+      map: { streams: live.streams, maxStreams: config().mapSseMax, polling: live.hubs.filter((h) => h.polling).length },
       recordingSince: iso(recordingSince)
     },
     { headers: { "cache-control": "no-store" } }

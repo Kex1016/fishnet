@@ -63,6 +63,10 @@ export const variables = defineEnvVars({
     schema: str(""),
     description: "Site-side admin secret (not the cakeutils token), at least 24 characters; unset = no /admin; never logged"
   },
+  ADDRESS_HEADER: {
+    schema: str(""),
+    description: "adapter-node: the header that names the visitor's address behind Caddy (X-Forwarded-For, with XFF_DEPTH=1); read here only to warn when it is missing"
+  },
   FISHNET_MOCK: {
     schema: (v) => {
       const m = v?.trim();

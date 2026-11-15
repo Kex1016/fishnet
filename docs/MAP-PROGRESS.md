@@ -15,7 +15,7 @@ everything else after cakeutils GMAP2 (cakeutils `v2/map/PROGRESS.md` on `claude
 | FM-2 live hub, SSE | **merged** 549ca0a | Opus 5.5 / high | cmsg_017jXErfLmkLcYLSb5FKAVcM9KqCGixSeEL8G9QZ2PRtiz | | #43 | |
 | FM-4 pages | in progress | Sonnet 5.5 / high | cmsg_017jXErfLmkLcYLSb5FKAVcMHrvYSaXiUfeQmTLGZk1awV | | | |
 | FM-5 layers, One Soul rounds | **merged** 30173d0 | Sonnet 5.5 / medium | cmsg_017jXErfLmkLcYLSb5FKAVcMJT7uHxrgGEJ3gBYJcm4wPK | | #42 | |
-| FM-6 deploy, docs | requested | Haiku 5.5 / low | | | | |
+| FM-6 deploy, docs | in progress | Haiku 5.5 / low | cmsg_017jXErfLmkLcYLSb5FKAVcMLx4U5tTPgm8hyjLLh1ZmYv | | | |
 | FM-0b fixture sync | **merged** 6cb11c9 | Sonnet 5.5 / low | cmsg_017jXErfLmkLcYLSb5FKAVcM5ftpf5BqgSVQMmVoD8A8oa | | #41 | MAP-43 follow-up (brief §7) |
 | FM-m mini worlds | waiting (FM-4) | Sonnet 5.5 / medium | | | | |
 | FM-8 show on map | waiting (FM-4) | Sonnet 5.5 / medium | | | | |

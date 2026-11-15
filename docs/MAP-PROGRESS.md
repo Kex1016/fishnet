@@ -12,11 +12,11 @@ everything else after cakeutils GMAP2 (cakeutils `v2/map/PROGRESS.md` on `claude
 | FM-0 contracts | **merged** 59deb16 | Opus 5.5 / high | cmsg_017jXErfLmkLcYLSb5FKAVcMRkD7EasRAE44kCebvUP2us | claude/project-thread-hf70c4 | #38 | early |
 | FM-1 tile proxy | **merged** 992d8df | Sonnet 5.5 / high | cmsg_017jXErfLmkLcYLSb5FKAVcM8uYUXfxLcYWKvBe73J2HfJ | claude/fishnet-map-fm1 | #39 | early |
 | FM-3 map canvas | **merged** 41d016b | Fable 5.2 / medium | cmsg_017jXErfLmkLcYLSb5FKAVcMEKSWLpTczmc4csx1NMMHJd | | #40 | early |
-| FM-2 live hub, SSE | requested | Opus 5.5 / high | | | | |
+| FM-2 live hub, SSE | in progress | Opus 5.5 / high | cmsg_017jXErfLmkLcYLSb5FKAVcM9KqCGixSeEL8G9QZ2PRtiz | | | |
 | FM-4 pages | requested | Sonnet 5.5 / high | | | | |
 | FM-5 layers, One Soul rounds | requested | Sonnet 5.5 / medium | | | | |
 | FM-6 deploy, docs | waiting (FM-2) | Haiku 5.5 / low | | | | |
-| FM-0b fixture sync | requested | Sonnet 5.5 / low | | | | MAP-43 follow-up (brief §7) |
+| FM-0b fixture sync | in progress | Sonnet 5.5 / low | cmsg_017jXErfLmkLcYLSb5FKAVcM5ftpf5BqgSVQMmVoD8A8oa | | | MAP-43 follow-up (brief §7) |
 | FM-m mini worlds | waiting (FM-4) | Sonnet 5.5 / medium | | | | |
 | FM-8 show on map | waiting (FM-4) | Sonnet 5.5 / medium | | | | |
 | FM-7 integration, QA, go-live | waiting (all) | Fable 5.2 / high | | | | |

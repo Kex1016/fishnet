@@ -1,7 +1,7 @@
 # Live map — progress (coordinator-owned)
 
 Line: the `/map` page on squaremap tiles via cakeutils `/v2/map` (brief: cakeutils `v2/map/FISHNET-BRIEF.md`).
-Integration branch: `claude/fishnet-map` (off `main` at `dd1267d`). PR `claude/fishnet-map` → `main` is opened for
+Integration branch: `claude/fishnet-map` (off `main` at `dd1267d`). PR `claude/fishnet-map` → `main` (#49, opened 2026-11-15) is for
 David at GFM2 and not merged by the coordinator. Unit PRs target `claude/fishnet-map`.
 
 Start rule (David, 2026-11-14): FM-0, FM-1, FM-3 once cakeutils MAP-C0 is merged (into cakeutils `claude/map`);
@@ -97,3 +97,4 @@ Gates: GFM0 **passed** 2026-11-15, GFM1 **passed** 2026-11-15, GFM2 **passed** 2
 - 2026-11-15 13:25Z: FM-m #46 reviewed (check, 392 tests, build + leak pass, screenshot read) and merged (85aafde). Mini stats link: /leaderboards?scope=mini:<server>/<mini>. FM-8 rebases on it.
 - 2026-11-15 13:20Z: FM-8 #47 reviewed (check, 397 tests twice, build + leak pass, screenshots read) and merged (b10b6d9). All feature units merged; FM-7 requested (Fable 5.2 / high).
 - 2026-11-15 13:55Z: FM-7 #48 reviewed (check, 404 tests, build + leak pass, e2e 54/54 on busy and fresh incl. 600-connection SSE check) and merged (f88e857). GFM1 and GFM2 passed on mock. PR claude/fishnet-map → main opened for David.
+- 2026-11-15 13:58Z: PR #49 claude/fishnet-map → main opened for David (not merged). FM-7 screenshots sent to Map screenshots 3.

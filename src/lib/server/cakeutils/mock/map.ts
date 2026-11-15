@@ -28,6 +28,9 @@ export type MockMapWorld = {
   palette: MockMapPalette;
   /** this world has a tile change log (squaremap after 1.4.3) */
   changes: boolean;
+  /** a public mini-server's world (cakeutils MAP-31): both set or neither */
+  mini?: string;
+  area?: "overworld" | "nether" | "end";
 };
 
 export type MockMapServer = {
@@ -51,7 +54,7 @@ export type MockMap = {
 };
 
 const H = 3_600_000;
-const OW = (order: number, palette: MockMapPalette = "overworld", name = "Overworld"): MockMapWorld => ({
+const OW = (order: number, palette: MockMapPalette = "overworld", name = "minecraft:overworld"): MockMapWorld => ({
   id: "minecraft_overworld",
   dimension: "minecraft:overworld",
   name,
@@ -77,8 +80,10 @@ export function generateMapBusy(players: WorldPlayer[]): MockMap {
     player_update_ms: 1000,
     worlds: [
       { ...OW(0), spawn: { x: 64, z: -32 }, changes: true },
-      { id: "minecraft_the_nether", dimension: "minecraft:the_nether", name: "The Nether", order: 1, zoom: { max: 3, default: 2, extra: 2 }, spawn: { x: 8, z: -4 }, palette: "nether", changes: false },
-      { id: "minecraft_the_end", dimension: "minecraft:the_end", name: "The End", order: 2, zoom: { max: 3, default: 1, extra: 2 }, spawn: { x: 100, z: 0 }, palette: "end", changes: false }
+      { id: "minecraft_the_nether", dimension: "minecraft:the_nether", name: "minecraft:the_nether", order: 0, zoom: { max: 3, default: 2, extra: 2 }, spawn: { x: 8, z: -4 }, palette: "nether", changes: false },
+      // a public mini-server's world (brief §2): its own id, the mini's name and area; a private mini is not here at all
+      { id: "mini_parkour_overworld", dimension: "minecraft:overworld", name: "minecraft:overworld", order: 0, zoom: { max: 3, default: 3, extra: 2 }, spawn: { x: 16, z: 16 }, palette: "flat", changes: false, mini: "Parkour", area: "overworld" },
+      { id: "minecraft_the_end", dimension: "minecraft:the_end", name: "minecraft:the_end", order: 0, zoom: { max: 3, default: 1, extra: 2 }, spawn: { x: 100, z: 0 }, palette: "end", changes: false }
     ]
   };
   const creative: MockMapServer = {
@@ -88,7 +93,7 @@ export function generateMapBusy(players: WorldPlayer[]): MockMap {
     live_players: false,
     announced_ago_ms: 26 * H,
     player_update_ms: 1000,
-    worlds: [{ ...OW(0, "flat", "Creative world"), zoom: { max: 3, default: 2, extra: 2 } }]
+    worlds: [{ ...OW(0, "flat", "minecraft:overworld"), zoom: { max: 3, default: 2, extra: 2 } }]
   };
   const staff: MockMapServer = { server: "staff", display_name: "Staff", online: true, live_players: true, announced_ago_ms: H, player_update_ms: 1000, worlds: [OW(0)] };
 
@@ -127,8 +132,13 @@ function jsonCc(req: Request, data: unknown, cc: string): Response {
   const body = JSON.stringify(data);
   const etag = `W/"${hex(`map:${body}`, 16)}"`;
   const headers = { "content-type": "application/json", "cache-control": cc, etag, ...RATE };
-  if (matches(req, etag)) return new Response(null, { status: 304, headers });
+  if (matches(req, etag)) return new Response(null, { status: 304, headers: noType(headers) });
   return new Response(body, { status: 200, headers });
+}
+
+function noType(h: Record<string, string>): Record<string, string> {
+  const { "content-type": _t, ...rest } = h;
+  return rest;
 }
 
 function matches(req: Request, etag: string): boolean {
@@ -248,7 +258,7 @@ async function tilePng(key: string, palette: MockMapPalette, seed: number, spawn
 async function tileAnswer(req: Request, key: string, cc: string, draw: () => Promise<Uint8Array>): Promise<Response> {
   const etag = `"${hex(`tile:${key}`, 16)}"`;
   const headers = { "content-type": "image/png", "cache-control": cc, etag, "last-modified": new Date(Date.UTC(2026, 10, 1)).toUTCString(), ...RATE };
-  if (matches(req, etag)) return new Response(null, { status: 304, headers });
+  if (matches(req, etag)) return new Response(null, { status: 304, headers: noType(headers) }); // cakeutils' 304 has no Content-Type (MAP-40 F3)
   const png = await draw();
   return new Response(req.method === "HEAD" ? null : (png as unknown as BodyInit), { status: 200, headers });
 }
@@ -276,7 +286,7 @@ function changesOf(server: string, w: MockMapWorld, t: number): MapChanges {
     const h = fnv1a(`change:${server}:${w.id}:${s}`);
     tiles.push([s, w.zoom.max, (h % 3) - 1, ((h >>> 8) % 3) - 1]);
   }
-  return { server, world: w.id, epoch: "mock-1", seq, dropped: Math.max(0, seq - LOG_KEEP), tiles };
+  return { server, world: w.id, epoch: "7b1kxl4apuny", seq, dropped: Math.max(0, seq - LOG_KEEP), tiles };
 }
 
 /**
@@ -297,7 +307,7 @@ export async function handleMap(world: World, url: URL, seg: string[], req: Requ
           server: s.server,
           display_name: s.display_name,
           online: s.online,
-          worlds: s.worlds.map((w) => ({ id: w.id, dimension: w.dimension, name: w.name, order: w.order, mini: null, area: null })),
+          worlds: s.worlds.map((w) => ({ id: w.id, dimension: w.dimension, name: w.name, order: w.order, mini: w.mini ?? null, area: w.area ?? null })),
           live_players: s.online && s.live_players,
           changes: s.online && s.worlds.some((w) => w.changes),
           announced_at: t - s.announced_ago_ms

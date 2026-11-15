@@ -15,6 +15,11 @@ export function tileService(): TileService {
   return (service = createTileService({
     dir: join(c.dataDir, c.mock ? `map-mock-${c.mock}` : "map"),
     maxBytes: c.mapCacheMaxBytes,
+    listed: async () => {
+      const r = await m.mapServers();
+      if (!r.ok || r.stale) return null;
+      return new Map(r.data.servers.map((s) => [s.server, new Set(s.worlds.map((w) => w.id))]));
+    },
     visible: (server, scope) => m.serverVisible(server, scope),
     source: (ref, o) => (ref.round !== undefined ? m.roundMapTile(ref.round, ref.world, ref.tile, ref.server, o) : m.mapTile(ref.server, ref.world, ref.tile, o))
   }));

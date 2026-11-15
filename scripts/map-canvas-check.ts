@@ -366,9 +366,9 @@ if (scenario === "fresh") {
     await settled(page);
     const srcs = () => page.evaluate(() => [...document.querySelectorAll<HTMLImageElement>(".mc__map img.leaflet-tile")].map((i) => i.getAttribute("src")!));
     const before: string[] = await srcs();
-    expect(before.length > 0 && before.every((s) => /\?v=mock-1\.\d+$/.test(s)), `tiles without a version: ${before.find((s) => !/\?v=mock-1\.\d+$/.test(s))}`);
-    await page.evaluate(() => (window as any).__fmap.applyTiles({ world: "minecraft_overworld", epoch: "mock-1", reset: false, tiles: [["mock-1.99999999", 3, 0, -1]] }));
-    await page.waitForFunction(() => [...document.querySelectorAll<HTMLImageElement>(".mc__map img.leaflet-tile")].some((i) => i.getAttribute("src")!.endsWith("/3/0_-1.png?v=mock-1.99999999")));
+    expect(before.length > 0 && before.every((s) => /\?v=[a-z0-9]+\.\d+$/.test(s)), `tiles without a version: ${before.find((s) => !/\?v=[a-z0-9]+\.\d+$/.test(s))}`);
+    await page.evaluate(() => (window as any).__fmap.applyTiles({ world: "minecraft_overworld", epoch: "7b1kxl4apuny", reset: false, tiles: [["7b1kxl4apuny.99999999", 3, 0, -1]] }));
+    await page.waitForFunction(() => [...document.querySelectorAll<HTMLImageElement>(".mc__map img.leaflet-tile")].some((i) => i.getAttribute("src")!.endsWith("/3/0_-1.png?v=7b1kxl4apuny.99999999")));
     const after: string[] = await srcs();
     expect(after.length === before.length, "tiles were rebuilt instead of swapped");
     expect(after.filter((s, i) => s !== before[i]).length === 1, "more than the named tile changed");

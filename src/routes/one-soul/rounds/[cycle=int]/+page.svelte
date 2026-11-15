@@ -10,6 +10,8 @@
   import { osHref } from "#lib/onesoul/links.ts";
   import { barRows } from "#lib/onesoul/boards.ts";
   import { day } from "#lib/format/dates.ts";
+  import RoundMap from "#lib/map/layers/RoundMap.svelte";
+  import { withParams } from "#lib/url.ts";
   let { data } = $props();
   const view = $derived(viewParam(page.url));
   const s = $derived(data.summary);
@@ -43,6 +45,21 @@
       <div class="fp-tiles os-tiles">
         {#each data.records as r (r.id)}<StatTile label={r.title} value={r.display} note={`${r.name}, turn ${r.turn}`} href={osHref.soul(data.cycle, r.turn)} />{/each}
       </div>
+    </section>
+  {/if}
+
+  {#if data.map}
+    <section class="fp-section">
+      <h2 class="t-title-3">Map</h2>
+      <RoundMap
+        mode="card"
+        world={data.map.tile.view}
+        map={data.map.layers.find((m) => m.dim === data.map!.tile.dim)}
+        cycle={data.cycle}
+        worlds={data.map.tile.worlds.map((w) => ({ id: w.id, label: w.label, href: withParams(page.url, { world: w.id }) }))}
+        openHref="/one-soul/map?round={data.cycle}&world={data.map.tile.view.id}"
+        tableHref="/one-soul/map?round={data.cycle}&view=tables"
+      />
     </section>
   {/if}
 

@@ -6,6 +6,7 @@
   import Notice from "#lib/design/Notice.svelte";
   import { DataTable, ViewSwitch } from "#lib/charts/index.ts";
   import WorldMap from "#lib/onesoul/WorldMap.svelte";
+  import RoundMap from "#lib/map/layers/RoundMap.svelte";
   import type { LayerId } from "#lib/onesoul/map.ts";
   import { withParams } from "#lib/url.ts";
   let { data } = $props();
@@ -13,8 +14,21 @@
   const NAMES: Record<LayerId, string> = { trails: "Trails", deaths: "Deaths", graves: "Graves", waystones: "Waystones", spawn: "Spawn" };
   let show = $state<Record<LayerId, boolean>>({ trails: true, deaths: true, graves: true, waystones: true, spawn: true });
   const KIND: Record<string, string> = { spawn: "Spawn", death: "Death", grave: "Grave", waystone: "Waystone", other: "Point" };
+  // a finished round with archived tiles is drawn on them, full bleed; ?view=tables is its table twin
+  const tiled = $derived(data.ok && data.tile !== null && data.view !== "tables");
+  const q = (extra: Record<string, string | null>) => withParams(page.url, extra);
 </script>
 
+{#if data.ok && data.tile && tiled}
+  <RoundMap
+    world={data.tile.view}
+    map={data.maps.find((m) => m.dim === data.tile!.dim)}
+    cycle={data.cycle}
+    worlds={data.tile.worlds.map((w) => ({ id: w.id, label: w.label, href: q({ world: w.id }) }))}
+    rounds={data.rounds.map((r) => ({ cycle: r, href: q({ round: String(r), world: null }) }))}
+    tableHref={q({ view: "tables" })}
+  />
+{:else}
 <div class="fp-page">
   <section class="fp-section">
     <div class="fp-section__head">
@@ -81,6 +95,7 @@
     </div>
   {/if}
 </div>
+{/if}
 
 <style>
   .os-controls {

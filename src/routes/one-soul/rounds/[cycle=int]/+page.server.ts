@@ -10,8 +10,9 @@ import { oneSoul, sectionApi } from "#lib/server/onesoul/index.ts";
 import { allGraves, allSouls, roundSummaries } from "#lib/server/onesoul/section.ts";
 import { prepareFeed, hideFromFeed } from "#lib/milestones/prepare.server.ts";
 import { PLAYTIME } from "#lib/api/metric.ts";
+import { roundShapes, roundTiles } from "#lib/map/layers/round.server.ts";
 
-export const load: PageServerLoad = async ({ parent, params }) => {
+export const load: PageServerLoad = async ({ parent, params, url }) => {
   const { os } = await parent();
   if (!os) error(404, "Not found");
   const cycle = params.cycle as unknown as number;
@@ -31,7 +32,15 @@ export const load: PageServerLoad = async ({ parent, params }) => {
         summary.ended_at ? oneSoul().pranks({ server: os.server, cycle }) : Promise.resolve(null)
       ])
     : [null, null, null, null, null, summary.ended_at ? await oneSoul().pranks({ server: os.server, cycle }) : null];
+  // a finished round shows its map on the archived tiles (FM-5); a running round has none and makes no tile request
+  let map: { tile: NonNullable<Awaited<ReturnType<typeof roundTiles>>>; layers: Awaited<ReturnType<typeof roundShapes>>["maps"] } | null = null;
+  if (summary.ended_at) {
+    const shapes = await roundShapes(oneSoul(), os.server, cycle, null);
+    const tile = shapes.ok ? await roundTiles(os.server, cycle, shapes.maps, true, url.searchParams.get("world")) : null;
+    if (tile) map = { tile, layers: shapes.maps };
+  }
   return {
+    map,
     title: `Round ${cycle}`,
     crumbs: [
       { label: "One Soul", href: "/one-soul" },

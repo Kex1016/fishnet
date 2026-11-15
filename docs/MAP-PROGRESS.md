@@ -12,10 +12,10 @@ everything else after cakeutils GMAP2 (cakeutils `v2/map/PROGRESS.md` on `claude
 | FM-0 contracts | **merged** 59deb16 | Opus 5.5 / high | cmsg_017jXErfLmkLcYLSb5FKAVcMRkD7EasRAE44kCebvUP2us | claude/project-thread-hf70c4 | #38 | early |
 | FM-1 tile proxy | **merged** 992d8df | Sonnet 5.5 / high | cmsg_017jXErfLmkLcYLSb5FKAVcM8uYUXfxLcYWKvBe73J2HfJ | claude/fishnet-map-fm1 | #39 | early |
 | FM-3 map canvas | **merged** 41d016b | Fable 5.2 / medium | cmsg_017jXErfLmkLcYLSb5FKAVcMEKSWLpTczmc4csx1NMMHJd | | #40 | early |
-| FM-2 live hub, SSE | in progress | Opus 5.5 / high | cmsg_017jXErfLmkLcYLSb5FKAVcM9KqCGixSeEL8G9QZ2PRtiz | | | |
+| FM-2 live hub, SSE | **merged** 549ca0a | Opus 5.5 / high | cmsg_017jXErfLmkLcYLSb5FKAVcM9KqCGixSeEL8G9QZ2PRtiz | | #43 | |
 | FM-4 pages | in progress | Sonnet 5.5 / high | cmsg_017jXErfLmkLcYLSb5FKAVcMHrvYSaXiUfeQmTLGZk1awV | | | |
 | FM-5 layers, One Soul rounds | **merged** 30173d0 | Sonnet 5.5 / medium | cmsg_017jXErfLmkLcYLSb5FKAVcMJT7uHxrgGEJ3gBYJcm4wPK | | #42 | |
-| FM-6 deploy, docs | waiting (FM-2) | Haiku 5.5 / low | | | | |
+| FM-6 deploy, docs | requested | Haiku 5.5 / low | | | | |
 | FM-0b fixture sync | **merged** 6cb11c9 | Sonnet 5.5 / low | cmsg_017jXErfLmkLcYLSb5FKAVcM5ftpf5BqgSVQMmVoD8A8oa | | #41 | MAP-43 follow-up (brief §7) |
 | FM-m mini worlds | waiting (FM-4) | Sonnet 5.5 / medium | | | | |
 | FM-8 show on map | waiting (FM-4) | Sonnet 5.5 / medium | | | | |
@@ -51,6 +51,12 @@ Gates: GFM0 **passed** 2026-11-15, GFM1 open, GFM2 open. Screenshots thread ("Ma
   `src/lib/map/worlds.ts` (vanilla worlds arrive `order 0`, raw names: the site orders and labels them).
 - 2026-11-15: FM-6 starts after FM-2 (it documents FM-2's env vars and Caddy block); FM-m starts after FM-4
   (it changes FM-4's world picker), both to keep file ownership disjoint.
+- 2026-11-15 (FM-2): browser connects to `liveHref(server)+"?world=&epoch=&seq="`, reconnects on world change; positions-off
+  comes from `live_players` in /v2/map (not in the snapshot); tile reset on `dropped > seq` (not ≥: nothing lost when
+  equal), accepted; players on worlds no longer listed are dropped; env `MAP_SSE_MAX`; 4 streams per exact client
+  address (IPv6 /64 not grouped: FM-7 to judge).
+- Screenshots threads: "Map screenshots" is full; later stages go to "Map screenshots 2"
+  (cmsg_017jXErfLmkLcYLSb5FKAVcMWkkENWXb2WqP27uo6Awu6E), at most 6 files per post.
 
 ## Log
 
@@ -66,3 +72,4 @@ Gates: GFM0 **passed** 2026-11-15, GFM1 open, GFM2 open. Screenshots thread ("Ma
 - 2026-11-15 12:45Z: FM-0b #41 reviewed (check, 348 tests, build pass); sent back once: mini world label must use `name` (mini display name, MAP §8), mock mini id like the real one.
 - 2026-11-15 12:50Z: FM-0b fix 0b8cb59 re-checked (check, 348 tests, build pass) and merged (#41, 6cb11c9). worlds.ts (sortWorlds, worldLabel) available to FM-4/FM-m; busy mini world cakeutils_miniservers_skyblock-1_overworld.
 - 2026-11-15 12:58Z: FM-5 #42 reviewed (check, 353 tests, build + leak pass, screenshots read) and merged (30173d0). Round world names use One Soul dimension labels (not worlds.ts), accepted.
+- 2026-11-15 13:05Z: FM-2 #43 reviewed (check, 381 tests merged, build + leak pass; client address via adapter ADDRESS_HEADER/XFF_DEPTH) and merged (549ca0a). FM-6 requested.

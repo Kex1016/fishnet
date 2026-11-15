@@ -55,7 +55,7 @@ Gates: GFM0 **passed** 2026-11-15, GFM1 open, GFM2 open. Screenshots thread ("Ma
   comes from `live_players` in /v2/map (not in the snapshot); tile reset on `dropped > seq` (not ≥: nothing lost when
   equal), accepted; players on worlds no longer listed are dropped; env `MAP_SSE_MAX`; 4 streams per exact client
   address (IPv6 /64 not grouped: FM-7 to judge).
-- Screenshots threads: "Map screenshots" and "Map screenshots 2" are full (24 files each); later stages go to "Map screenshots 3" (id pending; was "Map screenshots 2"
+- Screenshots threads: "Map screenshots" and "Map screenshots 2" are full (24 files each); later stages go to "Map screenshots 3" (cmsg_017jXErfLmkLcYLSb5FKAVcMEnq7yPfmvZvxbPPeUnNAUw; earlier "Map screenshots 2"
   (cmsg_017jXErfLmkLcYLSb5FKAVcMWkkENWXb2WqP27uo6Awu6E), at most 6 files per post.
 - 2026-11-15 (FM-4): pages use `src/lib/map/liveClient.ts` (SSE, resumes after last tile event) and `pages.ts`;
   world list in `/map/[server]` `data.worlds` via worldLabel; `?follow=` written into share links but read by FM-8.

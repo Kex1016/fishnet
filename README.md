@@ -36,7 +36,7 @@ Copy `.env.example` to `.env` and set the values. `.env` is never committed.
 | `CAKEUTILS_MAP_RATE` | Map requests per minute (tiles, positions, changes), below cakeutils' map bucket of 1200 | `900` |
 | `CAKEUTILS_MAP_BURST` | Map requests the site may send back to back, below cakeutils' map burst of 300 | `200` |
 | `MAP_CACHE_MAX_MB` | Disk the map tile cache may use under `FISHNET_DATA_DIR/map`, in MiB; the oldest tiles go first | `2048` |
-| `MAP_SSE_MAX` | Live map streams open at once, all visitors together (4 per client address) | `500` |
+| `MAP_SSE_MAX` | Live map streams open at once, all visitors together (4 per client: an IPv4 address or an IPv6 /64) | `500` |
 | `ORIGIN` | The public origin, for absolute links and the origin check | `http://localhost:3000` |
 | `FISHNET_DATA_DIR` | Recorder database and caches | `data` |
 | `HIDDEN_PLAYERS_FILE` | Players who opted out, one UUID or name per line | `data/hidden-players.txt` |
@@ -57,9 +57,14 @@ cakectl token create fishnet read:players read:stats read:onesoul read:map --rat
   volume as the database). It is capped by `MAP_CACHE_MAX_MB`; the oldest tiles go first. Deleting it only costs
   re-downloads.
 - **Live streams**: each open map keeps one stream (SSE) for players and tile changes. At most 4 streams per
-  client address and `MAP_SSE_MAX` in all; past that the site answers `503` with `Retry-After`. A stream closes
-  after 30 minutes and the browser reconnects. Behind Caddy, the `/map/<server>/live` path must not be buffered
-  or compressed: see `deploy/Caddyfile.example`.
+  client and `MAP_SSE_MAX` in all; past that the site answers `503` with `Retry-After` and the page polls
+  `/map/<server>/players.json` every 5 s instead, so the map keeps working. A client is an IPv4 address or an
+  IPv6 /64 (one IPv6 host owns a whole /64). A stream closes after 30 minutes and the browser reconnects. Behind
+  Caddy, the `/map/<server>/live` path must not be buffered or compressed: see `deploy/Caddyfile.example`.
+- **Behind Caddy, set `ADDRESS_HEADER=X-Forwarded-For` and `XFF_DEPTH=1`** (they are in `.env.example`). Without
+  them every visitor looks like Caddy, so the whole site shares 4 streams and everyone else polls. The site says
+  so once in its log (`map live: requests come through a proxy but ADDRESS_HEADER is not set`), and
+  `curl /healthz` shows the open streams under `map`.
 - **Map requests** have their own rate bucket (`CAKEUTILS_MAP_RATE`, `CAKEUTILS_MAP_BURST`), so a busy map
   does not use up the budget for the rest of the site.
 - Map tiles are rendered by squaremap; the about page credits it.

@@ -67,7 +67,8 @@
 
 <style>
   .rm-chip { color: var(--text); box-shadow: var(--shadow-float); text-decoration: none; }
-  /* beside the One Soul header and tabs the stage takes the rest of the window */
-  .rm-stage { height: max(420px, calc(100dvh - 200px)); }
+  /* under the One Soul header and tabs the stage takes the rest of the content area, down to its edge (the
+     One Soul layout makes its frame a column for this; a guessed header height left a strip under the map) */
+  .rm-stage { flex: 1 1 0; height: auto; min-height: 420px; }
   .rm-card { height: clamp(320px, 52vh, 480px); border: 1px solid var(--line); border-radius: var(--radius-xl); }
 </style>

@@ -4,15 +4,20 @@
 //   event: status   {state, as_of}            on connect and whenever cakeutils or the backend comes or goes
 //   : hb                                      every 15 s; `retry: 5000`; closed after 30 min (the browser reconnects)
 // `epoch` + `seq` = the change log the page loaded with, so the catch-up sends only what is newer. A server not on
-// the live map is a 404; past the stream limits (4 per address, MAP_SSE_MAX in all) a 503 with Retry-After. The
-// page's fallback after three failures is players.json.
+// the live map is a 404; past the stream limits (4 per client, MAP_SSE_MAX in all) a 503 with Retry-After. The
+// page's fallback after three failures is players.json. A client is an IPv4 address or an IPv6 /64 (the hub
+// counts by address.ts). Behind Caddy the address comes from ADDRESS_HEADER / XFF_DEPTH (adapter-node); without
+// them every visitor is Caddy, so the whole site shares 4 streams: said once in the log when it is seen.
 import { error } from "@sveltejs/kit";
+import { ADDRESS_HEADER } from "$app/env/private";
 import type { RequestHandler } from "./$types";
 import { mapApi } from "#lib/server/cakeutils/client.ts";
 import { liveHub } from "#lib/server/map/index.ts";
 import { parseInt10, validServerId, validWorldId } from "#lib/map/links.ts";
 
 const EPOCH = /^[A-Za-z0-9._:-]{1,64}$/;
+
+let warned = false;
 
 export const GET: RequestHandler = async (event) => {
   const { params, url } = event;
@@ -36,6 +41,12 @@ export const GET: RequestHandler = async (event) => {
     ip = event.getClientAddress();
   } catch {
     /* no address (tests, odd adapters): one shared bucket */
+  }
+
+  // a proxy is in front (it added X-Forwarded-For) but the site was not told to read it: fixed text, once
+  if (!warned && !ADDRESS_HEADER && event.request.headers.has("x-forwarded-for")) {
+    warned = true;
+    console.warn("map live: requests come through a proxy but ADDRESS_HEADER is not set: every visitor counts as one client (4 live streams for the whole site). Set ADDRESS_HEADER=X-Forwarded-For and XFF_DEPTH=1.");
   }
 
   const enc = new TextEncoder();

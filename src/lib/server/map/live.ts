@@ -15,11 +15,14 @@
 // against the last one: a stream gets the full snapshot once, then only what changed.
 //
 // Streams: `retry: 5000`, then `status`, the snapshot, the world's catch-up; a `: hb` comment every 15 s; closed
-// after 30 min (the browser reconnects). At most 4 per client address and `total` (MAP_SSE_MAX) in all; more
-// are refused (the route answers 503 + Retry-After). A stream whose reader stops reading is closed, not buffered.
+// after 30 min (the browser reconnects). At most 4 per client and `total` (MAP_SSE_MAX) in all; more are
+// refused (the route answers 503 + Retry-After). A client is an IPv4 address or an IPv6 /64 (address.ts: one
+// IPv6 host owns a whole /64, so exact addresses would let it take every stream of the site). A stream whose
+// reader stops reading is closed, not buffered.
 import type { Result } from "#lib/api/result.ts";
 import type { MapChanges, MapPlayers } from "#lib/api/types.ts";
 import { tileVersion } from "#lib/map/links.ts";
+import { addressKey } from "./address.ts";
 import type { LiveState, PlayerDot, PlayersEvent, PlayersSnapshot, StatusEvent, TilesEvent } from "#lib/map/types.ts";
 
 export type Clock = {
@@ -61,7 +64,7 @@ export type LiveDeps = {
 };
 
 export type LiveLimits = {
-  /** streams per client address */
+  /** streams per client: an IPv4 address or an IPv6 /64 (address.ts) */
   perIp: number;
   /** streams in all (MAP_SSE_MAX) */
   total: number;
@@ -121,7 +124,7 @@ export type Sink = {
 
 export type SubscribeRequest = {
   server: string;
-  /** the client's address (the per-address limit) */
+  /** the client's address; the limit counts it by `addressKey` (IPv4 address, IPv6 /64) */
   ip: string;
   /** the world shown: its change log is polled and its `tiles` events sent; null = positions only */
   world?: string | null;
@@ -206,11 +209,12 @@ type Stream = {
   server: string;
   ip: string;
   world: string | null;
-  since: { epoch: string; seq: number } | null;
+  /** where the stream stands in its world's change log: what the page loaded with, then the last position sent */
+  at: { epoch: string; seq: number } | null;
   sink: Sink;
   /** got its full players snapshot */
   primed: boolean;
-  /** got its world's catch-up */
+  /** heard its world's log at least once */
   caught: boolean;
   closed: boolean;
   hb: unknown;
@@ -290,18 +294,35 @@ export function createLiveHub(deps: LiveDeps): LiveHub {
     send(s, sse("players", ev));
   }
 
-  function catchUp(w: WorldPoll, s: Stream): void {
-    if (s.caught || !w.log) return;
+  /**
+   * Brings one stream level with a world's log, from where that stream stands (`s.at`: the log position the page
+   * loaded with, then the last one sent). `frames` shares the encoded event between streams at the same position.
+   *   - no position: the whole log, once (not a reset: the page has no versions to throw away);
+   *   - another epoch, or the log dropped rows the stream never saw: a reset with the whole log;
+   *   - behind: the rows it has not seen;
+   *   - level, or ahead of the hub: nothing. Ahead is normal, not a log gone backwards: the page asked cakeutils for
+   *     the log when it loaded, the hub up to `changesMs` earlier (FM-7: this used to be a reset, so a page that
+   *     loaded just after a tile changed reloaded every tile).
+   */
+  function deliver(w: WorldPoll, s: Stream, frames?: Map<string, string>, force = false): void {
+    const log = w.log;
+    if (!log || s.closed) return;
+    const at = s.at;
+    const first = !s.caught;
     s.caught = true;
-    const since = s.since;
-    let ev: TilesEvent;
-    if (!since) ev = tilesEvent(w.id, w.log, null, false);
-    else if (since.epoch !== w.log.epoch || w.log.dropped > since.seq || w.log.seq < since.seq) ev = tilesEvent(w.id, w.log, null, true);
-    else {
-      ev = tilesEvent(w.id, w.log, since.seq, false);
-      if (!ev.tiles.length) return;
+    const reset = force || (!!at && (at.epoch !== log.epoch || log.dropped > at.seq));
+    const after = !at || reset ? null : at.seq;
+    s.at = { epoch: log.epoch, seq: after === null ? log.seq : Math.max(after, log.seq) };
+    if (after !== null && log.seq <= after) return;
+    const key = `${reset ? "r" : ""}${after ?? ""}`;
+    let frame = frames?.get(key);
+    if (frame === undefined) {
+      const ev = tilesEvent(w.id, log, after, reset);
+      // a stream without a position hears the log even when it is empty (it then knows the epoch)
+      frame = ev.reset || ev.tiles.length || (first && !at) ? sse("tiles", ev) : "";
+      frames?.set(key, frame);
     }
-    send(s, sse("tiles", ev));
+    if (frame) send(s, frame);
   }
 
   function setState(h: ServerHub, state: LiveState): void {
@@ -430,17 +451,10 @@ export function createLiveHub(deps: LiveDeps): LiveHub {
   function applyLog(h: ServerHub, w: WorldPoll, got: Log): void {
     const prev = w.log;
     w.log = got;
-    if (prev) {
-      let ev: TilesEvent | null = null;
-      // a new epoch, the log dropped entries we never saw, or it went backwards: reload every tile
-      if (got.epoch !== prev.epoch || got.dropped > prev.seq || got.seq < prev.seq) ev = tilesEvent(w.id, got, null, true);
-      else if (got.seq > prev.seq) ev = tilesEvent(w.id, got, prev.seq, false);
-      if (ev && (ev.reset || ev.tiles.length)) {
-        const frame = sse("tiles", ev);
-        for (const s of h.streams) if (s.world === w.id && s.caught) send(s, frame);
-      }
-    }
-    for (const s of h.streams) if (s.world === w.id) catchUp(w, s);
+    // the hub itself saw the log go backwards inside one epoch (cakeutils starts a new epoch instead): reload every tile
+    const backwards = !!prev && got.epoch === prev.epoch && got.seq < prev.seq;
+    const frames = new Map<string, string>();
+    for (const s of [...h.streams]) if (s.world === w.id) deliver(w, s, frames, backwards);
   }
 
   function watch(h: ServerHub, world: string): void {
@@ -560,14 +574,15 @@ export function createLiveHub(deps: LiveDeps): LiveHub {
     subscribe(req) {
       if (!deps.visible(req.server)) return { ok: false, reason: "hidden", retryAfter: 0 };
       if (total >= L.total) return { ok: false, reason: "total", retryAfter: 30 };
-      if ((perIp.get(req.ip) ?? 0) >= L.perIp) return { ok: false, reason: "per_ip", retryAfter: 30 };
+      const ip = addressKey(req.ip);
+      if ((perIp.get(ip) ?? 0) >= L.perIp) return { ok: false, reason: "per_ip", retryAfter: 30 };
       const h = hubOf(req.server);
       const s: Stream = {
         id: nextId++,
         server: req.server,
-        ip: req.ip,
+        ip,
         world: req.world ?? null,
-        since: req.since ?? null,
+        at: req.since ? { epoch: req.since.epoch, seq: req.since.seq } : null,
         sink: req.sink,
         primed: false,
         caught: false,
@@ -576,7 +591,7 @@ export function createLiveHub(deps: LiveDeps): LiveHub {
         age: null
       };
       total++;
-      perIp.set(req.ip, (perIp.get(req.ip) ?? 0) + 1);
+      perIp.set(ip, (perIp.get(ip) ?? 0) + 1);
       h.streams.add(s);
       clock.clearTimeout(h.idle);
       h.idle = null;
@@ -586,7 +601,7 @@ export function createLiveHub(deps: LiveDeps): LiveHub {
       if (s.world) {
         watch(h, s.world);
         const w = h.worlds.get(s.world);
-        if (w) catchUp(w, s);
+        if (w) deliver(w, s);
       }
       heartbeat(s);
       s.age = clock.setTimeout(() => drop(s, true), L.maxAgeMs);

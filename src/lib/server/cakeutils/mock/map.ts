@@ -82,7 +82,7 @@ export function generateMapBusy(players: WorldPlayer[]): MockMap {
       { ...OW(0), spawn: { x: 64, z: -32 }, changes: true },
       { id: "minecraft_the_nether", dimension: "minecraft:the_nether", name: "minecraft:the_nether", order: 0, zoom: { max: 3, default: 2, extra: 2 }, spawn: { x: 8, z: -4 }, palette: "nether", changes: false },
       // a public mini-server's world (brief §2): its own id, the mini's name and area; a private mini is not here at all
-      { id: "mini_parkour_overworld", dimension: "minecraft:overworld", name: "minecraft:overworld", order: 0, zoom: { max: 3, default: 3, extra: 2 }, spawn: { x: 16, z: 16 }, palette: "flat", changes: false, mini: "Parkour", area: "overworld" },
+      { id: "cakeutils_miniservers_skyblock-1_overworld", dimension: "minecraft:overworld", name: "Skyblock 1", order: 0, zoom: { max: 3, default: 3, extra: 2 }, spawn: { x: 16, z: 16 }, palette: "flat", changes: false, mini: "skyblock-1", area: "overworld" },
       { id: "minecraft_the_end", dimension: "minecraft:the_end", name: "minecraft:the_end", order: 0, zoom: { max: 3, default: 1, extra: 2 }, spawn: { x: 100, z: 0 }, palette: "end", changes: false }
     ]
   };

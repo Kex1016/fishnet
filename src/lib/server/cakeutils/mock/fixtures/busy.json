@@ -3114,9 +3114,9 @@
       "changes": false
      },
      {
-      "id": "mini_parkour_overworld",
+      "id": "cakeutils_miniservers_skyblock-1_overworld",
       "dimension": "minecraft:overworld",
-      "name": "minecraft:overworld",
+      "name": "Skyblock 1",
       "order": 0,
       "zoom": {
        "max": 3,
@@ -3129,7 +3129,7 @@
       },
       "palette": "flat",
       "changes": false,
-      "mini": "Parkour",
+      "mini": "skyblock-1",
       "area": "overworld"
      },
      {

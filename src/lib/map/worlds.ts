@@ -19,10 +19,10 @@ function vanilla(w: WorldLike) {
   return VANILLA.find((v) => keys.some((k) => v.ids.includes(k))) ?? null;
 }
 
-/** A readable name (a mini's world reads "<mini> · Overworld"): the three vanilla worlds by their game names, a name that is already prose as is, a raw id title-cased. */
+/** A readable name (a mini's world reads "<mini name> · Overworld"): the three vanilla worlds by their game names, a name that is already prose as is, a raw id title-cased. */
 export function worldLabel(w: WorldLike): string {
   const v = vanilla(w);
-  if (w.mini) return `${w.mini} · ${v ? v.label : w.name.trim() || w.id}`;
+  if (w.mini) return `${w.name.trim() || w.mini} · ${v ? v.label : w.area ?? w.id}`; // `name` is the mini's display name (MAP.md §8)
   if (v) return v.label;
   const name = w.name.trim() || w.id;
   if (!/^[a-z0-9_.-]+(:[a-z0-9_./-]+)?$/.test(name)) return name; // written by a person: keep it

@@ -33,14 +33,15 @@ describe("worlds.ts", () => {
   });
   test("mini worlds come last, grouped by mini, then area; label names the mini", () => {
     const list = [
-      w("m_b_end", "minecraft:the_end", { mini: "Beta", area: "end" }),
-      w("m_a_nether", "minecraft:the_nether", { mini: "Alpha", area: "nether" }),
-      w("m_a_ow", "minecraft:overworld", { mini: "Alpha", area: "overworld" }),
+      w("m_b_end", "Beta Island", { mini: "beta", area: "end" }),
+      w("m_a_nether", "Alpha Island", { mini: "alpha", area: "nether" }),
+      w("m_a_ow", "Alpha Island", { mini: "alpha", area: "overworld" }),
       w("minecraft_the_end", "minecraft:the_end", { dimension: "minecraft:the_end" }),
       w("minecraft_overworld", "minecraft:overworld", { dimension: "minecraft:overworld" })
     ];
     expect(sortWorlds(list).map((x) => x.id)).toEqual(["minecraft_overworld", "minecraft_the_end", "m_a_ow", "m_a_nether", "m_b_end"]);
-    expect(worldLabel(list[2]!)).toBe("Alpha · Overworld");
+    expect(worldLabel(list[2]!)).toBe("Alpha Island · Overworld");
+    expect(worldLabel(w("x", "", { mini: "alpha", area: "end" }))).toBe("alpha · The End");
   });
 });
 
@@ -75,7 +76,7 @@ describe("mock matches the fixtures (MAP-43)", () => {
     }
   });
   test("a mini world has tiles", async () => {
-    expect((await get("/map/survival/tiles/mini_parkour_overworld/3/0_0.png")).status).toBe(200);
+    expect((await get("/map/survival/tiles/cakeutils_miniservers_skyblock-1_overworld/3/0_0.png")).status).toBe(200);
   });
 });
 
@@ -93,17 +94,17 @@ describe("tile cache drops worlds that left /v2/map", () => {
       writeFileSync(join(dir, ...p), new Uint8Array([0x89, 0x50, 0x4e, 0x47, 1, 2, 3, 4]));
     };
     put("survival", "minecraft_overworld", "3", "0_0.png");
-    put("survival", "mini_parkour_overworld", "3", "0_0.png");
+    put("survival", "cakeutils_miniservers_skyblock-1_overworld", "3", "0_0.png");
     put("gone", "minecraft_overworld", "3", "0_0.png");
     put("survival", "@round", "4", "minecraft_overworld", "3", "0_0.png");
-    let listed: Map<string, Set<string>> | null = new Map([["survival", new Set(["minecraft_overworld", "mini_parkour_overworld"])]]);
+    let listed: Map<string, Set<string>> | null = new Map([["survival", new Set(["minecraft_overworld", "cakeutils_miniservers_skyblock-1_overworld"])]]);
     const svc = createTileService({ dir, maxBytes: 0, sweepMs: 0, log: () => {}, visible: () => true, listed: async () => listed, source: async () => ok({ notModified: true, png: null, etag: null, cacheControl: null, lastModified: null }) });
     await svc.sweep();
-    expect(existsSync(join(dir, "survival", "mini_parkour_overworld"))).toBe(true);
+    expect(existsSync(join(dir, "survival", "cakeutils_miniservers_skyblock-1_overworld"))).toBe(true);
     expect(existsSync(join(dir, "gone", "minecraft_overworld"))).toBe(false); // its server is not listed: its worlds go
     listed = new Map([["survival", new Set(["minecraft_overworld"])]]); // the mini went private
     await svc.sweep();
-    expect(existsSync(join(dir, "survival", "mini_parkour_overworld"))).toBe(false);
+    expect(existsSync(join(dir, "survival", "cakeutils_miniservers_skyblock-1_overworld"))).toBe(false);
     expect(existsSync(join(dir, "survival", "minecraft_overworld", "3", "0_0.png"))).toBe(true);
     expect(existsSync(join(dir, "survival", "@round", "4", "minecraft_overworld", "3", "0_0.png"))).toBe(true);
     listed = null; // unknown: nothing is dropped

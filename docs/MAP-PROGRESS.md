@@ -19,9 +19,9 @@ everything else after cakeutils GMAP2 (cakeutils `v2/map/PROGRESS.md` on `claude
 | FM-0b fixture sync | **merged** 6cb11c9 | Sonnet 5.5 / low | cmsg_017jXErfLmkLcYLSb5FKAVcM5ftpf5BqgSVQMmVoD8A8oa | | #41 | MAP-43 follow-up (brief §7) |
 | FM-m mini worlds | **merged** 85aafde | Sonnet 5.5 / medium | cmsg_017jXErfLmkLcYLSb5FKAVcMJbVo1bafaL466vm4sX3MzM | claude/fm-m | #46 | |
 | FM-8 show on map | **merged** b10b6d9 | Sonnet 5.5 / medium | cmsg_017jXErfLmkLcYLSb5FKAVcM3HsPrW1hpcGKQY5rEeZJfm | | #47 | |
-| FM-7 integration, QA, go-live | in progress | Fable 5.2 / high | cmsg_017jXErfLmkLcYLSb5FKAVcMFUCKoWwqn7MzSih8pH2dEB | | | |
+| FM-7 integration, QA, go-live | **merged** f88e857 | Fable 5.2 / high | cmsg_017jXErfLmkLcYLSb5FKAVcMFUCKoWwqn7MzSih8pH2dEB | | #48 | |
 
-Gates: GFM0 **passed** 2026-11-15, GFM1 open, GFM2 open. Screenshots thread ("Map screenshots"): cmsg_017jXErfLmkLcYLSb5FKAVcMADw8BDRoVvuMRhAtXTp9cP.
+Gates: GFM0 **passed** 2026-11-15, GFM1 **passed** 2026-11-15, GFM2 **passed** 2026-11-15 on both mock scenarios (live API check after deploy, below). Screenshots thread ("Map screenshots"): cmsg_017jXErfLmkLcYLSb5FKAVcMADw8BDRoVvuMRhAtXTp9cP.
 
 ## Decisions
 
@@ -65,6 +65,17 @@ Gates: GFM0 **passed** 2026-11-15, GFM1 open, GFM2 open. Screenshots thread ("Ma
   the second to merge rebases.
 - 2026-11-15 (FM-8): explicit `world=` wins over the followed player's snapshot world; one unreproduced flaky test on
   the first run after a build (two runs green in review): FM-7 to watch.
+- 2026-11-15 (FM-7): the SSE per-address limit groups IPv6 by /64 (`src/lib/server/map/address.ts`); each stream keeps
+  its own change-log position (a page ahead of the hub no longer resets every tile); `?follow=` treats a hidden player
+  like an unknown one; without ADDRESS_HEADER behind a proxy every visitor shares one address (4 streams site-wide), so
+  the server logs it and `/healthz` shows `map.streams`.
+- 2026-11-15: the profile button is decided at page load; brief §5.1's live re-check on the profile is not built (it
+  would start a poller per profile view). The map page's not-there Notice covers a stale button.
+- Left for David at deploy: `caddy validate --config deploy/Caddyfile.example --adapter caddyfile` on the host; host
+  `.env` needs `ADDRESS_HEADER=X-Forwarded-For`, `XFF_DEPTH=1`; token gains `read:map`; then
+  `bun run e2e --base https://fishnet.haiiro.moe --hidden <names>` for the live check. Note: Caddyfile/README use
+  upstream 127.0.0.1:3000 while compose publishes 7777:3000 (pre-existing on main, port intentional): match the
+  Caddy upstream to the port the host really uses.
 
 ## Log
 
@@ -85,3 +96,4 @@ Gates: GFM0 **passed** 2026-11-15, GFM1 open, GFM2 open. Screenshots thread ("Ma
 - 2026-11-15 13:15Z: FM-4 #44 reviewed (check, 392 tests, build + leak pass, screenshots read: full bleed per David, fresh empty state) and merged (4fd45ab). GFM1 still needs `bun run e2e` both scenarios: FM-7. FM-8 and FM-m requested.
 - 2026-11-15 13:25Z: FM-m #46 reviewed (check, 392 tests, build + leak pass, screenshot read) and merged (85aafde). Mini stats link: /leaderboards?scope=mini:<server>/<mini>. FM-8 rebases on it.
 - 2026-11-15 13:20Z: FM-8 #47 reviewed (check, 397 tests twice, build + leak pass, screenshots read) and merged (b10b6d9). All feature units merged; FM-7 requested (Fable 5.2 / high).
+- 2026-11-15 13:55Z: FM-7 #48 reviewed (check, 404 tests, build + leak pass, e2e 54/54 on busy and fresh incl. 600-connection SSE check) and merged (f88e857). GFM1 and GFM2 passed on mock. PR claude/fishnet-map → main opened for David.

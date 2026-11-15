@@ -58,8 +58,11 @@ export const load: PageServerLoad = async ({ params, url }) => {
   const live = wantPositions ? await m.mapPlayers(entry.server) : null;
   const target = link.follow && live?.ok ? live.data.players.find((p) => p.uuid === link.follow) : undefined;
   if (target) {
-    // a world the server no longer lists falls back to the first, like any share link
-    link = worlds.some((w) => w.id === target.world) ? { ...link, world: target.world, x: Math.floor(target.x), z: Math.floor(target.z) } : link;
+    // the link's own world wins when the server lists it (a world switch sets it, and the live feed may be ahead of the
+    // snapshot); otherwise the player's world. Centre on them only when that is where they are.
+    const asked = link.world && worlds.some((w) => w.id === link.world) ? link.world : undefined;
+    const world = asked ?? (worlds.some((w) => w.id === target.world) ? target.world : undefined);
+    link = world === target.world ? { ...link, world, x: Math.floor(target.x), z: Math.floor(target.z) } : world ? { ...link, world } : link;
     base.follow = target.uuid;
   } else if (link.follow) {
     base.followNote = await followNote(entry, link.follow, wantPositions && !live?.ok ? "down" : wantPositions ? "absent" : "off");

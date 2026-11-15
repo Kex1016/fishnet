@@ -54,6 +54,7 @@
 
   // a followed player changes world: go with them (the follow stays in the link; the load centres on them)
   let switching = "";
+  let moving = false; // a world switch is on its way: the share link must not write the old world back meanwhile
   $effect(() => {
     const cur = data.view;
     if (!cur || !follow) return;
@@ -62,7 +63,8 @@
     const key = `${cur.server}/${p.world}/${follow}`;
     if (key === switching) return;
     switching = key;
-    untrack(() => goto(mapHref(cur.server, { world: p.world, follow }), { replaceState: true }));
+    moving = true;
+    untrack(() => goto(mapHref(cur.server, { world: p.world, follow }), { replaceState: true }).finally(() => (moving = false)));
   });
 
   // the live feed: one connection per server and world; positions off and no change log means nothing to listen for
@@ -91,6 +93,7 @@
     const to = at ? here : null;
     if (!to) return;
     const t = setTimeout(() => {
+      if (moving) return;
       try {
         replaceState(to, page.state);
       } catch {

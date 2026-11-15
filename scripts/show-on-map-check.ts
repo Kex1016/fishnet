@@ -82,10 +82,15 @@ await check("followed player changes world: the page switches world and keeps th
     const players = [{ uuid: KOI, name: "koi_pond", world, x: 170, z: -242, yaw: 0 }];
     await r.fulfill({ status: 200, headers: { "content-type": "text/event-stream", "cache-control": "no-store" }, body: `retry: 500\nevent: players\ndata: ${JSON.stringify({ at: Date.now(), players, gone: [] })}\n\n` });
   });
-  await page.goto(`${base}/map/survival?follow=${KOI}`, { waitUntil: "networkidle" });
-  await page.waitForFunction(() => location.search.includes("world=minecraft_the_nether"), null, { timeout: 15000 });
-  ok(page.url().includes(`follow=${KOI}`), "follow kept in the link");
-  await page.waitForSelector("text=Following koi_pond");
+  // the mock's own snapshot keeps koi_pond in the overworld, so the page may go back and forth: look at where it has been
+  const seen: string[] = [];
+  page.on("framenavigated", (f: any) => seen.push(f.url()));
+  await page.goto(`${base}/map/survival?follow=${KOI}`);
+  await page.waitForFunction(() => performance.getEntriesByType("navigation").length > 0 && document.querySelector(".mc__follow"), null, { timeout: 30000 });
+  await page.waitForTimeout(6000);
+  const hop = seen.find((u) => u.includes("world=minecraft_the_nether"));
+  ok(hop, `no switch to the nether; saw ${seen.length} URLs`);
+  ok(hop!.includes(`follow=${KOI}`), "follow kept in the link");
   await ctx.close();
 });
 await browser.close();

@@ -94,7 +94,7 @@ function harness() {
       if (i >= 0) timers.splice(i, 1);
     }
   };
-  const conn = connectLive("s", "minecraft_overworld", { onPlayers: (p) => calls.players.push(p), onTiles: (e) => calls.tiles.push(e), onStatus: (s) => calls.status.push(s), onMode: (m) => calls.modes.push(m) }, deps);
+  const conn = connectLive("s", "minecraft_overworld", { epoch: "e", seq: 4 }, { onPlayers: (p) => calls.players.push(p), onTiles: (e) => calls.tiles.push(e), onStatus: (s) => calls.status.push(s), onMode: (m) => calls.modes.push(m) }, deps);
   return { conn, calls, timers, fetched };
 }
 
@@ -102,7 +102,7 @@ describe("liveClient", () => {
   test("opens the stream with the world, merges players, passes tiles and status", () => {
     const h = harness();
     const es = FakeES.all[0];
-    expect(es.url).toBe("/map/s/live?world=minecraft_overworld");
+    expect(es.url).toBe("/map/s/live?world=minecraft_overworld&epoch=e&seq=4");
     es.emit("open");
     es.emit("players", { at: 1, players: [dot("1", "a"), dot("2", "b")], gone: [] });
     es.emit("players", { at: 2, players: [dot("1", "a", "minecraft_overworld", 5, 5)], gone: ["2"] });
@@ -125,11 +125,13 @@ describe("liveClient", () => {
     expect(h.calls.tiles).toHaveLength(0);
     expect(h.calls.status).toHaveLength(0);
   });
-  test("a reconnect starts from a full snapshot", () => {
+  test("a reconnect resumes after the last tile event and starts from a full snapshot", () => {
     const h = harness();
     FakeES.all[0].emit("players", { at: 1, players: [dot("1", "a")], gone: [] });
+    FakeES.all[0].emit("tiles", { world: "minecraft_overworld", epoch: "e", tiles: [["e.9", 3, 0, 0], ["e.7", 3, 1, 0]], reset: false });
     FakeES.all[0].fail();
     h.timers[0].fn();
+    expect(FakeES.all[1].url).toBe("/map/s/live?world=minecraft_overworld&epoch=e&seq=9");
     FakeES.all[1].emit("players", { at: 2, players: [dot("2", "b")], gone: [] });
     expect(h.calls.players.at(-1)).toEqual([dot("2", "b")]);
   });
@@ -152,7 +154,7 @@ describe("liveClient", () => {
     FakeES.all = [];
     const timers: number[] = [];
     const fetched: string[] = [];
-    const conn = connectLive("s", "w", { onPlayers: () => {} }, {
+    const conn = connectLive("s", "w", null, { onPlayers: () => {} }, {
       EventSource: undefined,
       fetch: (async (u: string) => (fetched.push(u), new Response(JSON.stringify({ server: "s", at: 1, state: "live", players: [] })))) as unknown as typeof fetch,
       setTimeout: () => timers.push(1),

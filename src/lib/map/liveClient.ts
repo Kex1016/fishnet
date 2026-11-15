@@ -23,6 +23,9 @@ export type LiveDeps = {
 
 export type LiveConnection = { close(): void };
 
+/** The change log the page loaded with: the hub's catch-up sends only what is newer (brief §4.3). */
+export type Since = { epoch: string; seq: number };
+
 export const POLL_MS = 5000;
 export const MAX_FAILURES = 3;
 const RETRY_MS = [1000, 3000];
@@ -39,8 +42,11 @@ function parse(data: unknown): unknown {
   }
 }
 
-/** Connects to a server's live feed. `world` is passed along so the hub knows which change log to watch. */
-export function connectLive(server: string, world: string, h: LiveHandlers, deps: LiveDeps = {}): LiveConnection {
+/**
+ * Connects to a server's live feed: `?world=&epoch=&seq=`, so the hub knows which change log to watch and where the
+ * page stands in it (`since` null: the world has no change log). A reconnect resumes after the last tile event seen.
+ */
+export function connectLive(server: string, world: string, since: Since | null, h: LiveHandlers, deps: LiveDeps = {}): LiveConnection {
   const ES = "EventSource" in deps ? deps.EventSource : typeof EventSource !== "undefined" ? EventSource : undefined;
   const doFetch = deps.fetch ?? (typeof fetch !== "undefined" ? fetch.bind(globalThis) : undefined);
   const later = deps.setTimeout ?? ((fn, ms) => setTimeout(fn, ms));
@@ -51,6 +57,7 @@ export function connectLive(server: string, world: string, h: LiveHandlers, deps
   let timer: unknown = null;
   let failures = 0;
   let players: PlayerDot[] = [];
+  let at: Since | null = since ? { ...since } : null;
   let fresh = true; // the next `players` event is a full snapshot (a connect or reconnect)
 
   function applyPlayers(ev: unknown): void {
@@ -90,7 +97,8 @@ export function connectLive(server: string, world: string, h: LiveHandlers, deps
     if (closed) return;
     if (!ES) return startPolling();
     fresh = true;
-    const src = new ES(`${liveHref(server)}?world=${encodeURIComponent(world)}`);
+    const q = `world=${encodeURIComponent(world)}${at ? `&epoch=${encodeURIComponent(at.epoch)}&seq=${at.seq}` : ""}`;
+    const src = new ES(`${liveHref(server)}?${q}`);
     es = src;
     src.addEventListener("open", () => {
       failures = 0;
@@ -99,7 +107,11 @@ export function connectLive(server: string, world: string, h: LiveHandlers, deps
     src.addEventListener("players", (e) => applyPlayers(parse((e as MessageEvent).data)));
     src.addEventListener("tiles", (e) => {
       const v = parse((e as MessageEvent).data);
-      if (isObj(v) && typeof v.world === "string" && Array.isArray(v.tiles)) h.onTiles?.(v as unknown as TilesEvent);
+      if (isObj(v) && typeof v.world === "string" && Array.isArray(v.tiles)) {
+        const ev = v as unknown as TilesEvent;
+        if (typeof ev.epoch === "string") at = { epoch: ev.epoch, seq: Math.max(ev.epoch === at?.epoch ? at.seq : 0, ...ev.tiles.map((t) => Number(String(t[0]).split(".").pop()) || 0)) };
+        h.onTiles?.(ev);
+      }
     });
     src.addEventListener("status", (e) => {
       const v = parse((e as MessageEvent).data) as Partial<StatusEvent> | null;

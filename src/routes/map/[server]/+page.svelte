@@ -5,7 +5,7 @@
   // world and player lists work without JavaScript; the server renders the map as a still picture of the same view.
   // Live: an EventSource on /map/<server>/live with a players.json poll as the fallback (liveClient.ts).
   // The share link (?world=&x=&z=&zoom=) follows the view, so the address bar is always a link to what you see.
-  // Layers (FM-5) join the popout row; ?follow= from other pages (FM-8) fills `follow` from data.link.
+  // ?follow= from other pages (FM-8) fills `follow` from data.link.
   import { onMount, untrack } from "svelte";
   import { replaceState } from "$app/navigation";
   import { page } from "$app/state";
@@ -53,7 +53,9 @@
   $effect(() => {
     const cur = data.view;
     if (!cur || (data.positions === "off" && cur.tiles.epoch === null)) return;
-    const conn = connectLive(cur.server, cur.id, {
+    const seqs = Object.values(cur.tiles.versions);
+    const since = cur.tiles.epoch !== null ? { epoch: cur.tiles.epoch, seq: seqs.length ? Math.max(...seqs) : 0 } : null;
+    const conn = connectLive(cur.server, cur.id, since, {
       onPlayers: (list) => (players = list),
       onTiles: (ev: TilesEvent) => {
         if (ev.world === cur.id) canvas?.applyTiles(ev);
@@ -209,7 +211,7 @@
             {/if}
           {/if}
         </MapPopout>
-        <!-- FM-5: the Layers popout joins this row -->
+        <!-- layers of the live map (none yet; FM-5's LayersPopout serves finished rounds) join this row -->
         <MapPopout label="Share" icon={Link2}>
           <span class="mc-pop__line">This link opens the map as you see it now.</span>
           <input class="fp-field mp-url t-mono" type="text" readonly value={absolute} aria-label="Link to this view" onfocus={(e) => e.currentTarget.select()} />

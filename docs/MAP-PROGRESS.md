@@ -19,7 +19,7 @@ everything else after cakeutils GMAP2 (cakeutils `v2/map/PROGRESS.md` on `claude
 | FM-0b fixture sync | **merged** 6cb11c9 | Sonnet 5.5 / low | cmsg_017jXErfLmkLcYLSb5FKAVcM5ftpf5BqgSVQMmVoD8A8oa | | #41 | MAP-43 follow-up (brief §7) |
 | FM-m mini worlds | **merged** 85aafde | Sonnet 5.5 / medium | cmsg_017jXErfLmkLcYLSb5FKAVcMJbVo1bafaL466vm4sX3MzM | claude/fm-m | #46 | |
 | FM-8 show on map | **merged** b10b6d9 | Sonnet 5.5 / medium | cmsg_017jXErfLmkLcYLSb5FKAVcM3HsPrW1hpcGKQY5rEeZJfm | | #47 | |
-| FM-7 integration, QA, go-live | requested | Fable 5.2 / high | | | | |
+| FM-7 integration, QA, go-live | in progress | Fable 5.2 / high | cmsg_017jXErfLmkLcYLSb5FKAVcMFUCKoWwqn7MzSih8pH2dEB | | | |
 
 Gates: GFM0 **passed** 2026-11-15, GFM1 open, GFM2 open. Screenshots thread ("Map screenshots"): cmsg_017jXErfLmkLcYLSb5FKAVcMADw8BDRoVvuMRhAtXTp9cP.
 
@@ -55,7 +55,7 @@ Gates: GFM0 **passed** 2026-11-15, GFM1 open, GFM2 open. Screenshots thread ("Ma
   comes from `live_players` in /v2/map (not in the snapshot); tile reset on `dropped > seq` (not ≥: nothing lost when
   equal), accepted; players on worlds no longer listed are dropped; env `MAP_SSE_MAX`; 4 streams per exact client
   address (IPv6 /64 not grouped: FM-7 to judge).
-- Screenshots threads: "Map screenshots" is full; later stages go to "Map screenshots 2"
+- Screenshots threads: "Map screenshots" and "Map screenshots 2" are full (24 files each); later stages go to "Map screenshots 3" (id pending; was "Map screenshots 2"
   (cmsg_017jXErfLmkLcYLSb5FKAVcMWkkENWXb2WqP27uo6Awu6E), at most 6 files per post.
 - 2026-11-15 (FM-4): pages use `src/lib/map/liveClient.ts` (SSE, resumes after last tile event) and `pages.ts`;
   world list in `/map/[server]` `data.worlds` via worldLabel; `?follow=` written into share links but read by FM-8.

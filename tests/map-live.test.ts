@@ -3,6 +3,7 @@ import { describe, expect, test } from "bun:test";
 import { fail, ok, type Result } from "#lib/api/result.ts";
 import type { MapChanges, MapPlayers } from "#lib/api/types.ts";
 import { createLiveHub, diffDots, toDot, HEARTBEAT, type Clock, type LiveDeps, type LiveLimits, type Sink } from "#lib/server/map/live.ts";
+import { addressKey } from "#lib/server/map/address.ts";
 import type { PlayerDot } from "#lib/map/types.ts";
 
 // ---- fake clock: timers run in time order; microtasks are flushed between them
@@ -383,6 +384,28 @@ describe("limits", () => {
     expect(sub(hub, { ip: "203.0.113.7" }).r.ok).toBe(true);
   });
 
+  test("an IPv6 host is its /64: any address of the prefix counts as the same client (FM-7)", async () => {
+    const { hub } = hubWith();
+    for (let i = 0; i < 4; i++) expect(sub(hub, { ip: `2001:db8:1:2::${(i + 1).toString(16)}` }).r.ok).toBe(true);
+    expect(sub(hub, { ip: "2001:db8:1:2:aaaa:bbbb:cccc:dddd" }).r).toEqual({ ok: false, reason: "per_ip", retryAfter: 30 });
+    expect(sub(hub, { ip: "2001:DB8:1:2::99" }).r.ok).toBe(false);
+    // the next /64 is another client; so is an IPv4 host
+    expect(sub(hub, { ip: "2001:db8:1:3::1" }).r.ok).toBe(true);
+    expect(sub(hub, { ip: "198.51.100.4" }).r.ok).toBe(true);
+    expect(hub.stats().streams).toBe(6);
+  });
+
+  test("an IPv4 address written as IPv6 is the same client as the IPv4 address", async () => {
+    const { hub } = hubWith({ limits: { perIp: 2 } });
+    const a = sub(hub, { ip: "203.0.113.7" });
+    expect(a.r.ok).toBe(true);
+    expect(sub(hub, { ip: "::ffff:203.0.113.7" }).r.ok).toBe(true);
+    expect(sub(hub, { ip: "::ffff:cb00:7107" }).r).toEqual({ ok: false, reason: "per_ip", retryAfter: 30 });
+    // closing frees the slot under the same key
+    if (a.r.ok) a.r.sub.close();
+    expect(sub(hub, { ip: "::FFFF:203.0.113.7" }).r.ok).toBe(true);
+  });
+
   test("at most `total` streams in all, across servers", async () => {
     const { hub } = hubWith({ limits: { total: 5 } });
     for (let i = 0; i < 5; i++) expect(sub(hub, { ip: `10.1.0.${i}`, server: i % 2 ? "creative" : "survival" }).r.ok).toBe(true);
@@ -526,6 +549,53 @@ describe("tiles", () => {
     expect(gap.k.events("tiles")[0].reset).toBe(true);
   });
 
+  test("a page ahead of the hub is not reset: it hears only what is newer than its own position (FM-7)", async () => {
+    const { hub, s, fc } = hubWith();
+    // the hub polled at seq 5; a page loads a moment later, after cakeutils logged 6 and 7
+    s.logs.minecraft_overworld = log("e1", 1, 5, 0);
+    const early = sub(hub, { world: "minecraft_overworld", since: { epoch: "e1", seq: 5 } });
+    await fc.flush();
+    const ahead = sub(hub, { ip: "10.0.0.2", world: "minecraft_overworld", since: { epoch: "e1", seq: 7 } });
+    await fc.flush();
+    expect(ahead.k.events("tiles")).toEqual([]);
+    // the hub catches up to 8: the early stream gets 6..8, the page that was ahead only 8
+    s.logs.minecraft_overworld = log("e1", 1, 8, 0);
+    await fc.advance(5_000);
+    expect(early.k.events("tiles")).toEqual([{ world: "minecraft_overworld", epoch: "e1", tiles: [["e1.6", 3, 5, 0], ["e1.7", 3, 6, 0], ["e1.8", 3, 7, 0]], reset: false }]);
+    expect(ahead.k.events("tiles")).toEqual([{ world: "minecraft_overworld", epoch: "e1", tiles: [["e1.8", 3, 7, 0]], reset: false }]);
+    // a hub that only reaches the page's position later says nothing to it
+    const far = sub(hub, { ip: "10.0.0.3", world: "minecraft_overworld", since: { epoch: "e1", seq: 9 } });
+    s.logs.minecraft_overworld = log("e1", 1, 9, 0);
+    await fc.advance(5_000);
+    expect(far.k.events("tiles")).toEqual([]);
+    expect(ahead.k.events("tiles").at(-1)).toEqual({ world: "minecraft_overworld", epoch: "e1", tiles: [["e1.9", 3, 8, 0]], reset: false });
+  });
+
+  test("the log going backwards inside one epoch reloads every tile, once", async () => {
+    const { hub, s, fc } = hubWith();
+    s.logs.minecraft_overworld = log("e1", 1, 9, 0);
+    const { k } = sub(hub, { world: "minecraft_overworld", since: { epoch: "e1", seq: 9 } });
+    await fc.flush();
+    s.logs.minecraft_overworld = log("e1", 1, 2, 0);
+    await fc.advance(5_000);
+    expect(k.events("tiles")).toEqual([{ world: "minecraft_overworld", epoch: "e1", tiles: [["e1.1", 3, 0, 0], ["e1.2", 3, 1, 0]], reset: true }]);
+    await fc.advance(5_000);
+    expect(k.events("tiles").length).toBe(1);
+    s.logs.minecraft_overworld = log("e1", 1, 3, 0);
+    await fc.advance(5_000);
+    expect(k.events("tiles").at(-1)).toEqual({ world: "minecraft_overworld", epoch: "e1", tiles: [["e1.3", 3, 2, 0]], reset: false });
+  });
+
+  test("a stream without a position hears the whole log once, also when it is empty", async () => {
+    const { hub, s, fc } = hubWith();
+    s.logs.minecraft_overworld = log("e1", 1, 0, 0);
+    const { k } = sub(hub, { world: "minecraft_overworld" });
+    await fc.flush();
+    expect(k.events("tiles")).toEqual([{ world: "minecraft_overworld", epoch: "e1", tiles: [], reset: false }]);
+    await fc.advance(10_000);
+    expect(k.events("tiles").length).toBe(1);
+  });
+
   test("a world without a log is asked again after 5 min, and polling stops 30 s after its last watcher", async () => {
     const { hub, s, fc } = hubWith();
     s.logs.minecraft_the_nether = "off";
@@ -604,5 +674,32 @@ describe("snapshot (players.json)", () => {
     expect(a.k.ended()).toBe(true);
     expect(hub.stats()).toEqual({ streams: 0, hubs: [] });
     expect(fc.pending()).toBe(0);
+  });
+});
+
+// ---- what one client is (address.ts)
+
+describe("addressKey", () => {
+  test("IPv4 stays as it is; IPv6 becomes its /64; mapped IPv4 becomes IPv4", () => {
+    expect(addressKey("203.0.113.7")).toBe("203.0.113.7");
+    expect(addressKey(" 203.0.113.7 ")).toBe("203.0.113.7");
+    expect(addressKey("2001:db8:1:2:3:4:5:6")).toBe("2001:db8:1:2::/64");
+    expect(addressKey("2001:0DB8:0001:0002::1")).toBe("2001:db8:1:2::/64");
+    expect(addressKey("2001:db8::1")).toBe("2001:db8:0:0::/64");
+    expect(addressKey("::1")).toBe("0:0:0:0::/64");
+    expect(addressKey("fe80::1%eth0")).toBe("fe80:0:0:0::/64");
+    expect(addressKey("[2001:db8:1:2::1]")).toBe("2001:db8:1:2::/64");
+    expect(addressKey("::ffff:192.0.2.1")).toBe("192.0.2.1");
+    expect(addressKey("::ffff:c000:201")).toBe("192.0.2.1");
+    expect(addressKey("64:ff9b::192.0.2.1")).toBe("64:ff9b:0:0::/64");
+  });
+  test("anything that is not an address is its own key, never an error", () => {
+    expect(addressKey("unknown")).toBe("unknown");
+    expect(addressKey("")).toBe("");
+    expect(addressKey("1.2.3.999")).toBe("1.2.3.999");
+    expect(addressKey("2001:db8:::1")).toBe("2001:db8:::1");
+    expect(addressKey("1:2:3:4:5:6:7:8:9")).toBe("1:2:3:4:5:6:7:8:9");
+    expect(addressKey("gggg::1")).toBe("gggg::1");
+    expect(addressKey("::ffff:1.2.3.999")).toBe("::ffff:1.2.3.999");
   });
 });

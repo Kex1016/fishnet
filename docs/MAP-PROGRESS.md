@@ -112,8 +112,8 @@ extension, branch `claude/map-markers`); everything else after cakeutils GMK2. N
 
 | WU | Status | Model / effort | Thread | Branch | PR | Notes |
 |---|---|---|---|---|---|---|
-| FMK-0 contracts | waiting for GMK0 | Sonnet 5.5 / high | | | | early |
-| FMK-1 Minecraft label | waiting for GMK0 | Opus 5.5 / medium | | | | early, ∥ FMK-0 |
+| FMK-0 contracts | **requested** | Sonnet 5.5 / high | | | | early |
+| FMK-1 Minecraft label | **requested** | Opus 5.5 / medium | | | | early, ∥ FMK-0 |
 | FMK-2 marker layer | waiting for GMK2 | Sonnet 5.5 / high | | | | FMK-0, FMK-1 |
 | FMK-3 live refresh | waiting for GMK2 | Sonnet 5.5 / medium | | | | FMK-0, ∥ FMK-2 |
 | FMK-6 docs | waiting for GMK2 | Haiku 5.5 / low | | | | FMK-2 |
@@ -132,3 +132,5 @@ done, PR to `main` open for David): not started.
 
 - 2026-11-15 21:40Z: line started on David's go. `claude/fishnet-markers` created off `main` (d719d9a). cakeutils GMK0
   not passed yet (MK-C0 running), so no unit started; re-check scheduled.
+- 2026-11-15 23:50Z: cakeutils GMK0 passed (22:55Z; MARKERS.md frozen, matches brief §2; MAPD-45..61 add nothing the site
+  must change). Unit briefs in project files `briefs/map-markers-web/{COMMON,FMK-0,FMK-1}.md`; FMK-0 and FMK-1 requested.

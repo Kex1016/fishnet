@@ -9,6 +9,7 @@
   import { boardHref, PLAYTIME } from "#lib/api/metric.ts";
   import { group } from "#lib/format/stat-display.ts";
   import { titleCase } from "#lib/players/names.ts";
+  import { ArrowRight, Map as MapIcon } from "@lucide/svelte";
   import { HOURS, meanPlayers } from "../boards.ts";
   let { data } = $props();
   const view = $derived(viewParam(page.url));
@@ -57,6 +58,17 @@
       <EmptyState title="Nobody is on right now" line="Players appear here while they are on this server." />
     {/if}
   </section>
+
+  {#if data.map}
+    <a class="fp-panel maplink" href={data.map.href}>
+      <MapIcon class="fp-ico" strokeWidth={1.4} aria-hidden="true" />
+      <span class="maplink__text">
+        <span class="t-title-3">Map</span>
+        <span class="t-small t-muted">{data.map.worlds.join(", ")}{data.map.live ? " · live positions" : ""}{data.map.online ? "" : " · map offline"}</span>
+      </span>
+      <ArrowRight class="fp-ico" strokeWidth={1.4} aria-hidden="true" />
+    </a>
+  {/if}
 
   <div class="fp-filters" style="justify-content: flex-end"><ViewSwitch url={page.url} {view} /></div>
   <div class="fp-panels">
@@ -156,3 +168,9 @@
   <MilestoneFeed result={data.milestones} title="Latest milestones here" href="/milestones?scope={encodeURIComponent(data.scope)}" />
   <AdvancementFeed result={data.advancements} title="Advancements completed here first" href="/advancements?scope={encodeURIComponent(data.scope)}" showServer={false} />
 </div>
+
+<style>
+  .maplink { display: flex; align-items: center; gap: var(--space-4); color: inherit; text-decoration: none; transition: border-color var(--duration-fast) var(--ease-soft), background-color var(--duration-fast) var(--ease-soft); }
+  .maplink:hover { border-color: var(--line); background: var(--raised); text-decoration: none; }
+  .maplink__text { display: flex; flex-direction: column; flex: 1 1 auto; min-width: 0; }
+</style>

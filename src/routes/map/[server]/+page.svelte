@@ -13,6 +13,7 @@
   import Face from "#lib/design/Face.svelte";
   import Notice from "#lib/design/Notice.svelte";
   import MapCanvas from "#lib/map/MapCanvas.svelte";
+  import WorldPicker from "#lib/map/WorldPicker.svelte";
   import MapPopout from "#lib/map/MapPopout.svelte";
   import { readout } from "#lib/map/crs.ts";
   import { connectLive } from "#lib/map/liveClient.ts";
@@ -152,14 +153,7 @@
     <div class="mc-over">
       <div class="mc-over__row">
         <MapPopout label="Worlds" value={v.name} icon={Globe}>
-          <div class="mc-pop__list">
-            {#each data.worlds as w (w.id)}
-              <a class="mc-pop__item" href={mapHref(v.server, { world: w.id })} aria-current={w.id === v.id ? "page" : undefined}>
-                <span class="mc-pop__grow">{w.name}</span>
-                <span class="mc-pop__note">{w.dimension?.replace(/^minecraft:/, "").replace(/_/g, " ") ?? ""}</span>
-              </a>
-            {/each}
-          </div>
+          <WorldPicker server={v.server} worlds={data.worlds} current={v.id} />
           {#if data.others.length > 1}
             <span class="mc-pop__title">Servers</span>
             <div class="mc-pop__list">

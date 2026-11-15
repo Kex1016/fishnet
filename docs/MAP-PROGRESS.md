@@ -10,7 +10,7 @@ everything else after cakeutils GMAP2 (cakeutils `v2/map/PROGRESS.md` on `claude
 | WU | Status | Model / effort | Thread | Branch | PR | Notes |
 |---|---|---|---|---|---|---|
 | FM-0 contracts | **merged** 59deb16 | Opus 5.5 / high | cmsg_017jXErfLmkLcYLSb5FKAVcMRkD7EasRAE44kCebvUP2us | claude/project-thread-hf70c4 | #38 | early |
-| FM-1 tile proxy | in progress | Sonnet 5.5 / high | cmsg_017jXErfLmkLcYLSb5FKAVcM8uYUXfxLcYWKvBe73J2HfJ | | | early |
+| FM-1 tile proxy | **merged** 992d8df | Sonnet 5.5 / high | cmsg_017jXErfLmkLcYLSb5FKAVcM8uYUXfxLcYWKvBe73J2HfJ | claude/fishnet-map-fm1 | #39 | early |
 | FM-3 map canvas | in progress | Fable 5.2 / medium | cmsg_017jXErfLmkLcYLSb5FKAVcMEKSWLpTczmc4csx1NMMHJd | | | early |
 | FM-2 live hub, SSE | waiting (GMAP2) | Opus 5.5 / high | | | | |
 | FM-4 pages | waiting (GMAP2, FM-3) | Sonnet 5.5 / high | | | | |
@@ -31,6 +31,10 @@ Gates: GFM0 **passed** 2026-11-15, GFM1 open, GFM2 open. Screenshots thread ("Ma
   cakeutils unreachable; 501 `not_implemented` maps to `off`; round routes require `?server=` so the hide list applies.
   Busy mock: survival (overworld, nether, end) + creative (positions off), hidden server `staff`, hidden player
   `quietgill`; spawn block red #d23c3c, block x/z divisible by 128 drawn darker in mock tiles.
+- 2026-11-15 (FM-1): tiles cached under `$FISHNET_DATA_DIR/map` (`map-mock-<scenario>` in mock; FM-6 puts it on the
+  volume), `MAP_CACHE_MAX_MB` default 2048. Browser URL `/map/t/<server>/<world>/<z>/<x>_<y>.png?v=<epoch>.<seq>`
+  (`<epoch>.0` when not in the change log); round tiles `/map/t/<server>/round/<cycle>/...`. 404 = not mapped,
+  503 + Retry-After = retry. Header `x-map-cache`. Additive `MapClient.serverVisible()`.
 
 ## Log
 
@@ -39,3 +43,4 @@ Gates: GFM0 **passed** 2026-11-15, GFM1 open, GFM2 open. Screenshots thread ("Ma
 - 2026-11-15 08:50Z: cakeutils MAP-C0 merged into `claude/map` (PR #98, 2050530); GMAP0 passed, GMAP1/GMAP2 open.
   FM-0 thread requested (Opus 5.5 / high). FM-1 and FM-3 follow FM-0 (brief §7.2).
 - 2026-11-15 09:20Z: FM-0 reviewed (check 0 errors, 285 tests, build + leak check pass, diff and screenshots read) and merged (#38, 59deb16). GFM0 passed. FM-1 and FM-3 requested.
+- 2026-11-15 09:25Z: FM-1 reviewed (merged with base: check 0 errors, 325 tests, build + leak check pass; path safety read) and merged (#39, 992d8df).

@@ -18,8 +18,8 @@ everything else after cakeutils GMAP2 (cakeutils `v2/map/PROGRESS.md` on `claude
 | FM-6 deploy, docs | **merged** 126153b | Haiku 5.5 / low | cmsg_017jXErfLmkLcYLSb5FKAVcMLx4U5tTPgm8hyjLLh1ZmYv | | #45 | |
 | FM-0b fixture sync | **merged** 6cb11c9 | Sonnet 5.5 / low | cmsg_017jXErfLmkLcYLSb5FKAVcM5ftpf5BqgSVQMmVoD8A8oa | | #41 | MAP-43 follow-up (brief §7) |
 | FM-m mini worlds | **merged** 85aafde | Sonnet 5.5 / medium | cmsg_017jXErfLmkLcYLSb5FKAVcMJbVo1bafaL466vm4sX3MzM | claude/fm-m | #46 | |
-| FM-8 show on map | in progress | Sonnet 5.5 / medium | cmsg_017jXErfLmkLcYLSb5FKAVcM3HsPrW1hpcGKQY5rEeZJfm | | | |
-| FM-7 integration, QA, go-live | waiting (all) | Fable 5.2 / high | | | | |
+| FM-8 show on map | **merged** b10b6d9 | Sonnet 5.5 / medium | cmsg_017jXErfLmkLcYLSb5FKAVcM3HsPrW1hpcGKQY5rEeZJfm | | #47 | |
+| FM-7 integration, QA, go-live | requested | Fable 5.2 / high | | | | |
 
 Gates: GFM0 **passed** 2026-11-15, GFM1 open, GFM2 open. Screenshots thread ("Map screenshots"): cmsg_017jXErfLmkLcYLSb5FKAVcMADw8BDRoVvuMRhAtXTp9cP.
 
@@ -63,6 +63,8 @@ Gates: GFM0 **passed** 2026-11-15, GFM1 open, GFM2 open. Screenshots thread ("Ma
 - 2026-11-15: FM-8 and FM-m run in parallel; both touch `/map/[server]/+page.svelte`. FM-m puts the grouped picker
   in a new `src/lib/map/WorldPicker.svelte` with a one-line swap in the page; FM-8 owns the `?follow=` handling;
   the second to merge rebases.
+- 2026-11-15 (FM-8): explicit `world=` wins over the followed player's snapshot world; one unreproduced flaky test on
+  the first run after a build (two runs green in review): FM-7 to watch.
 
 ## Log
 
@@ -82,3 +84,4 @@ Gates: GFM0 **passed** 2026-11-15, GFM1 open, GFM2 open. Screenshots thread ("Ma
 - 2026-11-15 13:10Z: FM-6 #45 reviewed (env vars all documented, Caddy SSE handle with flush_interval -1 and no encode, port untouched) and merged (126153b). Caddy config not validated with a binary: FM-7 / first deploy.
 - 2026-11-15 13:15Z: FM-4 #44 reviewed (check, 392 tests, build + leak pass, screenshots read: full bleed per David, fresh empty state) and merged (4fd45ab). GFM1 still needs `bun run e2e` both scenarios: FM-7. FM-8 and FM-m requested.
 - 2026-11-15 13:25Z: FM-m #46 reviewed (check, 392 tests, build + leak pass, screenshot read) and merged (85aafde). Mini stats link: /leaderboards?scope=mini:<server>/<mini>. FM-8 rebases on it.
+- 2026-11-15 13:20Z: FM-8 #47 reviewed (check, 397 tests twice, build + leak pass, screenshots read) and merged (b10b6d9). All feature units merged; FM-7 requested (Fable 5.2 / high).

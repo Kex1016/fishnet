@@ -15,6 +15,7 @@
 import type { MapChanges, MapIndex, MapPlayers, MapWorld, RoundMapWorld } from "#lib/api/types.ts";
 import { parseTile, validWorldId } from "#lib/map/links.ts";
 import { fnv1a, hex, type World, type WorldPlayer } from "./world.ts";
+import { generateMarkersBusy, generateMarkersFresh, markersAnswer, type MockMarkerSet } from "./markers.ts";
 
 export type MockMapPalette = "overworld" | "nether" | "end" | "flat";
 
@@ -51,6 +52,8 @@ export type MockMap = {
   movers: MockMover[];
   /** entries only there to be hidden: the site hides them in mock mode (client.ts mapApi), tests check they never show */
   hidden: { servers: string[]; players: string[] };
+  /** each world's markers (FMK-0; markers.ts); a world without an entry has none */
+  markers: MockMarkerSet[];
 };
 
 const H = 3_600_000;
@@ -66,7 +69,7 @@ const OW = (order: number, palette: MockMapPalette = "overworld", name = "minecr
 });
 
 export function generateMapFresh(): MockMap {
-  return { servers: [], movers: [], hidden: { servers: [], players: [] } };
+  return { servers: [], movers: [], hidden: { servers: [], players: [] }, markers: generateMarkersFresh() };
 }
 
 /** The busy map from the busy world's online players (deterministic). */
@@ -119,7 +122,7 @@ export function generateMapBusy(players: WorldPlayer[]): MockMap {
   const quiet = { uuid: "5a1c0de0-0000-4000-8000-00000000a11e", name: "quietgill" };
   movers.push({ ...quiet, server: "survival", world: "minecraft_overworld", cx: 40, cz: 40, r: 30, period_ms: 90_000, phase: 1 });
   movers.push({ uuid: "5a1c0de0-0000-4000-8000-00000000b05e", name: "Bosun", server: "staff", world: "minecraft_overworld", cx: 0, cz: 0, r: 20, period_ms: 60_000, phase: 0 });
-  return { servers: [creative, staff, survival], movers, hidden: { servers: ["staff"], players: [quiet.uuid] } };
+  return { servers: [creative, staff, survival], movers, hidden: { servers: ["staff"], players: [quiet.uuid] }, markers: generateMarkersBusy() };
 }
 
 // ---- answers
@@ -335,6 +338,17 @@ export async function handleMap(world: World, url: URL, seg: string[], req: Requ
       players: map.movers.filter((m) => m.server === s.server && listed.has(m.world)).map((m) => ({ uuid: m.uuid, name: m.name, world: m.world, ...moverAt(m, t) }))
     };
     return jsonCc(req, data, "private, max-age=1");
+  }
+
+  // /v2/map/{server}/worlds/{world}/markers (MARKERS §3): the same 404 for every hidden case, no oracle (§3.3)
+  if (seg[2] === "worlds" && seg.length === 5 && seg[4] === "markers") {
+    const mw = w(seg[3]);
+    if (!mw) return notFound(`world '${seg[3]}' is not on this map`);
+    const data = markersAnswer(map.markers, s.server, mw.id);
+    const etag = `"m${data.rev}"`;
+    const headers = { "content-type": "application/json", "cache-control": "private, max-age=30", etag, ...RATE };
+    if (matches(req, etag)) return new Response(null, { status: 304, headers: noType(headers) });
+    return new Response(JSON.stringify(data), { status: 200, headers });
   }
 
   // /v2/map/{server}/worlds/{world}[/changes]

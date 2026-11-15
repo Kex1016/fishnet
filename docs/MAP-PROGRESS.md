@@ -11,7 +11,7 @@ everything else after cakeutils GMAP2 (cakeutils `v2/map/PROGRESS.md` on `claude
 |---|---|---|---|---|---|---|
 | FM-0 contracts | **merged** 59deb16 | Opus 5.5 / high | cmsg_017jXErfLmkLcYLSb5FKAVcMRkD7EasRAE44kCebvUP2us | claude/project-thread-hf70c4 | #38 | early |
 | FM-1 tile proxy | in progress | Sonnet 5.5 / high | cmsg_017jXErfLmkLcYLSb5FKAVcM8uYUXfxLcYWKvBe73J2HfJ | | | early |
-| FM-3 map canvas | requested | Fable 5.2 / medium | | | | early |
+| FM-3 map canvas | in progress | Fable 5.2 / medium | cmsg_017jXErfLmkLcYLSb5FKAVcMEKSWLpTczmc4csx1NMMHJd | | | early |
 | FM-2 live hub, SSE | waiting (GMAP2) | Opus 5.5 / high | | | | |
 | FM-4 pages | waiting (GMAP2, FM-3) | Sonnet 5.5 / high | | | | |
 | FM-5 layers, One Soul rounds | waiting (GMAP2, FM-3) | Sonnet 5.5 / medium | | | | |

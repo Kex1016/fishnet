@@ -573,6 +573,18 @@ export const MAP_CHECKS: Check[] = [
         await sleep(400);
         expect(done.requests.some((r) => r.startsWith("/map/t/onesoul/round/1/")), "the finished round asked for no round tile");
         expect(!done.requests.some((r) => /^\/map\/[^/]+\/(live|players\.json)/.test(r)), "a finished round opened a live feed");
+        for (const width of [1440, 390]) {
+          await done.page.setViewportSize({ width, height: width < 600 ? 844 : 900 });
+          await sleep(150);
+          const fit = await done.page.evaluate(() => {
+            const area = document.querySelector(".fp-shell__scroll")!;
+            const a = area.getBoundingClientRect();
+            const s = document.querySelector(".mc-stage")!.getBoundingClientRect();
+            return { gap: Math.round(a.bottom - s.bottom), left: Math.round(s.left - a.left), right: Math.round(a.right - s.right), scrolls: area.scrollHeight > area.clientHeight + 1 };
+          });
+          expect(fit.gap === 0 && fit.left === 0 && fit.right === 0 && !fit.scrolls, `at ${width} px the round map leaves ${fit.gap} px under it, ${fit.left} and ${fit.right} px beside it${fit.scrolls ? ", and the page scrolls" : ""}`);
+        }
+        await done.page.setViewportSize({ width: 1440, height: 900 });
         const drawn = await done.page.evaluate(() => ({ marks: document.querySelectorAll(".mc-mark").length, trails: document.querySelectorAll("path.mc-path").length }));
         expect(drawn.marks > 0 && drawn.trails > 0, `${drawn.marks} marks and ${drawn.trails} trails on the finished round`);
         // layers: keyboard reaches them, a toggle hides and shows its marks

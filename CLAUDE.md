@@ -79,7 +79,7 @@ container for `bun run shots`; they are not a dependency.
 | `src/routes/img/`, `src/lib/server/images/` | icon proxy, faces | W8 |
 | `Dockerfile`, `compose.yml`, `.dockerignore`, `.env.example`, `deploy/` | deploy and watcher | W9 |
 | `src/routes/about/`, `README.md` | about page, operator docs | W9b |
-| `tests/e2e/` | Playwright against both scenarios | W10 |
+| `tests/e2e/` | Playwright against both scenarios; `map.ts` = the live map and its security pass (FM-7): a check may start a site of its own with `ctx.boot` (other limits, or the build over HTTP against `bun run mock` with real hide lists) | W10 |
 | `src/lib/map/` | the live map (line FM, `docs/MAP-PROGRESS.md`): `types.ts`, `links.ts`, `view.ts` (frozen, FM-0); `MapCanvas.svelte`, `crs.ts`, `tiles.ts`, `players.ts`, `overlays.ts`, `map.css`, `MapPopout.svelte` (FM-3: Leaflet by dynamic import, full-bleed `mc-stage` with popouts, `scripts/map-canvas-check.ts`) | map coordinator |
 
 A unit that needs a frozen contract changed asks the coordinator; it does not edit the file. Route

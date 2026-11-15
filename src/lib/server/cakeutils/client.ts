@@ -28,6 +28,11 @@ import { createExtras, type Extras } from "./extras.ts";
 import { hiddenServers } from "../hidden-servers.ts";
 import { ServerList } from "../hidden-servers-list.ts";
 import { standaloneExclude, standaloneIds } from "../onesoul/standalone.ts";
+import { createMapClient, type MapClient } from "./map.ts";
+import { hiddenPlayers } from "../hidden.ts";
+import { HiddenList } from "../hidden-list.ts";
+import { worldOf } from "./mock/index.ts";
+import { mockMapHidden } from "./mock/map.ts";
 
 export type Page = { limit?: number; offset?: number };
 export type PlayersQuery = Page & { online?: boolean; q?: string };
@@ -142,6 +147,47 @@ export function extras(): Extras {
   if (extrasInstance) return extrasInstance;
   extrasInstance = createExtras(shared(), { priority: () => priorityOf(), hidden: regularList, exclude: () => [...new Set([...hiddenServers().ids, ...standaloneExclude()])] });
   return extrasInstance;
+}
+
+let mapCore: Core | null = null;
+let mapInstance: MapClient | null = null;
+
+/**
+ * The web map's calls (map.ts, FM-0) on their own transport: the map bucket (CAKEUTILS_MAP_RATE /
+ * CAKEUTILS_MAP_BURST) and a small LRU of its own, so tiles and positions never spend the pages' budget.
+ * Hidden servers, One Soul servers and hidden players never leave it. In mock mode the fixture's
+ * hidden examples (a server and a player) are hidden too, so they never show in development either.
+ */
+export function mapApi(): MapClient {
+  if (mapInstance) return mapInstance;
+  const c = config();
+  mapCore = c.mock
+    ? createCore({ baseUrl: "http://mock.invalid", token: "cu_mock_mock", fetchImpl: mockFetch(c.mock), ratePerMinute: 100_000, burst: 10_000, maxEntries: 2_000, maxBytes: 8 * 1024 * 1024 })
+    : createCore({ baseUrl: c.apiUrl, token: apiToken(), ratePerMinute: c.mapRatePerMinute, burst: c.mapBurst, maxEntries: 2_000, maxBytes: 8 * 1024 * 1024, scopeHint: "read:map read:onesoul" });
+  const extra = c.mock ? mockMapHidden(worldOf(c.mock)) : { servers: [], players: [] };
+  const plus = <L>(memo: { from: L | null; to: L | null }, from: L, make: (l: L) => L): L => {
+    if (memo.from !== from) {
+      memo.from = from;
+      memo.to = make(from);
+    }
+    return memo.to!;
+  };
+  const liveMemo = { from: null as ServerList | null, to: null as ServerList | null };
+  const ownerMemo = { from: null as ServerList | null, to: null as ServerList | null };
+  const playerMemo = { from: null as HiddenList | null, to: null as HiddenList | null };
+  mapInstance = createMapClient({
+    core: mapCore,
+    hiddenLive: () => (extra.servers.length ? plus(liveMemo, regularList(), (l) => new ServerList([...l.ids, ...extra.servers])) : regularList()),
+    hiddenServers: () => (extra.servers.length ? plus(ownerMemo, hiddenServers(), (l) => new ServerList([...l.ids, ...extra.servers])) : hiddenServers()),
+    hiddenPlayers: () => (extra.players.length ? plus(playerMemo, hiddenPlayers(), (l) => l.with(extra.players)) : hiddenPlayers())
+  });
+  return mapInstance;
+}
+
+/** Reachability, cache and map-bucket numbers of the map's transport (no token, no paths). */
+export function mapApiStatus(): CoreStatus {
+  mapApi();
+  return mapCore!.status();
 }
 
 /** The shared transport (one cache and one request budget for every client). */

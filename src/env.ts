@@ -23,6 +23,38 @@ export const variables = defineEnvVars({
     },
     description: "Requests the site may send back to back, below the token's burst"
   },
+  CAKEUTILS_MAP_RATE: {
+    schema: (v) => {
+      const n = v ? Number(v) : 900;
+      if (!Number.isInteger(n) || n < 1) throw new Error("CAKEUTILS_MAP_RATE must be a positive integer (requests per minute)");
+      return n;
+    },
+    description: "Map requests per minute the site allows itself (tiles, positions, changes), below cakeutils' map bucket (1200)"
+  },
+  CAKEUTILS_MAP_BURST: {
+    schema: (v) => {
+      const n = v ? Number(v) : 200;
+      if (!Number.isInteger(n) || n < 1) throw new Error("CAKEUTILS_MAP_BURST must be a positive integer (requests)");
+      return n;
+    },
+    description: "Map requests the site may send back to back, below cakeutils' map burst (300)"
+  },
+  MAP_CACHE_MAX_MB: {
+    schema: (v) => {
+      const n = v ? Number(v) : 2048;
+      if (!Number.isInteger(n) || n < 1) throw new Error("MAP_CACHE_MAX_MB must be a positive integer (MiB)");
+      return n;
+    },
+    description: "Disk the map tile cache may use under FISHNET_DATA_DIR/map, in MiB"
+  },
+  MAP_SSE_MAX: {
+    schema: (v) => {
+      const n = v ? Number(v) : 500;
+      if (!Number.isInteger(n) || n < 1) throw new Error("MAP_SSE_MAX must be a positive integer (streams)");
+      return n;
+    },
+    description: "Live map streams open at once, all visitors together"
+  },
   ORIGIN: { schema: str("http://localhost:3000"), description: "Public origin" },
   FISHNET_DATA_DIR: { schema: str("data"), description: "Recorder SQLite file and caches" },
   HIDDEN_PLAYERS_FILE: { schema: str("data/hidden-players.txt"), description: "Opted-out players, one per line" },

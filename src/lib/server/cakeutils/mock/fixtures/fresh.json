@@ -6,6 +6,14 @@
  "advancements_since_ago_ms": 0,
  "advancements_imported": [],
  "advancement_titles": [],
+ "map": {
+  "servers": [],
+  "movers": [],
+  "hidden": {
+   "servers": [],
+   "players": []
+  }
+ },
  "servers": [
   {
    "id": "lobby",

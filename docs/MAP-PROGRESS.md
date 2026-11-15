@@ -112,8 +112,8 @@ extension, branch `claude/map-markers`); everything else after cakeutils GMK2. N
 
 | WU | Status | Model / effort | Thread | Branch | PR | Notes |
 |---|---|---|---|---|---|---|
-| FMK-0 contracts | **requested** | Sonnet 5.5 / high | | | | early |
-| FMK-1 Minecraft label | **requested** | Opus 5.5 / medium | | | | early, ∥ FMK-0 |
+| FMK-0 contracts | **running** | Sonnet 5.5 / high | cmsg_017jXErfLmkLcYLSb5FKAVcMNKkmuhzux3SoSxqmPjJLmW | | | early |
+| FMK-1 Minecraft label | **running** | Opus 5.5 / medium | cmsg_017jXErfLmkLcYLSb5FKAVcMK3CxUDUYdWKUzCFFncR3M3 | | | early, ∥ FMK-0 |
 | FMK-2 marker layer | waiting for GMK2 | Sonnet 5.5 / high | | | | FMK-0, FMK-1 |
 | FMK-3 live refresh | waiting for GMK2 | Sonnet 5.5 / medium | | | | FMK-0, ∥ FMK-2 |
 | FMK-6 docs | waiting for GMK2 | Haiku 5.5 / low | | | | FMK-2 |
@@ -126,7 +126,8 @@ done, PR to `main` open for David): not started.
 
 - 2026-11-15: units merge into `claude/fishnet-markers` after the coordinator's review (build, tests, diff, screenshots);
   sent back at most twice, then a fresh thread one model step up. Screenshots (brief §6.3) go to the latest
-  "Map screenshots" thread with room, at most 6 files per post.
+  "Map screenshots" thread with room, at most 6 files per post. This line's screenshots thread: "Map screenshots 4"
+  (cmsg_017jXErfLmkLcYLSb5FKAVcMMtBDSKAwwsGAJJvFv7YzHw).
 
 ## Markers log
 

@@ -15,6 +15,8 @@ services:
     ports:
       - "7777:3000"
     env_file: .env
+    # ./data holds the recorder's database, the hide lists and the map tile cache (FISHNET_DATA_DIR/map,
+    # capped by MAP_CACHE_MAX_MB). Keep it on the volume: losing the cache only costs re-downloads.
     volumes:
       - ./data:/app/data
     read_only: true

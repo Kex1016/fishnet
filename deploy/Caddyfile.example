@@ -1,13 +1,26 @@
 # Add to the host's Caddyfile (or drop into a file it imports), then `caddy reload`.
 fishnet.haiiro.moe {
-	encode zstd gzip
+	# The live map stream (SSE, /map/<server>/live, brief §4.3): no buffering and no compression, so each
+	# event reaches the browser at once. Keep this block first and leave encode out of it.
+	@maplive path_regexp ^/map/[^/]+/live$
+	handle @maplive {
+		reverse_proxy 127.0.0.1:3000 {
+			flush_interval -1
+		}
+	}
 
-	# The few files in static/ come without a Cache-Control from the Node server (hashed /_app/immutable/
-	# files, /img/icon and /img/face already carry their own): let browsers keep them a day.
-	@static path /favicon.svg /robots.txt /img/face-default.png
-	header @static Cache-Control "public, max-age=86400, stale-while-revalidate=604800"
+	handle {
+		encode zstd gzip
 
-	reverse_proxy 127.0.0.1:3000
+		# The few files in static/ come without a Cache-Control from the Node server (hashed /_app/immutable/
+		# files, /img/icon and /img/face already carry their own): let browsers keep them a day.
+		@static path /favicon.svg /robots.txt /img/face-default.png
+		header @static Cache-Control "public, max-age=86400, stale-while-revalidate=604800"
+
+		# Map tiles under /map/t/ carry their own Cache-Control from the app (immutable for a finished tile
+		# version, 60 s fresh otherwise) and are passed through as they are.
+		reverse_proxy 127.0.0.1:3000
+	}
 }
 
 # If Caddy runs in Docker instead: put it and fishnet on one network and use

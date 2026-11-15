@@ -9,7 +9,7 @@ everything else after cakeutils GMAP2 (cakeutils `v2/map/PROGRESS.md` on `claude
 
 | WU | Status | Model / effort | Thread | Branch | PR | Notes |
 |---|---|---|---|---|---|---|
-| FM-0 contracts | requested | Opus 5.5 / high | | | | early |
+| FM-0 contracts | in progress | Opus 5.5 / high | cmsg_017jXErfLmkLcYLSb5FKAVcMRkD7EasRAE44kCebvUP2us | | | early |
 | FM-1 tile proxy | waiting (FM-0) | Sonnet 5.5 / high | | | | early |
 | FM-3 map canvas | waiting (FM-0) | Fable 5.2 / medium | | | | early |
 | FM-2 live hub, SSE | waiting (GMAP2) | Opus 5.5 / high | | | | |

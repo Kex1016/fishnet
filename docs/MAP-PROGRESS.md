@@ -9,7 +9,7 @@ everything else after cakeutils GMAP2 (cakeutils `v2/map/PROGRESS.md` on `claude
 
 | WU | Status | Model / effort | Thread | Branch | PR | Notes |
 |---|---|---|---|---|---|---|
-| FM-0 contracts | waiting (MAP-C0) | Opus 5.5 / high | | | | early |
+| FM-0 contracts | requested | Opus 5.5 / high | | | | early |
 | FM-1 tile proxy | waiting (FM-0) | Sonnet 5.5 / high | | | | early |
 | FM-3 map canvas | waiting (FM-0) | Fable 5.2 / medium | | | | early |
 | FM-2 live hub, SSE | waiting (GMAP2) | Opus 5.5 / high | | | | |
@@ -30,3 +30,5 @@ Gates: GFM0 open, GFM1 open, GFM2 open. Screenshots thread ("Map screenshots"): 
 
 - 2026-11-14 23:00Z: line started. cakeutils MAP-C0 in progress (not merged), GMAP2 open: no unit can start yet.
   `claude/fishnet-map` created. "Map screenshots" thread requested from the project coordinator.
+- 2026-11-15 08:50Z: cakeutils MAP-C0 merged into `claude/map` (PR #98, 2050530); GMAP0 passed, GMAP1/GMAP2 open.
+  FM-0 thread requested (Opus 5.5 / high). FM-1 and FM-3 follow FM-0 (brief §7.2).

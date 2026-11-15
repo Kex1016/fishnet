@@ -98,3 +98,37 @@ Gates: GFM0 **passed** 2026-11-15, GFM1 **passed** 2026-11-15, GFM2 **passed** 2
 - 2026-11-15 13:20Z: FM-8 #47 reviewed (check, 397 tests twice, build + leak pass, screenshots read) and merged (b10b6d9). All feature units merged; FM-7 requested (Fable 5.2 / high).
 - 2026-11-15 13:55Z: FM-7 #48 reviewed (check, 404 tests, build + leak pass, e2e 54/54 on busy and fresh incl. 600-connection SSE check) and merged (f88e857). GFM1 and GFM2 passed on mock. PR claude/fishnet-map → main opened for David.
 - 2026-11-15 13:58Z: PR #49 claude/fishnet-map → main opened for David (not merged). FM-7 screenshots sent to Map screenshots 3.
+
+# Markers (map markers line)
+
+Line: points and areas from cakeutils' read-only `GET /v2/map/{server}/worlds/{world}/markers` drawn on `/map/[server]`.
+Brief: cakeutils `v2/map/MARKERS-FISHNET-BRIEF.md` (project files `briefs/MAP-MARKERS-WEBSITE.md`); contract: cakeutils
+`v2/map/MARKERS.md` and `openapi.json` once GMK0 freezes them. Integration branch **`claude/fishnet-markers`** (off `main` at
+`d719d9a`); unit PRs target it and the markers coordinator merges them. PR `claude/fishnet-markers` → `main` is for David at GFMK2.
+Coordinator thread: "Build Fishnet map markers" (cmsg_017jXErfLmkLcYLSb5FKAVcMU8EDAWUZxKJUYYYZqVSPrX).
+
+Start rule (David, 2026-11-15): FMK-0 and FMK-1 once cakeutils GMK0 is logged (cakeutils `v2/map/PROGRESS.md`, Markers
+extension, branch `claude/map-markers`); everything else after cakeutils GMK2. No Fable models in this line; minimal chatter.
+
+| WU | Status | Model / effort | Thread | Branch | PR | Notes |
+|---|---|---|---|---|---|---|
+| FMK-0 contracts | waiting for GMK0 | Sonnet 5.5 / high | | | | early |
+| FMK-1 Minecraft label | waiting for GMK0 | Opus 5.5 / medium | | | | early, ∥ FMK-0 |
+| FMK-2 marker layer | waiting for GMK2 | Sonnet 5.5 / high | | | | FMK-0, FMK-1 |
+| FMK-3 live refresh | waiting for GMK2 | Sonnet 5.5 / medium | | | | FMK-0, ∥ FMK-2 |
+| FMK-6 docs | waiting for GMK2 | Haiku 5.5 / low | | | | FMK-2 |
+| FMK-7 integration, QA, security | waiting for GMK2 | Opus 5.5 / medium | | | | all |
+
+Gates: GFMK0 (FMK-0 + FMK-1 merged), GFMK1 (FMK-2 + FMK-3 merged, check/test/build/e2e on both scenarios), GFMK2 (FMK-7
+done, PR to `main` open for David): not started.
+
+## Markers decisions
+
+- 2026-11-15: units merge into `claude/fishnet-markers` after the coordinator's review (build, tests, diff, screenshots);
+  sent back at most twice, then a fresh thread one model step up. Screenshots (brief §6.3) go to the latest
+  "Map screenshots" thread with room, at most 6 files per post.
+
+## Markers log
+
+- 2026-11-15 21:40Z: line started on David's go. `claude/fishnet-markers` created off `main` (d719d9a). cakeutils GMK0
+  not passed yet (MK-C0 running), so no unit started; re-check scheduled.

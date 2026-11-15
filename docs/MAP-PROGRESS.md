@@ -13,12 +13,12 @@ everything else after cakeutils GMAP2 (cakeutils `v2/map/PROGRESS.md` on `claude
 | FM-1 tile proxy | **merged** 992d8df | Sonnet 5.5 / high | cmsg_017jXErfLmkLcYLSb5FKAVcM8uYUXfxLcYWKvBe73J2HfJ | claude/fishnet-map-fm1 | #39 | early |
 | FM-3 map canvas | **merged** 41d016b | Fable 5.2 / medium | cmsg_017jXErfLmkLcYLSb5FKAVcMEKSWLpTczmc4csx1NMMHJd | | #40 | early |
 | FM-2 live hub, SSE | **merged** 549ca0a | Opus 5.5 / high | cmsg_017jXErfLmkLcYLSb5FKAVcM9KqCGixSeEL8G9QZ2PRtiz | | #43 | |
-| FM-4 pages | in progress | Sonnet 5.5 / high | cmsg_017jXErfLmkLcYLSb5FKAVcMHrvYSaXiUfeQmTLGZk1awV | | | |
+| FM-4 pages | **merged** 4fd45ab | Sonnet 5.5 / high | cmsg_017jXErfLmkLcYLSb5FKAVcMHrvYSaXiUfeQmTLGZk1awV | claude/project-thread-07827n | #44 | |
 | FM-5 layers, One Soul rounds | **merged** 30173d0 | Sonnet 5.5 / medium | cmsg_017jXErfLmkLcYLSb5FKAVcMJT7uHxrgGEJ3gBYJcm4wPK | | #42 | |
 | FM-6 deploy, docs | **merged** 126153b | Haiku 5.5 / low | cmsg_017jXErfLmkLcYLSb5FKAVcMLx4U5tTPgm8hyjLLh1ZmYv | | #45 | |
 | FM-0b fixture sync | **merged** 6cb11c9 | Sonnet 5.5 / low | cmsg_017jXErfLmkLcYLSb5FKAVcM5ftpf5BqgSVQMmVoD8A8oa | | #41 | MAP-43 follow-up (brief §7) |
-| FM-m mini worlds | waiting (FM-4) | Sonnet 5.5 / medium | | | | |
-| FM-8 show on map | waiting (FM-4) | Sonnet 5.5 / medium | | | | |
+| FM-m mini worlds | requested | Sonnet 5.5 / medium | | | | |
+| FM-8 show on map | requested | Sonnet 5.5 / medium | | | | |
 | FM-7 integration, QA, go-live | waiting (all) | Fable 5.2 / high | | | | |
 
 Gates: GFM0 **passed** 2026-11-15, GFM1 open, GFM2 open. Screenshots thread ("Map screenshots"): cmsg_017jXErfLmkLcYLSb5FKAVcMADw8BDRoVvuMRhAtXTp9cP.
@@ -57,6 +57,12 @@ Gates: GFM0 **passed** 2026-11-15, GFM1 open, GFM2 open. Screenshots thread ("Ma
   address (IPv6 /64 not grouped: FM-7 to judge).
 - Screenshots threads: "Map screenshots" is full; later stages go to "Map screenshots 2"
   (cmsg_017jXErfLmkLcYLSb5FKAVcMWkkENWXb2WqP27uo6Awu6E), at most 6 files per post.
+- 2026-11-15 (FM-4): pages use `src/lib/map/liveClient.ts` (SSE, resumes after last tile event) and `pages.ts`;
+  world list in `/map/[server]` `data.worlds` via worldLabel; `?follow=` written into share links but read by FM-8.
+  FM-7 to look at: busy mock hub tile epoch differs from the page's change-log epoch (`mock-1`).
+- 2026-11-15: FM-8 and FM-m run in parallel; both touch `/map/[server]/+page.svelte`. FM-m puts the grouped picker
+  in a new `src/lib/map/WorldPicker.svelte` with a one-line swap in the page; FM-8 owns the `?follow=` handling;
+  the second to merge rebases.
 
 ## Log
 
@@ -74,3 +80,4 @@ Gates: GFM0 **passed** 2026-11-15, GFM1 open, GFM2 open. Screenshots thread ("Ma
 - 2026-11-15 12:58Z: FM-5 #42 reviewed (check, 353 tests, build + leak pass, screenshots read) and merged (30173d0). Round world names use One Soul dimension labels (not worlds.ts), accepted.
 - 2026-11-15 13:05Z: FM-2 #43 reviewed (check, 381 tests merged, build + leak pass; client address via adapter ADDRESS_HEADER/XFF_DEPTH) and merged (549ca0a). FM-6 requested.
 - 2026-11-15 13:10Z: FM-6 #45 reviewed (env vars all documented, Caddy SSE handle with flush_interval -1 and no encode, port untouched) and merged (126153b). Caddy config not validated with a binary: FM-7 / first deploy.
+- 2026-11-15 13:15Z: FM-4 #44 reviewed (check, 392 tests, build + leak pass, screenshots read: full bleed per David, fresh empty state) and merged (4fd45ab). GFM1 still needs `bun run e2e` both scenarios: FM-7. FM-8 and FM-m requested.

@@ -45,6 +45,12 @@ export type LiveOptions = {
 };
 
 export interface MapClient {
+  /**
+   * May this server's map be shown at all (FM-1)? `live`: a valid id that is neither hidden nor One Soul;
+   * `round`: a valid id that is not hidden. Anything that serves a copy without asking cakeutils (the tile
+   * disk cache) checks it first, so a server hidden after its tiles were cached disappears at once.
+   */
+  serverVisible(server: string, scope: "live" | "round"): boolean;
   /** The proxy has /v2/map and the token may read it. Cached 10 min; false on 404/403/501, last known value when down. */
   mapEnabled(): Promise<boolean>;
   /** GET /v2/map (live tier, 15 s): hidden and One Soul servers left out. `off` without the map; `empty` when no server has one. */
@@ -105,6 +111,8 @@ export function createMapClient(o: MapClientOptions): MapClient {
   let known: { at: number; on: boolean } | null = null;
 
   const client: MapClient = {
+    serverVisible: (server, scope) => (scope === "live" ? liveOk(server) : validServerId(server) && !o.hiddenServers().has(server)),
+
     mapEnabled: async () => {
       const t = now();
       if (known && t - known.at < CHECK_MS) return known.on;

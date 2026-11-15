@@ -34,7 +34,7 @@ export const load: PageServerLoad = async ({ params, url }) => {
     stale: servers.ok && servers.stale,
     /** every server with a map, for the server switch (names are plain text) */
     others: servers.ok ? servers.data.servers.map((s) => ({ server: s.server, name: s.display_name })) : [],
-    worlds: [] as { id: string; name: string; dimension: string | null }[],
+    worlds: [] as { id: string; name: string; dimension: string | null; mini: string | null; miniName: string | null }[],
     view: null as MapWorldView | null,
     players: [] as PlayerDot[],
     positions: "off" as "on" | "off" | "down",
@@ -44,7 +44,7 @@ export const load: PageServerLoad = async ({ params, url }) => {
   if (!entry) return { ...base, problem: "offline" as MapProblem };
 
   const worlds = sortWorlds(entry.worlds);
-  base.worlds = worlds.map((w) => ({ id: w.id, name: worldLabel(w), dimension: w.dimension }));
+  base.worlds = worlds.map((w) => ({ id: w.id, name: worldLabel(w), dimension: w.dimension, mini: w.mini ?? null, miniName: w.mini ? w.name.trim() || w.mini : null }));
   const ref = pickWorld(worlds, link.world);
   if (!ref) return { ...base, problem: "no_worlds" as MapProblem };
 

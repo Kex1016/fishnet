@@ -35,6 +35,9 @@ Gates: GFM0 **passed** 2026-11-15, GFM1 open, GFM2 open. Screenshots thread ("Ma
   volume), `MAP_CACHE_MAX_MB` default 2048. Browser URL `/map/t/<server>/<world>/<z>/<x>_<y>.png?v=<epoch>.<seq>`
   (`<epoch>.0` when not in the change log); round tiles `/map/t/<server>/round/<cycle>/...`. 404 = not mapped,
   503 + Retry-After = retry. Header `x-map-cache`. Additive `MapClient.serverVisible()`.
+- 2026-11-15 (David): the map fills the whole content area right of the site nav, edge to edge; every control and
+  piece of information is a popout, overlay or hover popup (players on hover). Applies to FM-3 (canvas, preview) and
+  FM-4 (`/map/[server]`); FM-5/FM-8 controls follow the same rule.
 
 ## Log
 
@@ -44,3 +47,4 @@ Gates: GFM0 **passed** 2026-11-15, GFM1 open, GFM2 open. Screenshots thread ("Ma
   FM-0 thread requested (Opus 5.5 / high). FM-1 and FM-3 follow FM-0 (brief §7.2).
 - 2026-11-15 09:20Z: FM-0 reviewed (check 0 errors, 285 tests, build + leak check pass, diff and screenshots read) and merged (#38, 59deb16). GFM0 passed. FM-1 and FM-3 requested.
 - 2026-11-15 09:25Z: FM-1 reviewed (merged with base: check 0 errors, 325 tests, build + leak check pass; path safety read) and merged (#39, 992d8df).
+- 2026-11-15 09:32Z: David's full-bleed map direction recorded and sent to FM-3; goes into the FM-4 brief.

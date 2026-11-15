@@ -127,6 +127,8 @@ export function generateMapBusy(players: WorldPlayer[]): MockMap {
 type Kit = { problem: (status: number, code: string, detail: string) => Response };
 
 const RATE = { "ratelimit-limit": "1200", "ratelimit-remaining": "299" };
+/** the mock's "now" for things that happened once (a backend's announcement) */
+const STARTED = Date.now();
 
 function jsonCc(req: Request, data: unknown, cc: string): Response {
   const body = JSON.stringify(data);
@@ -310,7 +312,9 @@ export async function handleMap(world: World, url: URL, seg: string[], req: Requ
           worlds: s.worlds.map((w) => ({ id: w.id, dimension: w.dimension, name: w.name, order: w.order, mini: w.mini ?? null, area: w.area ?? null })),
           live_players: s.online && s.live_players,
           changes: s.online && s.worlds.some((w) => w.changes),
-          announced_at: t - s.announced_ago_ms
+          // when the backend announced its map: a moment in the past that stays put (anchored to the start of
+          // the process), so the answer and its ETag are stable and a revalidation gets its 304 like at cakeutils
+          announced_at: STARTED - s.announced_ago_ms
         }))
     };
     return jsonCc(req, data, "private, max-age=15");

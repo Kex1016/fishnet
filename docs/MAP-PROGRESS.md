@@ -11,7 +11,7 @@ everything else after cakeutils GMAP2 (cakeutils `v2/map/PROGRESS.md` on `claude
 |---|---|---|---|---|---|---|
 | FM-0 contracts | **merged** 59deb16 | Opus 5.5 / high | cmsg_017jXErfLmkLcYLSb5FKAVcMRkD7EasRAE44kCebvUP2us | claude/project-thread-hf70c4 | #38 | early |
 | FM-1 tile proxy | **merged** 992d8df | Sonnet 5.5 / high | cmsg_017jXErfLmkLcYLSb5FKAVcM8uYUXfxLcYWKvBe73J2HfJ | claude/fishnet-map-fm1 | #39 | early |
-| FM-3 map canvas | in progress | Fable 5.2 / medium | cmsg_017jXErfLmkLcYLSb5FKAVcMEKSWLpTczmc4csx1NMMHJd | | | early |
+| FM-3 map canvas | **merged** 41d016b | Fable 5.2 / medium | cmsg_017jXErfLmkLcYLSb5FKAVcMEKSWLpTczmc4csx1NMMHJd | | #40 | early |
 | FM-2 live hub, SSE | waiting (GMAP2) | Opus 5.5 / high | | | | |
 | FM-4 pages | waiting (GMAP2, FM-3) | Sonnet 5.5 / high | | | | |
 | FM-5 layers, One Soul rounds | waiting (GMAP2, FM-3) | Sonnet 5.5 / medium | | | | |
@@ -38,6 +38,14 @@ Gates: GFM0 **passed** 2026-11-15, GFM1 open, GFM2 open. Screenshots thread ("Ma
 - 2026-11-15 (David): the map fills the whole content area right of the site nav, edge to edge; every control and
   piece of information is a popout, overlay or hover popup (players on hover). Applies to FM-3 (canvas, preview) and
   FM-4 (`/map/[server]`); FM-5/FM-8 controls follow the same rule.
+- 2026-11-15 (FM-3): Leaflet 1.9.4 (+ @types/leaflet) added, dynamic import. Layout: `mc-stage` in the shell's scroll
+  area, MapCanvas inside, popouts in `mc-over > mc-over__row`, status in `mc-over__status`; `/design/map` is the
+  template for FM-4. Instance: follow, unfollow, applyTiles, setView, view, pointOf; `onview` ≤ 4/s. Players drawn at
+  block centre (FM-2 floors positions); layer marks at raw coordinates, world shown only (FM-5); followed player on
+  another world keeps follow and waits for the page to switch world, absent → `onfollow(null)` (FM-8). Worlds without a
+  change log bust tiles with `?r=` (ignored by the tile route). `scripts/map-canvas-check.ts` checks alignment.
+- 2026-11-15: unrendered tiles stay `404` (cacheable, FM-1 semantics); Chromium logs them as console errors, so FM-7's
+  e2e console check ignores failed requests under `/map/t/`.
 
 ## Log
 
@@ -48,3 +56,4 @@ Gates: GFM0 **passed** 2026-11-15, GFM1 open, GFM2 open. Screenshots thread ("Ma
 - 2026-11-15 09:20Z: FM-0 reviewed (check 0 errors, 285 tests, build + leak check pass, diff and screenshots read) and merged (#38, 59deb16). GFM0 passed. FM-1 and FM-3 requested.
 - 2026-11-15 09:25Z: FM-1 reviewed (merged with base: check 0 errors, 325 tests, build + leak check pass; path safety read) and merged (#39, 992d8df).
 - 2026-11-15 09:32Z: David's full-bleed map direction recorded and sent to FM-3; goes into the FM-4 brief.
+- 2026-11-15 10:05Z: FM-3 reviewed (check 0 errors, 340 tests, build + leak check pass, screenshots read: full-bleed per David) and merged (#40, 41d016b). Early units done; rest waits for cakeutils GMAP2.

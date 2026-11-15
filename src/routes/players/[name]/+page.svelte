@@ -8,6 +8,7 @@
   import { StatTile } from "#lib/charts/index.ts";
   import { Segments, StatsExplorer, playerLabel, isUuidName, splitMini } from "#lib/players/index.ts";
   import { PlayerAdvancementFirsts, PlayerFirsts } from "#lib/milestones/index.ts";
+  import ShowOnMap from "#lib/map/ShowOnMap.svelte";
   import HiddenServersNote from "#lib/milestones/HiddenServersNote.svelte";
   import { day, ago, dateTime } from "#lib/format/dates.ts";
   import { durationMs, group } from "#lib/format/stat-display.ts";
@@ -49,6 +50,7 @@
           {/if}
           · first seen <time datetime={new Date(p.first_seen).toISOString()} title={dateTime(p.first_seen)}>{day(p.first_seen)}</time>
         </p>
+        {#if data.onMap}<div class="fp-who__map"><ShowOnMap state={data.onMap} /></div>{/if}
         <p class="t-caption t-faint fp-who__uuid">{p.uuid}{#if isUuidName(p.name)} · no name yet: this player was first seen through a stat, before logging in{/if}</p>
       </div>
       {#if data.player.stale}<AsOf at={data.player.asOf} stale />{/if}
@@ -157,6 +159,7 @@
   .fp-who { display: grid; grid-template-columns: 64px minmax(0, 1fr) auto; gap: var(--space-2) var(--space-5); align-items: center; }
   .fp-who__text { display: flex; flex-direction: column; gap: var(--space-1); min-width: 0; }
   .fp-who__name { overflow-wrap: anywhere; }
+  .fp-who__map { margin-block: var(--space-1); }
   .fp-who__affix { font-weight: 500; }
   .fp-who__status { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1); }
   .fp-who__uuid { font-family: var(--font-mono); overflow-wrap: anywhere; }

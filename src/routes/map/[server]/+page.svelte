@@ -5,9 +5,11 @@
   // world and player lists work without JavaScript; the server renders the map as a still picture of the same view.
   // Live: an EventSource on /map/<server>/live with a players.json poll as the fallback (liveClient.ts).
   // The share link (?world=&x=&z=&zoom=) follows the view, so the address bar is always a link to what you see.
-  // ?follow= from other pages (FM-8) fills `follow` from data.link.
+  // ?follow= (FM-8, "Show on map" on a profile) opens the player's world centred on them and follows them; when they
+  // are not here a Notice says why and links to the server they are on. A followed player who changes world keeps the
+  // follow: the page switches world with them.
   import { onMount, untrack } from "svelte";
-  import { replaceState } from "$app/navigation";
+  import { goto, replaceState } from "$app/navigation";
   import { page } from "$app/state";
   import EmptyState from "#lib/design/EmptyState.svelte";
   import Face from "#lib/design/Face.svelte";
@@ -18,6 +20,7 @@
   import { readout } from "#lib/map/crs.ts";
   import { connectLive } from "#lib/map/liveClient.ts";
   import { mapHref } from "#lib/map/links.ts";
+  import { followText } from "#lib/map/showOnMap.ts";
   import { groupPlayers } from "#lib/map/pages.ts";
   import type { LiveState, MapView, PlayerDot, TilesEvent } from "#lib/map/types.ts";
   import { asOf } from "#lib/format/dates.ts";
@@ -25,7 +28,7 @@
   let { data } = $props();
 
   let players = $state<PlayerDot[]>(untrack(() => data.players));
-  let follow = $state<string | null>(null);
+  let follow = $state<string | null>(untrack(() => data.follow));
   let at = $state<MapView | null>(null);
   let liveState = $state<LiveState>("live");
   let liveAt = $state<number | null>(null);
@@ -44,10 +47,22 @@
     at = null;
     liveState = "live";
     liveAt = null;
-    if (data.server !== shownServer) {
-      shownServer = data.server;
-      follow = null;
-    }
+    if (data.server !== shownServer) shownServer = data.server;
+    // every load decides: a link with ?follow= follows (the world switch below keeps it), any other opens unfollowed
+    follow = data.follow;
+  });
+
+  // a followed player changes world: go with them (the follow stays in the link; the load centres on them)
+  let switching = "";
+  $effect(() => {
+    const cur = data.view;
+    if (!cur || !follow) return;
+    const p = players.find((x) => x.uuid === follow);
+    if (!p || p.world === cur.id || !data.worlds.some((w: { id: string }) => w.id === p.world)) return;
+    const key = `${cur.server}/${p.world}/${follow}`;
+    if (key === switching) return;
+    switching = key;
+    untrack(() => goto(mapHref(cur.server, { world: p.world, follow }), { replaceState: true }));
   });
 
   // the live feed: one connection per server and world; positions off and no change log means nothing to listen for
@@ -215,6 +230,15 @@
             </button>
           {/if}
         </MapPopout>
+        {#if data.followNote}
+          {@const n = data.followNote}
+          <div class="mp-note">
+            <Notice kind="info">
+              {followText(n)}
+              {#if n.elsewhere}<a href={n.elsewhere.href}>Open the {n.elsewhere.name} map</a>{/if}
+            </Notice>
+          </div>
+        {/if}
         {#if data.down || data.stale || liveState !== "live" || data.positions !== "on"}
           <ul class="mp-status" aria-label="Map status">
             {#if data.stale && data.asOf}
@@ -242,6 +266,7 @@
   .mp-row > :global(.mc-pop__item) { flex: 1 1 auto; min-width: 0; }
   .mp-row > :global(.fp-ibtn) { flex: none; }
   .mp-row > :global(.fp-ibtn[aria-pressed="true"]) { background: var(--acc-soft); color: var(--acc-ink); }
+  .mp-note { flex: 1 1 100%; max-width: 36rem; box-shadow: var(--shadow-pill); }
   .mp-url { width: 100%; min-width: 0; font-size: 12px; text-overflow: ellipsis; }
   .mp-status { align-self: center; display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); margin: 0; padding: 0; list-style: none; }
   .mp-status > :global(li) { height: 24px; box-shadow: var(--shadow-pill); background: var(--surface); border: 1px solid var(--line); }

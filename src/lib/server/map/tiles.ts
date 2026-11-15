@@ -67,6 +67,12 @@ export type TileServiceOptions = {
   now?: () => number;
   /** milliseconds between sweeps; 0 = none scheduled (tests call sweep()) */
   sweepMs?: number;
+  /**
+   * The worlds /v2/map lists now, `server → world ids`, or null when that is not known (cakeutils down, answer stale).
+   * A sweep drops the cached tiles of live worlds that are not listed: a mini world's tiles turn 404 when the mini
+   * goes private (brief §2). Finished rounds' tiles (`@round`) are never touched.
+   */
+  listed?: () => Promise<Map<string, Set<string>> | null>;
   freshMs?: number;
   missMs?: number;
   maxPerServer?: number;
@@ -337,10 +343,41 @@ export function createTileService(o: TileServiceOptions) {
     }
   }
 
+  /** Remove cached live worlds that /v2/map no longer lists (a server missing from the answer loses all of them). */
+  async function dropUnlisted(listed: Map<string, Set<string>>): Promise<number> {
+    let dropped = 0;
+    let servers: import("node:fs").Dirent[];
+    try {
+      servers = await readdir(o.dir, { withFileTypes: true });
+    } catch {
+      return 0;
+    }
+    for (const sd of servers) {
+      if (!sd.isDirectory() || !validServerId(sd.name)) continue;
+      const keep = listed.get(sd.name);
+      let worlds: import("node:fs").Dirent[];
+      try {
+        worlds = await readdir(join(o.dir, sd.name), { withFileTypes: true });
+      } catch {
+        continue;
+      }
+      for (const w of worlds) {
+        if (!w.isDirectory() || w.name === "@round" || keep?.has(w.name)) continue;
+        await rm(join(o.dir, sd.name, w.name), { recursive: true, force: true }).catch(() => {});
+        dropped++;
+        for (const m of [misses, retryAt]) for (const k of [...m.keys()]) if (k.startsWith(`${sd.name}\0\0${w.name}\0`)) m.delete(k);
+      }
+    }
+    if (dropped > 0) log(`map tile cache: dropped ${dropped} world(s) no longer on the map`);
+    return dropped;
+  }
+
   /** Delete the least recently used tiles until the cache is under the cap; also clears stray temp files and orphan sidecars. */
   function sweep(): Promise<SweepResult> {
     if (sweeping) return sweeping;
     sweeping = (async () => {
+      const listed = await o.listed?.().catch(() => null);
+      if (listed) await dropUnlisted(listed);
       const files: Entry[] = [];
       await walk(o.dir, files);
       const t = now();

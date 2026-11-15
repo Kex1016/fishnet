@@ -6,6 +6,7 @@
   // check the canvas, the fixtures and the hide wrapper by eye and with Playwright (scripts/map-canvas-check.ts).
   import { onMount, untrack } from "svelte";
   import EmptyState from "#lib/design/EmptyState.svelte";
+  import { sortWorlds, worldLabel } from "#lib/map/worlds.ts";
   import Face from "#lib/design/Face.svelte";
   import Notice from "#lib/design/Notice.svelte";
   import MapCanvas from "#lib/map/MapCanvas.svelte";
@@ -114,9 +115,9 @@
           {#each servers as s (s.server)}
             <div class="mc-pop__list">
               <span class="mc-pop__line">{s.display_name}{s.live_players ? "" : " · live positions are off"}</span>
-              {#each s.worlds as w (w.id)}
+              {#each sortWorlds(s.worlds) as w (w.id)}
                 <a class="mc-pop__item" href="?server={s.server}&world={w.id}" aria-current={s.server === v.server && w.id === v.id ? "page" : undefined}>
-                  <span class="mc-pop__grow">{w.name}</span>
+                  <span class="mc-pop__grow">{worldLabel(w)}</span>
                   <span class="mc-pop__note">{w.dimension ?? "unknown"}</span>
                 </a>
               {/each}

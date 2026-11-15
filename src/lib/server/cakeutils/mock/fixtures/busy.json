@@ -3028,7 +3028,7 @@
      {
       "id": "minecraft_overworld",
       "dimension": "minecraft:overworld",
-      "name": "Creative world",
+      "name": "minecraft:overworld",
       "order": 0,
       "zoom": {
        "max": 3,
@@ -3055,7 +3055,7 @@
      {
       "id": "minecraft_overworld",
       "dimension": "minecraft:overworld",
-      "name": "Overworld",
+      "name": "minecraft:overworld",
       "order": 0,
       "zoom": {
        "max": 3,
@@ -3082,7 +3082,7 @@
      {
       "id": "minecraft_overworld",
       "dimension": "minecraft:overworld",
-      "name": "Overworld",
+      "name": "minecraft:overworld",
       "order": 0,
       "zoom": {
        "max": 3,
@@ -3099,8 +3099,8 @@
      {
       "id": "minecraft_the_nether",
       "dimension": "minecraft:the_nether",
-      "name": "The Nether",
-      "order": 1,
+      "name": "minecraft:the_nether",
+      "order": 0,
       "zoom": {
        "max": 3,
        "default": 2,
@@ -3114,10 +3114,29 @@
       "changes": false
      },
      {
+      "id": "cakeutils_miniservers_skyblock-1_overworld",
+      "dimension": "minecraft:overworld",
+      "name": "Skyblock 1",
+      "order": 0,
+      "zoom": {
+       "max": 3,
+       "default": 3,
+       "extra": 2
+      },
+      "spawn": {
+       "x": 16,
+       "z": 16
+      },
+      "palette": "flat",
+      "changes": false,
+      "mini": "skyblock-1",
+      "area": "overworld"
+     },
+     {
       "id": "minecraft_the_end",
       "dimension": "minecraft:the_end",
-      "name": "The End",
-      "order": 2,
+      "name": "minecraft:the_end",
+      "order": 0,
       "zoom": {
        "max": 3,
        "default": 1,

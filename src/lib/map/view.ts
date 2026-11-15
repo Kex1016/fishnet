@@ -2,6 +2,7 @@
 // call it, MapCanvas only reads the result.
 import type { MapChanges, MapWorld, MapWorldRef, RoundMapWorld } from "#lib/api/types.ts";
 import { roundTileTemplate, tileTemplate } from "./links.ts";
+import { worldLabel } from "./worlds.ts";
 import type { MapWorldView } from "./types.ts";
 
 /** A live world: its /v2/map entry, its settings and (when it has one) its change log. */
@@ -11,7 +12,7 @@ export function liveWorldView(server: string, ref: MapWorldRef, w: MapWorld, cha
   return {
     server,
     id: ref.id,
-    name: ref.name,
+    name: worldLabel(ref),
     dimension: ref.dimension,
     order: ref.order,
     cycle: null,

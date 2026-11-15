@@ -7,6 +7,7 @@ import type { PageServerLoad } from "./$types";
 import { mapApi } from "#lib/server/cakeutils/client.ts";
 import { parseMapLink } from "#lib/map/links.ts";
 import { liveWorldView } from "#lib/map/view.ts";
+import { sortWorlds } from "#lib/map/worlds.ts";
 import type { MapWorldView, PlayerDot } from "#lib/map/types.ts";
 
 export const load: PageServerLoad = async ({ locals, url }) => {
@@ -15,7 +16,7 @@ export const load: PageServerLoad = async ({ locals, url }) => {
   const servers = await m.mapServers();
   const list = servers.ok ? servers.data.servers : [];
   const pick = list.find((s) => s.server === url.searchParams.get("server")) ?? list.find((s) => s.live_players) ?? list[0];
-  const ref = pick ? (pick.worlds.find((w) => w.id === url.searchParams.get("world")) ?? pick.worlds[0]) : undefined;
+  const ref = pick ? (sortWorlds(pick.worlds).find((w) => w.id === url.searchParams.get("world")) ?? sortWorlds(pick.worlds)[0]) : undefined;
   let view: MapWorldView | null = null;
   let players: PlayerDot[] = [];
   let positions: "on" | "off" | "down" = "off";

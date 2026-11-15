@@ -2,7 +2,7 @@
 // mock scenario (dev banner), and whether servers are hidden (src/lib/server/hidden-servers.ts).
 import { error } from "@sveltejs/kit";
 import type { LayoutServerLoad } from "./$types";
-import { api, exclusionStatus, extras } from "#lib/server/cakeutils/client.ts";
+import { api, exclusionStatus, extras, mapApi } from "#lib/server/cakeutils/client.ts";
 import { hiddenServers } from "#lib/server/hidden-servers.ts";
 import { labelOverrides } from "#lib/server/admin/index.ts";
 import { oneSoul } from "#lib/server/onesoul/index.ts";
@@ -18,13 +18,14 @@ export const load: LayoutServerLoad = async ({ locals, url }) => {
     if (hidden.hidesScope(url.searchParams.get("scope")) || (m && hidden.has(decodeURIComponent(m[1])))) error(404, "Not found");
   }
   const x = extras();
-  const [milestones, advancements, onesoul, firsts, deaths, activity] = await Promise.all([
+  const [milestones, advancements, onesoul, firsts, deaths, activity, map] = await Promise.all([
     api().milestonesEnabled(),
     api().advancementsEnabled(),
     oneSoul().enabled("status"),
     x.enabled("firsts"),
     x.enabled("deaths"),
-    x.enabled("activity")
+    x.enabled("activity"),
+    mapApi().mapEnabled()
   ]);
   const ex = exclusionStatus();
   return {
@@ -41,6 +42,8 @@ export const load: LayoutServerLoad = async ({ locals, url }) => {
     firsts,
     deaths,
     activity,
+    /** the proxy has the web map and the token may read it (the Map nav entry; FM-0) */
+    map,
     /** cakeutils is older than D-113: its network stats still count the hidden servers */
     exclusionUnsupported: ex.unsupported,
     /** the owner's stat names (admin.db), for labels.ts in the browser */

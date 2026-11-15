@@ -12,6 +12,7 @@ import type {
 import { formatStat, durationMs } from "#lib/format/stat-display.ts";
 import { fnv1a, hex, type World, type WorldPlayer, type WorldSubject } from "./world.ts";
 import { handleExtras } from "./extras.ts";
+import { handleMap } from "./map.ts";
 import { handleOneSoul } from "../../onesoul/mock/handler.ts";
 
 const SCOPE_RE = /^(network|server:[A-Za-z0-9._-]{1,64}|mini:[A-Za-z0-9._-]{1,64}\/[^/]{1,64}|round:[A-Za-z0-9._-]{1,64}\/[0-9]{1,9})$/;
@@ -445,6 +446,10 @@ export async function handleMock(world: World, req: Request): Promise<Response> 
     return problem(404, "not_found", "no such route");
   }
   const seg = path.slice(4).split("/").filter(Boolean).map(decodeURIComponent);
+
+  // the web map (MAP-C0) and a finished round's map: its own headers and problems (MAP §5.3, §5.4)
+  const mp = await handleMap(all, url, seg, req, { problem });
+  if (mp) return mp;
 
   // One Soul (built and planned routes): its own world, its own rules
   const os = handleOneSoul(all.onesoul, req, url, seg, {

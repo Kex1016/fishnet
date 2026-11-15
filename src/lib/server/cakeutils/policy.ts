@@ -12,13 +12,19 @@
 // | feed      | /v2/milestones...                        | 60 s   | 4 min                        |
 // | catalogue | /v2/stats/types, /v2/stats/subjects...   | 30 min | 6 h                          |
 // | icon      | /v2/icons/<sha>.png (content-addressed)  | always | -                            |
+// | map-world | /v2/map/<server>/worlds/<world>          | 5 min  | 1 h                          |
+// | map-direct| map tiles, positions, change logs        | never cached here (tile disk cache, live hub) |
+//
+// The map index (/v2/map) is `live`; a finished round's map settings
+// (/v2/onesoul/rounds/<cycle>/map/worlds/<world>) are `catalogue`: a round that is over never changes.
+// The map routes are counted in their own bucket (map.ts), whatever their tier.
 //
 // "Served while refreshing" (stale-while-revalidate) is the window past the TTL in which a visitor
 // gets the cached answer at once and one refresh runs behind it; past that window the page waits
 // for a fresh answer. When cakeutils is down or throttling, the last good answer is served up to
 // 24 h with "as of" (core.ts), whatever the tier.
 
-export type RouteClass = "health" | "live" | "player" | "board" | "feed" | "catalogue" | "icon";
+export type RouteClass = "health" | "live" | "player" | "board" | "feed" | "catalogue" | "icon" | "map-world" | "map-direct";
 
 export type Policy = {
   cls: RouteClass;
@@ -43,14 +49,31 @@ const POLICIES: Record<RouteClass, Policy> = {
   board: { cls: "board", floorMs: 1 * MIN, swrMs: 4 * MIN, negativeMs: 1 * MIN, staleOk: true },
   feed: { cls: "feed", floorMs: 1 * MIN, swrMs: 4 * MIN, negativeMs: 1 * MIN, staleOk: true },
   catalogue: { cls: "catalogue", floorMs: 30 * MIN, swrMs: 6 * HOUR, negativeMs: 5 * MIN, staleOk: true },
-  icon: { cls: "icon", floorMs: Number.POSITIVE_INFINITY, swrMs: 0, negativeMs: 10 * MIN, staleOk: true }
+  icon: { cls: "icon", floorMs: Number.POSITIVE_INFINITY, swrMs: 0, negativeMs: 10 * MIN, staleOk: true },
+  "map-world": { cls: "map-world", floorMs: 5 * MIN, swrMs: 1 * HOUR, negativeMs: 1 * MIN, staleOk: true },
+  // never in the LRU: core.direct() answers them (FM-1's disk cache and FM-2's hub keep what they need)
+  "map-direct": { cls: "map-direct", floorMs: 0, swrMs: 0, negativeMs: 0, staleOk: false }
 };
+
+const MAP_DIRECT = /^\/v2\/(map\/[^/]+\/(tiles\/|players$|worlds\/[^/]+\/changes$)|onesoul\/rounds\/[^/]+\/map\/tiles\/)/;
+const MAP_WORLD = /^\/v2\/map\/[^/]+\/worlds\/[^/]+$/;
+const ROUND_MAP_WORLD = /^\/v2\/onesoul\/rounds\/[^/]+\/map\/worlds\/[^/]+$/;
+
+/** A path counted in cakeutils' map bucket (MAP §5.1): /v2/map* and a finished round's map routes. */
+export function isMapPath(path: string): boolean {
+  const p = path.split("?")[0];
+  return p === "/v2/map" || p.startsWith("/v2/map/") || /^\/v2\/onesoul\/rounds\/[^/]+\/map\//.test(p);
+}
 
 /** The tier of a `/v2/...` path (query ignored). Anything unknown is "live": the shortest floor. */
 export function policyFor(path: string): Policy {
   const p = path.split("?")[0];
   if (p === "/v2/health") return POLICIES.health;
   if (p.startsWith("/v2/icons/")) return POLICIES.icon;
+  if (MAP_DIRECT.test(p)) return POLICIES["map-direct"];
+  if (MAP_WORLD.test(p)) return POLICIES["map-world"];
+  if (ROUND_MAP_WORLD.test(p)) return POLICIES.catalogue;
+  if (p === "/v2/map") return POLICIES.live;
   if (p.startsWith("/v2/leaderboards/")) return POLICIES.board;
   if (p === "/v2/stats/types" || p.startsWith("/v2/stats/subjects")) return POLICIES.catalogue;
   if (p === "/v2/milestones" || p.startsWith("/v2/milestones/")) return POLICIES.feed;

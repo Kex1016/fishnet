@@ -2,7 +2,7 @@
 // nothing baked into the build. The token is never logged or exported: only its public id
 // (`cu_<id>`) leaves this module.
 import {
-  CAKEUTILS_API_TOKEN, CAKEUTILS_API_URL, CAKEUTILS_BURST, CAKEUTILS_RATE, FISHNET_ALLOW_MOCK, FISHNET_DATA_DIR, FISHNET_MOCK, HIDDEN_PLAYERS_FILE, HIDDEN_SERVERS_FILE, NODE_ENV, ORIGIN
+  CAKEUTILS_API_TOKEN, CAKEUTILS_API_URL, CAKEUTILS_BURST, CAKEUTILS_MAP_BURST, CAKEUTILS_MAP_RATE, CAKEUTILS_RATE, FISHNET_ALLOW_MOCK, FISHNET_DATA_DIR, FISHNET_MOCK, HIDDEN_PLAYERS_FILE, HIDDEN_SERVERS_FILE, MAP_CACHE_MAX_MB, MAP_SSE_MAX, NODE_ENV, ORIGIN
 } from "$app/env/private";
 import { building, dev } from "$app/env";
 import type { Scenario } from "./cakeutils/mock/index.ts";
@@ -17,6 +17,13 @@ export type Config = {
   ratePerMinute: number;
   /** how many requests may go out back to back (the bucket's size), below the token's burst */
   burst: number;
+  /** the map's own bucket (tiles, positions, changes, map settings): requests per minute and burst */
+  mapRatePerMinute: number;
+  mapBurst: number;
+  /** disk the tile cache may use, in bytes */
+  mapCacheMaxBytes: number;
+  /** live map streams open at once, all visitors together */
+  mapSseMax: number;
   origin: string;
   dataDir: string;
   hiddenPlayersFile: string;
@@ -36,6 +43,10 @@ export function config(): Config {
     mock: FISHNET_MOCK,
     ratePerMinute: CAKEUTILS_RATE,
     burst: CAKEUTILS_BURST,
+    mapRatePerMinute: CAKEUTILS_MAP_RATE,
+    mapBurst: CAKEUTILS_MAP_BURST,
+    mapCacheMaxBytes: MAP_CACHE_MAX_MB * 1024 * 1024,
+    mapSseMax: MAP_SSE_MAX,
     origin: ORIGIN,
     dataDir: FISHNET_DATA_DIR,
     hiddenPlayersFile: HIDDEN_PLAYERS_FILE,

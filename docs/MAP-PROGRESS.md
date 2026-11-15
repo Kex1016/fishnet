@@ -15,7 +15,7 @@ everything else after cakeutils GMAP2 (cakeutils `v2/map/PROGRESS.md` on `claude
 | FM-2 live hub, SSE | **merged** 549ca0a | Opus 5.5 / high | cmsg_017jXErfLmkLcYLSb5FKAVcM9KqCGixSeEL8G9QZ2PRtiz | | #43 | |
 | FM-4 pages | in progress | Sonnet 5.5 / high | cmsg_017jXErfLmkLcYLSb5FKAVcMHrvYSaXiUfeQmTLGZk1awV | | | |
 | FM-5 layers, One Soul rounds | **merged** 30173d0 | Sonnet 5.5 / medium | cmsg_017jXErfLmkLcYLSb5FKAVcMJT7uHxrgGEJ3gBYJcm4wPK | | #42 | |
-| FM-6 deploy, docs | in progress | Haiku 5.5 / low | cmsg_017jXErfLmkLcYLSb5FKAVcMLx4U5tTPgm8hyjLLh1ZmYv | | | |
+| FM-6 deploy, docs | **merged** 126153b | Haiku 5.5 / low | cmsg_017jXErfLmkLcYLSb5FKAVcMLx4U5tTPgm8hyjLLh1ZmYv | | #45 | |
 | FM-0b fixture sync | **merged** 6cb11c9 | Sonnet 5.5 / low | cmsg_017jXErfLmkLcYLSb5FKAVcM5ftpf5BqgSVQMmVoD8A8oa | | #41 | MAP-43 follow-up (brief §7) |
 | FM-m mini worlds | waiting (FM-4) | Sonnet 5.5 / medium | | | | |
 | FM-8 show on map | waiting (FM-4) | Sonnet 5.5 / medium | | | | |
@@ -73,3 +73,4 @@ Gates: GFM0 **passed** 2026-11-15, GFM1 open, GFM2 open. Screenshots thread ("Ma
 - 2026-11-15 12:50Z: FM-0b fix 0b8cb59 re-checked (check, 348 tests, build pass) and merged (#41, 6cb11c9). worlds.ts (sortWorlds, worldLabel) available to FM-4/FM-m; busy mini world cakeutils_miniservers_skyblock-1_overworld.
 - 2026-11-15 12:58Z: FM-5 #42 reviewed (check, 353 tests, build + leak pass, screenshots read) and merged (30173d0). Round world names use One Soul dimension labels (not worlds.ts), accepted.
 - 2026-11-15 13:05Z: FM-2 #43 reviewed (check, 381 tests merged, build + leak pass; client address via adapter ADDRESS_HEADER/XFF_DEPTH) and merged (549ca0a). FM-6 requested.
+- 2026-11-15 13:10Z: FM-6 #45 reviewed (env vars all documented, Caddy SSE handle with flush_interval -1 and no encode, port untouched) and merged (126153b). Caddy config not validated with a binary: FM-7 / first deploy.

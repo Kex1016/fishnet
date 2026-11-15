@@ -5234,6 +5234,77 @@
         }
       }
     },
+    "/v2/map/{server}/worlds/{world}/markers": {
+      "get": {
+        "operationId": "getMapMarkers",
+        "tags": [
+          "map"
+        ],
+        "summary": "The markers players placed in one map world, ordered by id: points, rectangular areas and block-grid polygons with title, subtitle and colour. Polygons are in block corners, counter-clockwise, every edge axis-aligned. Send If-None-Match with the ETag (\"m<rev>\") to revalidate (304). An empty world is 200 with no markers; 404 not_found for a world that is not on the map, of a mini-server that is not public, or of a standalone server.",
+        "description": "Scopes: one of read, read:map.",
+        "x-cakeutils-scopes": [
+          "read",
+          "read:map"
+        ],
+        "parameters": [
+          {
+            "name": "server",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Server id (velocity.toml key)."
+          },
+          {
+            "name": "world",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Map world id: the dimension id with ':' replaced by '_', e.g. minecraft_overworld."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "headers": {
+              "ETag": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MapMarkers"
+                }
+              }
+            }
+          },
+          "304": {
+            "description": "Not modified (If-None-Match matched the ETag)"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
     "/v2/admin/announce": {
       "post": {
         "operationId": "announce",
@@ -10427,6 +10498,236 @@
           "updated_at": {
             "type": "integer",
             "description": "when squaremap last wrote the settings, before the round was archived"
+          }
+        }
+      },
+      "MapMarker": {
+        "type": "object",
+        "required": [
+          "id",
+          "kind",
+          "title",
+          "subtitle",
+          "color",
+          "color_auto",
+          "point",
+          "bounds",
+          "polygon",
+          "label",
+          "bbox",
+          "created_at",
+          "updated_at",
+          "revision"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "never reused"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "point",
+              "area",
+              "poly"
+            ]
+          },
+          "title": {
+            "type": "string",
+            "description": "1 to 64 characters, one line. Raw text, never markup: clients must escape it."
+          },
+          "subtitle": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "up to 256 characters and 4 lines (\\n), or null. Raw text, never markup: clients must escape it."
+          },
+          "color": {
+            "type": "string",
+            "pattern": "^#[0-9a-f]{6}$",
+            "description": "#rrggbb, lower case"
+          },
+          "color_auto": {
+            "type": "boolean",
+            "description": "true when cakeutils generated the colour because the builder gave none"
+          },
+          "point": {
+            "oneOf": [
+              {
+                "type": "object",
+                "required": [
+                  "x",
+                  "y",
+                  "z"
+                ],
+                "properties": {
+                  "x": {
+                    "type": "integer"
+                  },
+                  "y": {
+                    "type": "integer"
+                  },
+                  "z": {
+                    "type": "integer"
+                  }
+                }
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "kind point: the block (drawn at its centre x + 0.5, z + 0.5); else null"
+          },
+          "bounds": {
+            "oneOf": [
+              {
+                "type": "object",
+                "required": [
+                  "min_x",
+                  "min_z",
+                  "max_x",
+                  "max_z"
+                ],
+                "properties": {
+                  "min_x": {
+                    "type": "integer"
+                  },
+                  "min_z": {
+                    "type": "integer"
+                  },
+                  "max_x": {
+                    "type": "integer"
+                  },
+                  "max_z": {
+                    "type": "integer"
+                  }
+                }
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "kind area: inclusive block bounds (an area of blocks 0..9 has max 9); else null"
+          },
+          "polygon": {
+            "oneOf": [
+              {
+                "type": "array",
+                "minItems": 4,
+                "maxItems": 4096,
+                "items": {
+                  "type": "array",
+                  "items": {
+                    "type": "integer"
+                  },
+                  "minItems": 2,
+                  "maxItems": 2
+                }
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "kinds area and poly: [x, z] block corners, counter-clockwise as drawn (x right, z down), from the lowest-z then lowest-x corner, every edge axis-aligned, no holes; else null"
+          },
+          "label": {
+            "oneOf": [
+              {
+                "type": "object",
+                "required": [
+                  "x",
+                  "z",
+                  "r"
+                ],
+                "properties": {
+                  "x": {
+                    "type": "number"
+                  },
+                  "z": {
+                    "type": "number"
+                  },
+                  "r": {
+                    "type": "number",
+                    "description": "distance in blocks to the nearest edge"
+                  }
+                }
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "kinds area and poly: where the title goes (the point inside farthest from every edge); else null"
+          },
+          "bbox": {
+            "allOf": [
+              {
+                "type": "object",
+                "required": [
+                  "min_x",
+                  "min_z",
+                  "max_x",
+                  "max_z"
+                ],
+                "properties": {
+                  "min_x": {
+                    "type": "integer"
+                  },
+                  "min_z": {
+                    "type": "integer"
+                  },
+                  "max_x": {
+                    "type": "integer"
+                  },
+                  "max_z": {
+                    "type": "integer"
+                  }
+                }
+              }
+            ],
+            "description": "bounding box in block corners (max exclusive as blocks): a point's is its block"
+          },
+          "created_at": {
+            "type": "integer",
+            "description": "epoch ms"
+          },
+          "updated_at": {
+            "type": "integer",
+            "description": "epoch ms"
+          },
+          "revision": {
+            "type": "integer",
+            "description": "1 at creation, +1 per change"
+          }
+        }
+      },
+      "MapMarkers": {
+        "type": "object",
+        "required": [
+          "server",
+          "world",
+          "rev",
+          "markers"
+        ],
+        "properties": {
+          "server": {
+            "type": "string",
+            "description": "server id (velocity.toml key)"
+          },
+          "world": {
+            "type": "string",
+            "description": "the map world id"
+          },
+          "rev": {
+            "type": "integer",
+            "description": "the world's change counter; the ETag is \"m<rev>\""
+          },
+          "markers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MapMarker"
+            },
+            "description": "ordered by id"
           }
         }
       },

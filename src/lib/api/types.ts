@@ -116,3 +116,15 @@ export type MapPlayers = S["MapPlayers"];
 export type MapPlayer = MapPlayers["players"][number];
 /** GET /v2/onesoul/rounds/{cycle}/map/worlds/{world}?server=: a finished round's archived map. */
 export type RoundMapWorld = S["OneSoulRoundMapWorld"];
+
+// ---- Map markers (cakeutils v2/map/MARKERS.md §3; FMK-0). Scope read:map, the map bucket.
+
+/** GET /v2/map/{server}/worlds/{world}/markers: `rev` is the world's change counter (ETag `"m<rev>"`), `markers` ordered by id. */
+export type MapMarkers = S["MapMarkers"];
+/**
+ * One marker. Corners, not blocks: `polygon` vertices and `bbox` are block corners (block (x, z) is the square
+ * [x, x+1) × [z, z+1)); a point's `bbox` is its block as corners (x, z, x+1, z+1). `title` and `subtitle` are raw
+ * text: never markup, always escaped.
+ */
+export type MapMarker = MapMarkers["markers"][number];
+export type MapMarkerKind = MapMarker["kind"];

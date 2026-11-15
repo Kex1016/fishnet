@@ -1,6 +1,9 @@
 // /map/<server> (FM-4): one server's map, full bleed. The load returns everything the first paint needs: the server
 // list for the popouts, the chosen world's settings and change log, and the first players snapshot, so the page is a
 // picture with a working world list and player list before (and without) JavaScript. ?follow= (FM-8) opens the followed player's world, centred on them.
+// The opening world's markers (FMK-0) ride along with the rest so the Places popout renders without JS and the canvas draws at
+// once; `markers` is a MarkersLoad (markers/types.ts): `none` for a world that cannot have any, `down` when cakeutils is
+// unreachable and nothing good is kept. A hidden server never gets this far (404 above), so none of its markers load.
 // A server that is not on /v2/map (no map, hidden, One Soul, unknown) is a 404 like any page that does not exist.
 import { error } from "@sveltejs/kit";
 import type { PageServerLoad } from "./$types";
@@ -12,6 +15,9 @@ import { pickWorld } from "#lib/map/pages.ts";
 import { sortWorlds, worldLabel } from "#lib/map/worlds.ts";
 import { liveWorldView } from "#lib/map/view.ts";
 import type { MapWorldView, PlayerDot } from "#lib/map/types.ts";
+import type { MarkersLoad } from "#lib/map/markers/types.ts";
+import type { Result } from "#lib/api/result.ts";
+import type { MapMarkers } from "#lib/api/types.ts";
 
 /** Why a server's map cannot be drawn: its backend is down, its squaremap is too old, or it lists no world. */
 export type MapProblem = "offline" | "format" | "no_worlds" | "missing";
@@ -43,6 +49,8 @@ export const load: PageServerLoad = async ({ params, url }) => {
     players: [] as PlayerDot[],
     positions: "off" as "on" | "off" | "down",
     pollMs: 2000,
+    /** the opening world's markers; `none` until a world is chosen */
+    markers: noMarkers(null),
     problem: null as MapProblem | null,
     /** the player the link asks to follow, when they are on this map; the page starts following them */
     follow: null as string | null,
@@ -74,7 +82,7 @@ export const load: PageServerLoad = async ({ params, url }) => {
   const ref = pickWorld(worlds, link.world);
   if (!ref) return { ...base, problem: "no_worlds" as MapProblem };
 
-  const [w, changes] = await Promise.all([m.mapWorld(entry.server, ref.id), m.mapChanges(entry.server, ref.id)]);
+  const [w, changes, markers] = await Promise.all([m.mapWorld(entry.server, ref.id), m.mapChanges(entry.server, ref.id), m.markers(entry.server, ref.id)]);
   if (!w.ok) return { ...base, problem: (w.kind === "off" ? "format" : w.kind === "not_found" ? "missing" : "offline") as MapProblem };
 
   let positions: "on" | "off" | "down" = wantPositions ? "down" : "off";
@@ -88,6 +96,7 @@ export const load: PageServerLoad = async ({ params, url }) => {
     view: liveWorldView(entry.server, { ...ref, name: worldLabel(ref) }, w.data, changes.ok ? changes.data : null),
     players,
     positions,
+    markers: markersLoad(ref.id, markers),
     pollMs: Math.max(2000, w.data.player_update_ms) // the live hub's interval (brief §4.3)
   };
 };
@@ -106,4 +115,14 @@ async function followNote(entry: { server: string; display_name: string }, uuid:
     if (s) return { name, elsewhere: { server: s.server, name: s.display_name, href: showHref(s.server, uuid) }, reason: "elsewhere" };
   }
   return { name, elsewhere: null, reason: why === "off" ? "positions_off" : "not_visible" };
+}
+
+function noMarkers(world: string | null, state: "none" | "down" = "none"): MarkersLoad {
+  return { world, state, rev: 0, markers: [], asOf: null, stale: false };
+}
+
+/** A markers answer as the page keeps it: not_found/off = "no markers can be here" (no error), anything else = down. */
+function markersLoad(world: string, r: Result<MapMarkers>): MarkersLoad {
+  if (r.ok) return { world, state: "ok", rev: r.data.rev, markers: r.data.markers, asOf: r.asOf, stale: r.stale };
+  return noMarkers(world, r.kind === "not_found" || r.kind === "off" || r.kind === "bad_request" ? "none" : "down");
 }

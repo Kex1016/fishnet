@@ -1142,6 +1142,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v2/map/{server}/worlds/{world}/markers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The markers players placed in one map world, ordered by id: points, rectangular areas and block-grid polygons with title, subtitle and colour. Polygons are in block corners, counter-clockwise, every edge axis-aligned. Send If-None-Match with the ETag ("m<rev>") to revalidate (304). An empty world is 200 with no markers; 404 not_found for a world that is not on the map, of a mini-server that is not public, or of a standalone server.
+         * @description Scopes: one of read, read:map.
+         */
+        get: operations["getMapMarkers"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v2/admin/announce": {
         parameters: {
             query?: never;
@@ -2434,6 +2454,65 @@ export interface components {
             };
             /** @description when squaremap last wrote the settings, before the round was archived */
             updated_at: number;
+        };
+        MapMarker: {
+            /** @description never reused */
+            id: number;
+            /** @enum {string} */
+            kind: "point" | "area" | "poly";
+            /** @description 1 to 64 characters, one line. Raw text, never markup: clients must escape it. */
+            title: string;
+            /** @description up to 256 characters and 4 lines (\n), or null. Raw text, never markup: clients must escape it. */
+            subtitle: string | null;
+            /** @description #rrggbb, lower case */
+            color: string;
+            /** @description true when cakeutils generated the colour because the builder gave none */
+            color_auto: boolean;
+            /** @description kind point: the block (drawn at its centre x + 0.5, z + 0.5); else null */
+            point: {
+                x: number;
+                y: number;
+                z: number;
+            } | null;
+            /** @description kind area: inclusive block bounds (an area of blocks 0..9 has max 9); else null */
+            bounds: {
+                min_x: number;
+                min_z: number;
+                max_x: number;
+                max_z: number;
+            } | null;
+            /** @description kinds area and poly: [x, z] block corners, counter-clockwise as drawn (x right, z down), from the lowest-z then lowest-x corner, every edge axis-aligned, no holes; else null */
+            polygon: number[][] | null;
+            /** @description kinds area and poly: where the title goes (the point inside farthest from every edge); else null */
+            label: {
+                x: number;
+                z: number;
+                /** @description distance in blocks to the nearest edge */
+                r: number;
+            } | null;
+            /** @description bounding box in block corners (max exclusive as blocks): a point's is its block */
+            bbox: {
+                min_x: number;
+                min_z: number;
+                max_x: number;
+                max_z: number;
+            };
+            /** @description epoch ms */
+            created_at: number;
+            /** @description epoch ms */
+            updated_at: number;
+            /** @description 1 at creation, +1 per change */
+            revision: number;
+        };
+        MapMarkers: {
+            /** @description server id (velocity.toml key) */
+            server: string;
+            /** @description the map world id */
+            world: string;
+            /** @description the world's change counter; the ETag is "m<rev>" */
+            rev: number;
+            /** @description ordered by id */
+            markers: components["schemas"]["MapMarker"][];
         };
         AnnounceRequest: {
             /** @description "global" or "server:<id>" */
@@ -4913,6 +4992,44 @@ export interface operations {
             429: components["responses"]["TooManyRequests"];
             500: components["responses"]["InternalError"];
             503: components["responses"]["ServiceUnavailable"];
+        };
+    };
+    getMapMarkers: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Server id (velocity.toml key). */
+                server: string;
+                /** @description Map world id: the dimension id with ':' replaced by '_', e.g. minecraft_overworld. */
+                world: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    ETag?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MapMarkers"];
+                };
+            };
+            /** @description Not modified (If-None-Match matched the ETag) */
+            304: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["InternalError"];
         };
     };
     announce: {

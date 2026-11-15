@@ -3238,7 +3238,574 @@
    "players": [
     "5a1c0de0-0000-4000-8000-00000000a11e"
    ]
-  }
+  },
+  "markers": [
+   {
+    "server": "survival",
+    "world": "minecraft_overworld",
+    "rev": 9,
+    "markers": [
+     {
+      "id": 1,
+      "title": "Spawn",
+      "subtitle": "The red block. Everyone starts here.",
+      "color": "#e5484d",
+      "color_auto": false,
+      "created_at": 1793534400000,
+      "updated_at": 1793707200000,
+      "revision": 2,
+      "kind": "point",
+      "point": {
+       "x": 64,
+       "y": 72,
+       "z": -32
+      },
+      "bounds": null,
+      "polygon": null,
+      "label": null,
+      "bbox": {
+       "min_x": 64,
+       "min_z": -32,
+       "max_x": 65,
+       "max_z": -31
+      }
+     },
+     {
+      "id": 2,
+      "title": "Farm",
+      "subtitle": "Wheat, carrots and one very patient cow\nSouth of the river\nOpen to everyone\nBring a bucket",
+      "color": "#33b88f",
+      "color_auto": true,
+      "created_at": 1793620800000,
+      "updated_at": 1793620800000,
+      "revision": 1,
+      "kind": "point",
+      "point": {
+       "x": -120,
+       "y": 63,
+       "z": 200
+      },
+      "bounds": null,
+      "polygon": null,
+      "label": null,
+      "bbox": {
+       "min_x": -120,
+       "min_z": 200,
+       "max_x": -119,
+       "max_z": 201
+      }
+     },
+     {
+      "id": 3,
+      "title": "<b>Shop</b> & §cRed",
+      "subtitle": "Prices in diamonds: 3 per stack & a smile",
+      "color": "#0090ff",
+      "color_auto": false,
+      "created_at": 1793642400000,
+      "updated_at": 1793642400000,
+      "revision": 1,
+      "kind": "point",
+      "point": {
+       "x": -60,
+       "y": 64,
+       "z": -90
+      },
+      "bounds": null,
+      "polygon": null,
+      "label": null,
+      "bbox": {
+       "min_x": -60,
+       "min_z": -90,
+       "max_x": -59,
+       "max_z": -89
+      }
+     },
+     {
+      "id": 4,
+      "title": "Spawn town and the surrounding fields of the northern realm",
+      "subtitle": "Where it started. Please keep the roads clear.",
+      "color": "#3e63dd",
+      "color_auto": false,
+      "created_at": 1793523600000,
+      "updated_at": 1793523600000,
+      "revision": 1,
+      "kind": "area",
+      "point": null,
+      "bounds": {
+       "min_x": 0,
+       "min_z": -96,
+       "max_x": 127,
+       "max_z": -1
+      },
+      "polygon": [
+       [
+        0,
+        -96
+       ],
+       [
+        0,
+        0
+       ],
+       [
+        128,
+        0
+       ],
+       [
+        128,
+        -96
+       ]
+      ],
+      "label": {
+       "x": 64,
+       "z": -48,
+       "r": 48
+      },
+      "bbox": {
+       "min_x": 0,
+       "min_z": -96,
+       "max_x": 128,
+       "max_z": 0
+      }
+     },
+     {
+      "id": 5,
+      "title": "Market",
+      "subtitle": "Open from sunrise.",
+      "color": "#f4f1e8",
+      "color_auto": false,
+      "created_at": 1793793600000,
+      "updated_at": 1793793600000,
+      "revision": 1,
+      "kind": "area",
+      "point": null,
+      "bounds": {
+       "min_x": 20,
+       "min_z": -60,
+       "max_x": 50,
+       "max_z": -43
+      },
+      "polygon": [
+       [
+        20,
+        -60
+       ],
+       [
+        20,
+        -42
+       ],
+       [
+        51,
+        -42
+       ],
+       [
+        51,
+        -60
+       ]
+      ],
+      "label": {
+       "x": 35.5,
+       "z": -51,
+       "r": 9
+      },
+      "bbox": {
+       "min_x": 20,
+       "min_z": -60,
+       "max_x": 51,
+       "max_z": -42
+      }
+     },
+     {
+      "id": 6,
+      "title": "Well",
+      "subtitle": null,
+      "color": "#ffc53d",
+      "color_auto": false,
+      "created_at": 1793880000000,
+      "updated_at": 1793880000000,
+      "revision": 1,
+      "kind": "area",
+      "point": null,
+      "bounds": {
+       "min_x": 96,
+       "min_z": -40,
+       "max_x": 97,
+       "max_z": -39
+      },
+      "polygon": [
+       [
+        96,
+        -40
+       ],
+       [
+        96,
+        -38
+       ],
+       [
+        98,
+        -38
+       ],
+       [
+        98,
+        -40
+       ]
+      ],
+      "label": {
+       "x": 97,
+       "z": -39,
+       "r": 1
+      },
+      "bbox": {
+       "min_x": 96,
+       "min_z": -40,
+       "max_x": 98,
+       "max_z": -38
+      }
+     },
+     {
+      "id": 7,
+      "title": "River bend",
+      "subtitle": "Deep water. Boats only.",
+      "color": "#101826",
+      "color_auto": false,
+      "created_at": 1793966400000,
+      "updated_at": 1793966400000,
+      "revision": 1,
+      "kind": "poly",
+      "point": null,
+      "bounds": null,
+      "polygon": [
+       [
+        200,
+        100
+       ],
+       [
+        200,
+        112
+       ],
+       [
+        212,
+        112
+       ],
+       [
+        212,
+        111
+       ],
+       [
+        211,
+        111
+       ],
+       [
+        211,
+        110
+       ],
+       [
+        210,
+        110
+       ],
+       [
+        210,
+        109
+       ],
+       [
+        209,
+        109
+       ],
+       [
+        209,
+        108
+       ],
+       [
+        208,
+        108
+       ],
+       [
+        208,
+        107
+       ],
+       [
+        207,
+        107
+       ],
+       [
+        207,
+        106
+       ],
+       [
+        206,
+        106
+       ],
+       [
+        206,
+        105
+       ],
+       [
+        205,
+        105
+       ],
+       [
+        205,
+        104
+       ],
+       [
+        204,
+        104
+       ],
+       [
+        204,
+        103
+       ],
+       [
+        203,
+        103
+       ],
+       [
+        203,
+        102
+       ],
+       [
+        202,
+        102
+       ],
+       [
+        202,
+        101
+       ],
+       [
+        201,
+        101
+       ],
+       [
+        201,
+        100
+       ]
+      ],
+      "label": {
+       "x": 203.5,
+       "z": 108.5,
+       "r": 3.5
+      },
+      "bbox": {
+       "min_x": 200,
+       "min_z": 100,
+       "max_x": 212,
+       "max_z": 112
+      }
+     },
+     {
+      "id": 8,
+      "title": "The Great Northern Cathedral of the Lantern Keepers and Ringers",
+      "subtitle": null,
+      "color": "#8e4ec6",
+      "color_auto": false,
+      "created_at": 1794052800000,
+      "updated_at": 1794052800000,
+      "revision": 1,
+      "kind": "area",
+      "point": null,
+      "bounds": {
+       "min_x": -300,
+       "min_z": -200,
+       "max_x": -261,
+       "max_z": -171
+      },
+      "polygon": [
+       [
+        -300,
+        -200
+       ],
+       [
+        -300,
+        -170
+       ],
+       [
+        -260,
+        -170
+       ],
+       [
+        -260,
+        -200
+       ]
+      ],
+      "label": {
+       "x": -280,
+       "z": -185,
+       "r": 15
+      },
+      "bbox": {
+       "min_x": -300,
+       "min_z": -200,
+       "max_x": -260,
+       "max_z": -170
+      }
+     }
+    ]
+   },
+   {
+    "server": "survival",
+    "world": "minecraft_the_nether",
+    "rev": 2,
+    "markers": [
+     {
+      "id": 10,
+      "title": "Fortress",
+      "subtitle": "Blaze spawners on the second floor.",
+      "color": "#f76b15",
+      "color_auto": false,
+      "created_at": 1793736000000,
+      "updated_at": 1793736000000,
+      "revision": 1,
+      "kind": "area",
+      "point": null,
+      "bounds": {
+       "min_x": 8,
+       "min_z": -12,
+       "max_x": 39,
+       "max_z": 11
+      },
+      "polygon": [
+       [
+        8,
+        -12
+       ],
+       [
+        8,
+        12
+       ],
+       [
+        40,
+        12
+       ],
+       [
+        40,
+        -12
+       ]
+      ],
+      "label": {
+       "x": 24,
+       "z": 0,
+       "r": 12
+      },
+      "bbox": {
+       "min_x": 8,
+       "min_z": -12,
+       "max_x": 40,
+       "max_z": 12
+      }
+     }
+    ]
+   },
+   {
+    "server": "survival",
+    "world": "cakeutils_miniservers_skyblock-1_overworld",
+    "rev": 1,
+    "markers": [
+     {
+      "id": 11,
+      "title": "Island",
+      "subtitle": "Start here.",
+      "color": "#30a46c",
+      "color_auto": false,
+      "created_at": 1794139200000,
+      "updated_at": 1794139200000,
+      "revision": 1,
+      "kind": "point",
+      "point": {
+       "x": 16,
+       "y": 64,
+       "z": 16
+      },
+      "bounds": null,
+      "polygon": null,
+      "label": null,
+      "bbox": {
+       "min_x": 16,
+       "min_z": 16,
+       "max_x": 17,
+       "max_z": 17
+      }
+     }
+    ]
+   },
+   {
+    "server": "staff",
+    "world": "minecraft_overworld",
+    "rev": 3,
+    "markers": [
+     {
+      "id": 20,
+      "title": "STAFF ONLY: never on the public map",
+      "subtitle": "never shown",
+      "color": "#e5484d",
+      "color_auto": false,
+      "created_at": 1793620800000,
+      "updated_at": 1793620800000,
+      "revision": 1,
+      "kind": "point",
+      "point": {
+       "x": 5,
+       "y": 64,
+       "z": 5
+      },
+      "bounds": null,
+      "polygon": null,
+      "label": null,
+      "bbox": {
+       "min_x": 5,
+       "min_z": 5,
+       "max_x": 6,
+       "max_z": 6
+      }
+     },
+     {
+      "id": 21,
+      "title": "STAFF ONLY: never on the public map (area)",
+      "subtitle": null,
+      "color": "#0090ff",
+      "color_auto": false,
+      "created_at": 1793707200000,
+      "updated_at": 1793707200000,
+      "revision": 1,
+      "kind": "area",
+      "point": null,
+      "bounds": {
+       "min_x": 0,
+       "min_z": 0,
+       "max_x": 15,
+       "max_z": 15
+      },
+      "polygon": [
+       [
+        0,
+        0
+       ],
+       [
+        0,
+        16
+       ],
+       [
+        16,
+        16
+       ],
+       [
+        16,
+        0
+       ]
+      ],
+      "label": {
+       "x": 8,
+       "z": 8,
+       "r": 8
+      },
+      "bbox": {
+       "min_x": 0,
+       "min_z": 0,
+       "max_x": 16,
+       "max_z": 16
+      }
+     }
+    ]
+   }
+  ]
  },
  "servers": [
   {

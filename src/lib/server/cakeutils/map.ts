@@ -8,7 +8,8 @@
 // - hidden servers and One Soul (standalone) servers leave /v2/map; any call naming one answers not_found
 //   without asking cakeutils (the round routes hide only the owner's hidden servers: One Soul rounds are
 //   what they are for);
-// - hidden players leave every positions answer.
+// - hidden players leave every positions answer;
+// - markers (FMK-0): the same server check, and a hidden server's markers are never asked for.
 // Parameters are checked (links.ts) before a path is built: a bad id, zoom, coordinate or cycle is not_found.
 //
 // What a failure means (MAP §5.4, mapped in core.ts):
@@ -17,7 +18,7 @@
 //   read or a route not built yet (status 501: "map_format_unsupported", "not_implemented"); and from
 //   mapServers / mapEnabled, a proxy without the map or a token without read:map;
 // - down: cakeutils unreachable, or status 503 "map_offline" / "map_busy" for that server (retryAfter set).
-import type { MapChanges, MapIndex, MapPlayers, MapWorld, RoundMapWorld } from "#lib/api/types.ts";
+import type { MapChanges, MapIndex, MapMarkers, MapPlayers, MapWorld, RoundMapWorld } from "#lib/api/types.ts";
 import { fail, ok, type Result } from "#lib/api/result.ts";
 import { validCycle, validServerId, validTile, validWorldId, type TileKey } from "#lib/map/links.ts";
 import type { Core, Priority } from "./core.ts";
@@ -59,6 +60,15 @@ export interface MapClient {
   mapWorld(server: string, world: string): Promise<Result<MapWorld>>;
   /** GET /v2/map/{server}/tiles/{world}/{z}/{x}_{y}.png, past the LRU; `etag` → 304 while unchanged. */
   mapTile(server: string, world: string, tile: TileKey, o?: TileOptions): Promise<Result<MapTile>>;
+  /**
+   * GET /v2/map/{server}/worlds/{world}/markers (map-markers tier: 30 s, served while refreshing for 10 min, last good
+   * answer up to 24 h with `asOf` and `stale` when cakeutils is down). The LRU revalidates with the ETag ("m<rev>"):
+   * a 304 costs one map-bucket request and no body. `not_found` is "no markers here": an unknown or hidden server, a
+   * bad id, a world that is not on the map, a private mini-server or a standalone server (MARKERS §3.3). It is the
+   * normal answer for a world with no map, not a failure to report; callers draw nothing and show no error. A world
+   * with no markers is `ok` with `markers: []`.
+   */
+  markers(server: string, world: string, o?: LiveOptions): Promise<Result<MapMarkers>>;
   /** GET /v2/map/{server}/worlds/{world}/changes, past the LRU; `off` (not_supported) without a log. */
   mapChanges(server: string, world: string, o?: LiveOptions): Promise<Result<MapChanges>>;
   /** GET /v2/map/{server}/players, past the LRU, hidden players left out; `off` when positions are off. */
@@ -139,6 +149,15 @@ export function createMapClient(o: MapClientOptions): MapClient {
     mapTile: (server, world, t, opt = {}) => {
       if (!liveOk(server) || !validWorldId(world)) return notFound();
       return tile(`/v2/map/${enc(server)}/tiles/${world}/${t.z}/${t.x}_${t.y}.png`, t, opt);
+    },
+
+    markers: async (server, world, opt = {}) => {
+      if (!liveOk(server) || !validWorldId(world)) return notFound();
+      const r = await core.get<MapMarkers>({ path: `/v2/map/${enc(server)}/worlds/${world}/markers` }, opt.priority ?? "page");
+      // a body that is not the contract's shape is no answer ("down"), never a crash downstream
+      if (r.ok && (!r.data || !Array.isArray(r.data.markers) || typeof r.data.rev !== "number")) return fail("down");
+      // `empty` = "No markers in this world yet" (the core only knows the list keys it was taught)
+      return r.ok ? { ...r, empty: r.data.markers.length === 0 } : r;
     },
 
     mapChanges: (server, world, opt = {}) => {

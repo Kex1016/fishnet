@@ -120,7 +120,7 @@ extension, branch `claude/map-markers`); everything else after cakeutils GMK2. N
 | FMK-7 integration, QA, security | **merged** 50f6f00 | Opus 5.5 / medium | cmsg_017jXErfLmkLcYLSb5FKAVcMXzRVJmqbXEF11E6Cg4GShF | | #55 | all |
 
 Gates: GFMK0 (FMK-0 + FMK-1 merged), GFMK1 (FMK-2 + FMK-3 merged, check/test/build/e2e on both scenarios), GFMK2 (FMK-7
-done, PR to `main` open for David). **GFMK0 passed** 2026-11-16; cakeutils GMK2 passed 2026-11-16 02:30Z. **GFMK1 passed** 2026-11-16 03:10Z. **GFMK2 passed** 2026-11-16 03:50Z on both mock scenarios; PR `claude/fishnet-markers` → `main` open for David (not merged by the coordinator). Live API check after deploy: `bun run e2e --base https://fishnet.haiiro.moe --only "map markers" --hidden staff`.
+done, PR to `main` open for David). **GFMK0 passed** 2026-11-16; cakeutils GMK2 passed 2026-11-16 02:30Z. **GFMK1 passed** 2026-11-16 03:10Z. **GFMK2 passed** 2026-11-16 03:50Z on both mock scenarios; PR #56 `claude/fishnet-markers` → `main` open for David (not merged by the coordinator). Live API check after deploy: `bun run e2e --base https://fishnet.haiiro.moe --only "map markers" --hidden staff`.
 
 ## Markers decisions
 

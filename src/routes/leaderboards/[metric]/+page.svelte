@@ -24,7 +24,8 @@
       <h1 class="t-display">{data.title}</h1>
       {#if data.about}<p class="fp-lede">{data.about}</p>{/if}
       <p class="fp-chips">
-        {#if data.subjectKey}<a class="fp-chip" href="/stats/subject/{encodeURIComponent(data.subjectKey)}">About this stat</a>{/if}
+        {#if data.subjectKey && !data.parts.length}<a class="fp-chip" href="/stats/subject/{encodeURIComponent(data.subjectKey)}">About this stat</a>{/if}
+        {#each data.parts as part (part.href)}<a class="fp-chip" href={part.href}>{part.label}</a>{/each}
         {#if data.typeKey}<a class="fp-chip" href="/stats/{encodeURIComponent(data.typeKey)}">All {data.kicker.toLowerCase()} stats</a>{/if}
         <a class="fp-chip" href="/leaderboards">All boards</a>
       </p>

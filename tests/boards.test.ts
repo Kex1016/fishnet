@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, mock, test } from "bun:test";
 import { distribution, median, playerHref, playerLabel, scopeLabel, scopeMinis, sum } from "../src/routes/leaderboards/board.ts";
-import { COMPOSITES, compositeHref, featuredFor, findComposite, findFeatured, FEATURED } from "#lib/boards.ts";
+import { COMPOSITES, compositeHref, featuredFor, featuredHref, featuredKey, findComposite, findFeatured, FEATURED } from "#lib/boards.ts";
 import { boardHref, metricKey } from "#lib/api/metric.ts";
 import { ok, fail } from "#lib/api/result.ts";
 import type { Leaderboard } from "#lib/api/types.ts";
@@ -17,6 +17,13 @@ describe("config", () => {
   test("featured ids resolve and never collide with criterion form", () => {
     for (const b of FEATURED) expect(b.id.includes(":")).toBe(false);
     expect(findFeatured("diamonds")?.metric).toEqual({ kind: "stat", type: "minecraft:mined", subject: "minecraft:diamond_ore" });
+    expect(findFeatured("diamonds")?.also).toEqual([{ kind: "stat", type: "minecraft:mined", subject: "minecraft:deepslate_diamond_ore" }]);
+    expect(featuredKey(findFeatured("diamonds")!)).toBe("diamonds");
+    expect(featuredKey(findFeatured("mined")!)).toBe("mined:*");
+    expect(featuredHref(findFeatured("diamonds")!, "server:survival")).toBe("/leaderboards/diamonds?scope=server%3Asurvival");
+    expect(featuredHref(findFeatured("fish")!)).toBe("/leaderboards/custom%3Aminecraft%3Afish_caught");
+    // the plain diamond ore criterion is its own board, not the combined one
+    expect(featuredFor({ kind: "stat", type: "minecraft:mined", subject: "minecraft:diamond_ore" })).toBeUndefined();
     expect(featuredFor({ kind: "stat", type: "minecraft:mined", subject: "*" })?.id).toBe("mined");
     expect(findComposite("travel")?.parts.length).toBe(11);
     expect(findFeatured("travel")).toBeUndefined();

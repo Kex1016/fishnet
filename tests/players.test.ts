@@ -158,3 +158,22 @@ test("hidden list: uuids with or without dashes, names, comments, case", () => {
   expect(parseHiddenList("").size).toBe(0);
   expect(parseHiddenList("").has("anyone")).toBe(false);
 });
+
+test("ranks: diamond ore adds the deepslate ore below the page", () => {
+  const diamonds = FEATURED.find((b) => b.id === "diamonds")!;
+  expect(batchIncludes(FEATURED, COMPOSITES)).toContain("stats:mined:minecraft:deepslate_diamond_ore");
+  const board = ok({ metric: "diamonds", scope: "network", unit: "count", total: 9, entries: [{ rank: 1, uuid: "x", name: "A", value: 100, unit: "count", display: "100" }] });
+  const me: BatchPlayer = {
+    ref: profile.uuid,
+    uuid: profile.uuid,
+    name: "Cod",
+    online: false,
+    server: null,
+    stats: { "stats:mined:minecraft:diamond_ore": sv("minecraft:mined", "minecraft:diamond_ore", 4), "stats:mined:minecraft:deepslate_diamond_ore": sv("minecraft:mined", "minecraft:deepslate_diamond_ore", 11) }
+  };
+  const s = standing(diamonds, board, me, profile, "network", 100)!;
+  expect(s.rank).toBeNull();
+  expect(s.value).toBe(15);
+  expect(s.display).toBe("15");
+  expect(s.href).toBe("/leaderboards/diamonds");
+});

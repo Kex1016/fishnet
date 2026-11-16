@@ -4,8 +4,8 @@
 import type { BatchPlayer, Leaderboard, PlayerProfile, Unit } from "#lib/api/types.ts";
 import type { Result } from "#lib/api/result.ts";
 import type { Metric } from "#lib/api/metric.ts";
-import { boardHref, metricKey, shortType } from "#lib/api/metric.ts";
-import type { CompositeBoard, FeaturedBoard } from "#lib/boards.ts";
+import { metricKey, shortType } from "#lib/api/metric.ts";
+import { featuredHref, type CompositeBoard, type FeaturedBoard } from "#lib/boards.ts";
 import { formatStat, durationMs } from "#lib/format/stat-display.ts";
 
 export type BoardStanding = {
@@ -32,7 +32,7 @@ export function includeKey(m: Metric): string {
 /** The includes one batch call needs for the featured boards and the composites' parts (≤ 32). */
 export function batchIncludes(featured: FeaturedBoard[], composites: CompositeBoard[]): string[] {
   const keys = new Set<string>();
-  for (const b of featured) if (b.metric.kind === "stat") keys.add(includeKey(b.metric));
+  for (const b of featured) for (const m of [b.metric, ...(b.also ?? [])]) if (m.kind === "stat") keys.add(includeKey(m));
   for (const c of composites) for (const p of c.parts) keys.add(includeKey(p));
   return [...keys].slice(0, 32);
 }
@@ -45,13 +45,22 @@ export function batchIncludes(featured: FeaturedBoard[], composites: CompositeBo
 export function standing(b: FeaturedBoard, board: Result<Leaderboard>, me: BatchPlayer | null, profile: PlayerProfile, scope: string, pageSize: number): BoardStanding | null {
   if (!board.ok) return null;
   const entry = board.data.entries.find((e) => e.uuid === profile.uuid);
-  const href = boardHref(b.metric, scope);
+  const href = featuredHref(b, scope);
   if (b.metric.kind === "playtime") {
     const ms = scope === "network" ? profile.playtime.total_ms : (me?.playtime?.total_ms ?? 0);
     return { id: b.id, label: b.label, href, rank: entry?.rank ?? null, total: board.data.total, display: entry?.display ?? durationMs(ms), value: entry?.value ?? ms, unit: "ms", pageSize };
   }
-  const own = me?.stats?.[includeKey(b.metric)];
-  const unit = (own?.unit ?? board.data.unit) as Unit;
+  // a board with `also` counts every part: the player's values added inside this one scope
+  const unit = (me?.stats?.[includeKey(b.metric)]?.unit ?? board.data.unit) as Unit;
+  let ownValue: number | undefined;
+  let ownDisplay: string | undefined;
+  for (const m of [b.metric, ...(b.also ?? [])]) {
+    const s = me?.stats?.[includeKey(m)];
+    if (!s || s.unit !== unit) continue;
+    ownValue = (ownValue ?? 0) + s.value;
+    ownDisplay = b.also?.length ? undefined : s.display;
+  }
+  const own = ownValue === undefined ? undefined : { value: ownValue, display: ownDisplay };
   const value = entry?.value ?? own?.value ?? 0;
   const display = entry?.display ?? own?.display ?? formatStat(unit, value);
   return { id: b.id, label: b.label, href, rank: entry?.rank ?? null, total: board.data.total, display, value, unit, pageSize };

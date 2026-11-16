@@ -83,6 +83,8 @@ export function roundTileTemplate(server: string, cycle: number, world: string):
 
 export const liveHref = (server: string) => `/map/${encodeURIComponent(server)}/live`;
 export const playersJsonHref = (server: string) => `/map/${encodeURIComponent(server)}/players.json`;
+/** One world's markers for the page (FMK-0 route); the poll fallback revalidates it (FMK-3). */
+export const markersJsonHref = (server: string, world: string) => `/map/${encodeURIComponent(server)}/markers.json?world=${encodeURIComponent(world)}`;
 
 /** Where the map looks: a world, a block at the centre, a Leaflet zoom (may pass zoom.max by zoom.extra). */
 export type MapView = { world: string; x: number; z: number; zoom: number };

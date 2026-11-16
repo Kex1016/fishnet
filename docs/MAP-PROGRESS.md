@@ -120,7 +120,7 @@ extension, branch `claude/map-markers`); everything else after cakeutils GMK2. N
 | FMK-7 integration, QA, security | **merged** 50f6f00 | Opus 5.5 / medium | cmsg_017jXErfLmkLcYLSb5FKAVcMXzRVJmqbXEF11E6Cg4GShF | | #55 | all |
 
 Gates: GFMK0 (FMK-0 + FMK-1 merged), GFMK1 (FMK-2 + FMK-3 merged, check/test/build/e2e on both scenarios), GFMK2 (FMK-7
-done, PR to `main` open for David). **GFMK0 passed** 2026-11-16; cakeutils GMK2 passed 2026-11-16 02:30Z. **GFMK1 passed** 2026-11-16 03:10Z. **GFMK2 passed** 2026-11-16 03:50Z on both mock scenarios; PR #56 `claude/fishnet-markers` → `main` open for David (not merged by the coordinator). Live API check after deploy: `bun run e2e --base https://fishnet.haiiro.moe --only "map markers" --hidden staff`.
+done, PR to `main` open for David). **GFMK0 passed** 2026-11-16; cakeutils GMK2 passed 2026-11-16 02:30Z. **GFMK1 passed** 2026-11-16 03:10Z. **GFMK2 passed** 2026-11-16 03:50Z on both mock scenarios; PR #56 `claude/fishnet-markers` → `main` **merged** 2026-11-16 (454f19c, David chose "merge now, deploy later"); deploy pending. Live API check after deploy: `bun run e2e --base https://fishnet.haiiro.moe --only "map markers" --hidden staff`.
 
 ## Markers decisions
 
@@ -176,3 +176,5 @@ done, PR to `main` open for David). **GFMK0 passed** 2026-11-16; cakeutils GMK2 
   README markers paragraph below the token command it had split.
 - 2026-11-16 03:50Z: FMK-7 (#55) reviewed (check, 510 tests, build + leak check, e2e 64/0 on busy and fresh) and merged.
   GFMK2 passed; PR to `main` opened for David. Deploy needs nothing new beyond the map line's (same token scope).
+- 2026-11-16 09:58Z: David chose "merge now, deploy later"; PR #56 merged into `main` (454f19c). Left: deploy (after
+  cakeutils PR #122 is on the proxy), then the live markers e2e run and live screenshots.

@@ -8,6 +8,7 @@
 //   bun run e2e --base https://fishnet.haiiro.moe # the live site: only the checks that hold on any real network
 //   bun run e2e --base http://127.0.0.1:3101 --scenario busy   # a server you started yourself
 //   bun run e2e --only map                        # the checks whose name contains "map"
+//   bun run e2e --base https://fishnet.haiiro.moe --only "map markers" --hidden staff   # the markers checks on the live site (map-markers.ts)
 //   bun run e2e --base https://fishnet.haiiro.moe --hidden quietgill,staff   # names that must never show there
 //   bun run e2e --base https://fishnet.haiiro.moe --abuse     # also opens 600 streams from this host (map.ts)
 //
@@ -19,9 +20,10 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { CHECKS as SITE_CHECKS } from "./checks.ts";
 import { MAP_CHECKS } from "./map.ts";
+import { MARKER_CHECKS } from "./map-markers.ts";
 import { CheckError, Ctx, type Boot, type Booted, type Browser, type Scenario } from "./ctx.ts";
 
-const CHECKS = [...SITE_CHECKS, ...MAP_CHECKS];
+const CHECKS = [...SITE_CHECKS, ...MAP_CHECKS, ...MARKER_CHECKS];
 
 const args = process.argv.slice(2);
 const opt = (name: string): string | undefined => {

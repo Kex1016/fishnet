@@ -116,7 +116,7 @@ extension, branch `claude/map-markers`); everything else after cakeutils GMK2. N
 | FMK-1 Minecraft label | **merged** b02fb0c | Opus 5.5 / medium | cmsg_017jXErfLmkLcYLSb5FKAVcMK3CxUDUYdWKUzCFFncR3M3 | | #51 | early, ∥ FMK-0 |
 | FMK-2 marker layer | **merged** 045f510 | Sonnet 5.5 / high | cmsg_017jXErfLmkLcYLSb5FKAVcMGL6MJWdCKxS1aoqqgc2vrV | claude/project-thread-kfo182 | #53 | FMK-0, FMK-1 |
 | FMK-3 live refresh | **merged** 30ec06f | Sonnet 5.5 / medium | cmsg_017jXErfLmkLcYLSb5FKAVcM5SqQLQwqEWjTzyUULc1sqB | | #52 | FMK-0, ∥ FMK-2 |
-| FMK-6 docs | **running** | Haiku 5.5 / low | cmsg_017jXErfLmkLcYLSb5FKAVcM3LjTwFSaFcKntZcv1sKdvS | | | FMK-2 |
+| FMK-6 docs | **merged** 7f47eff | Haiku 5.5 / low | cmsg_017jXErfLmkLcYLSb5FKAVcM3LjTwFSaFcKntZcv1sKdvS | | #54 | FMK-2 |
 | FMK-7 integration, QA, security | **running** | Opus 5.5 / medium | cmsg_017jXErfLmkLcYLSb5FKAVcMXzRVJmqbXEF11E6Cg4GShF | | | all |
 
 Gates: GFMK0 (FMK-0 + FMK-1 merged), GFMK1 (FMK-2 + FMK-3 merged, check/test/build/e2e on both scenarios), GFMK2 (FMK-7
@@ -169,3 +169,5 @@ done, PR to `main` open for David). **GFMK0 passed** 2026-11-16; cakeutils GMK2 
 - 2026-11-16 03:10Z: FMK-2 (#53, head 4c4ef28) re-reviewed (check, 510 tests, build + leak check, e2e 54/0,
   map-markers-check PASS, screenshots) and merged. Merged branch re-run green: GFMK1 passed. FMK-2 screenshots to
   "Map screenshots 4". FMK-6 and FMK-7 briefs written and requested.
+- 2026-11-16 03:15Z: FMK-6 (#54) reviewed (facts match brief §2, no env var added) and merged; coordinator moved the
+  README markers paragraph below the token command it had split.

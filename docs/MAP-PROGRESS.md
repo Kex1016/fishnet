@@ -114,7 +114,7 @@ extension, branch `claude/map-markers`); everything else after cakeutils GMK2. N
 |---|---|---|---|---|---|---|
 | FMK-0 contracts | **merged** df814ab | Sonnet 5.5 / high | cmsg_017jXErfLmkLcYLSb5FKAVcMNKkmuhzux3SoSxqmPjJLmW | | #50 | early |
 | FMK-1 Minecraft label | **merged** b02fb0c | Opus 5.5 / medium | cmsg_017jXErfLmkLcYLSb5FKAVcMK3CxUDUYdWKUzCFFncR3M3 | | #51 | early, ∥ FMK-0 |
-| FMK-2 marker layer | **running** | Sonnet 5.5 / high | cmsg_017jXErfLmkLcYLSb5FKAVcMGL6MJWdCKxS1aoqqgc2vrV | | | FMK-0, FMK-1 |
+| FMK-2 marker layer | **review** (sent back once) | Sonnet 5.5 / high | cmsg_017jXErfLmkLcYLSb5FKAVcMGL6MJWdCKxS1aoqqgc2vrV | | | FMK-0, FMK-1 |
 | FMK-3 live refresh | **merged** 30ec06f | Sonnet 5.5 / medium | cmsg_017jXErfLmkLcYLSb5FKAVcM5SqQLQwqEWjTzyUULc1sqB | | #52 | FMK-0, ∥ FMK-2 |
 | FMK-6 docs | waiting for GMK2 | Haiku 5.5 / low | | | | FMK-2 |
 | FMK-7 integration, QA, security | waiting for GMK2 | Opus 5.5 / medium | | | | all |
@@ -160,3 +160,5 @@ done, PR to `main` open for David). **GFMK0 passed** 2026-11-16; cakeutils GMK2 
   copy refreshed; no 503 on the route). FMK-2 and FMK-3 briefs written and requested.
 - 2026-11-16 02:35Z: FMK-3 (#52) reviewed (diff, LRU/priority semantics, hidden and 404 stop polling; check, 485 tests,
   build + leak check, e2e 54/0) and merged.
+- 2026-11-16 03:00Z: FMK-2 (#53) reviewed: check, 505 tests, build, e2e 54/0, map-markers-check PASS; sent back once: an
+  area title must not cross an area drawn above it or another label (placed smallest area first; brief §5.2 extended).

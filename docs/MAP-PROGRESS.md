@@ -114,13 +114,13 @@ extension, branch `claude/map-markers`); everything else after cakeutils GMK2. N
 |---|---|---|---|---|---|---|
 | FMK-0 contracts | **merged** df814ab | Sonnet 5.5 / high | cmsg_017jXErfLmkLcYLSb5FKAVcMNKkmuhzux3SoSxqmPjJLmW | | #50 | early |
 | FMK-1 Minecraft label | **merged** b02fb0c | Opus 5.5 / medium | cmsg_017jXErfLmkLcYLSb5FKAVcMK3CxUDUYdWKUzCFFncR3M3 | | #51 | early, ∥ FMK-0 |
-| FMK-2 marker layer | **review** (sent back once) | Sonnet 5.5 / high | cmsg_017jXErfLmkLcYLSb5FKAVcMGL6MJWdCKxS1aoqqgc2vrV | | | FMK-0, FMK-1 |
+| FMK-2 marker layer | **merged** 045f510 | Sonnet 5.5 / high | cmsg_017jXErfLmkLcYLSb5FKAVcMGL6MJWdCKxS1aoqqgc2vrV | claude/project-thread-kfo182 | #53 | FMK-0, FMK-1 |
 | FMK-3 live refresh | **merged** 30ec06f | Sonnet 5.5 / medium | cmsg_017jXErfLmkLcYLSb5FKAVcM5SqQLQwqEWjTzyUULc1sqB | | #52 | FMK-0, ∥ FMK-2 |
-| FMK-6 docs | waiting for GMK2 | Haiku 5.5 / low | | | | FMK-2 |
-| FMK-7 integration, QA, security | waiting for GMK2 | Opus 5.5 / medium | | | | all |
+| FMK-6 docs | **requested** | Haiku 5.5 / low | | | | FMK-2 |
+| FMK-7 integration, QA, security | **requested** | Opus 5.5 / medium | | | | all |
 
 Gates: GFMK0 (FMK-0 + FMK-1 merged), GFMK1 (FMK-2 + FMK-3 merged, check/test/build/e2e on both scenarios), GFMK2 (FMK-7
-done, PR to `main` open for David). **GFMK0 passed** 2026-11-16; cakeutils GMK2 passed 2026-11-16 02:30Z; GFMK1, GFMK2 not yet.
+done, PR to `main` open for David). **GFMK0 passed** 2026-11-16; cakeutils GMK2 passed 2026-11-16 02:30Z. **GFMK1 passed** 2026-11-16 03:10Z. GFMK2 not yet.
 
 ## Markers decisions
 
@@ -144,6 +144,10 @@ done, PR to `main` open for David). **GFMK0 passed** 2026-11-16; cakeutils GMK2 
   SWR lag); the hub's first `rev` after a world becomes watched is its baseline, so the page refetches once when the
   stream opens (FMK-2) and passes `markersRev` in `connectLive` deps for the poll fallback. Mock-only
   `POST /__mock/markers/bump` in `scripts/mock-server.ts` (not in the site build).
+- 2026-11-16 (FMK-2): Places order = tab order = draw order (areas by size, then pins); a popup pans the map only when
+  the visitor opens it, never for links, Places or refetches; `markers.json` adds a site-side `uni` field (Unifont
+  metrics for titles outside the bitmap sheets). Labels placed smallest area first, each inside its area, clear of
+  areas drawn above and of placed labels (else no label at that zoom). Mock zig label within half a block of cakeutils'.
 
 ## Markers log
 
@@ -162,3 +166,6 @@ done, PR to `main` open for David). **GFMK0 passed** 2026-11-16; cakeutils GMK2 
   build + leak check, e2e 54/0) and merged.
 - 2026-11-16 03:00Z: FMK-2 (#53) reviewed: check, 505 tests, build, e2e 54/0, map-markers-check PASS; sent back once: an
   area title must not cross an area drawn above it or another label (placed smallest area first; brief §5.2 extended).
+- 2026-11-16 03:10Z: FMK-2 (#53, head 4c4ef28) re-reviewed (check, 510 tests, build + leak check, e2e 54/0,
+  map-markers-check PASS, screenshots) and merged. Merged branch re-run green: GFMK1 passed. FMK-2 screenshots to
+  "Map screenshots 4". FMK-6 and FMK-7 briefs written and requested.

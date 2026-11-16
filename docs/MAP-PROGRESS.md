@@ -113,7 +113,7 @@ extension, branch `claude/map-markers`); everything else after cakeutils GMK2. N
 | WU | Status | Model / effort | Thread | Branch | PR | Notes |
 |---|---|---|---|---|---|---|
 | FMK-0 contracts | **merged** df814ab | Sonnet 5.5 / high | cmsg_017jXErfLmkLcYLSb5FKAVcMNKkmuhzux3SoSxqmPjJLmW | | #50 | early |
-| FMK-1 Minecraft label | **running** | Opus 5.5 / medium | cmsg_017jXErfLmkLcYLSb5FKAVcMK3CxUDUYdWKUzCFFncR3M3 | | | early, ∥ FMK-0 |
+| FMK-1 Minecraft label | **review** (sent back once) | Opus 5.5 / medium | cmsg_017jXErfLmkLcYLSb5FKAVcMK3CxUDUYdWKUzCFFncR3M3 | | | early, ∥ FMK-0 |
 | FMK-2 marker layer | waiting for GMK2 | Sonnet 5.5 / high | | | | FMK-0, FMK-1 |
 | FMK-3 live refresh | waiting for GMK2 | Sonnet 5.5 / medium | | | | FMK-0, ∥ FMK-2 |
 | FMK-6 docs | waiting for GMK2 | Haiku 5.5 / low | | | | FMK-2 |
@@ -132,6 +132,9 @@ done, PR to `main` open for David): not started.
   `200` + `markers: []` case ("No markers in this world yet") lives in `busy` (survival's end, creative's overworld).
   `MapClient.markers` returns `empty` for `[]`; `markers.json` sends a stale list with `x-stale: 1` / `x-as-of` and
   `max-age=5`, never a `304`; nothing kept → `503`. Page data `markers: MarkersLoad` (`ok` / `none` / `down`).
+- 2026-11-16 (FMK-1, brief §5.3/§8 tuning): label contrast target 3 : 1 (4.5 unreachable by lightening against 22 % over
+  grey); the tint searches **lighter first for every colour**, darker only when lighter cannot reach the target (dark
+  titles merged into the solid black shadow on bright areas). Supersedes the L ≤ 0.6 direction rule.
 
 ## Markers log
 
@@ -141,3 +144,4 @@ done, PR to `main` open for David): not started.
   must change). Unit briefs in project files `briefs/map-markers-web/{COMMON,FMK-0,FMK-1}.md`; FMK-0 and FMK-1 requested.
 - 2026-11-16 00:10Z: FMK-0 (#50) reviewed (diff, hide check before any call, 404 for staff and bad world, 304 round
   trip, POST refused; check 0 errors, 436 tests, build + leak check PASS, busy smoke) and merged.
+- 2026-11-16 00:15Z: FMK-1 (#51) reviewed: renderer good; sent back once for the lighter-first tint.

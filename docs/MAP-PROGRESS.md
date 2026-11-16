@@ -113,14 +113,14 @@ extension, branch `claude/map-markers`); everything else after cakeutils GMK2. N
 | WU | Status | Model / effort | Thread | Branch | PR | Notes |
 |---|---|---|---|---|---|---|
 | FMK-0 contracts | **merged** df814ab | Sonnet 5.5 / high | cmsg_017jXErfLmkLcYLSb5FKAVcMNKkmuhzux3SoSxqmPjJLmW | | #50 | early |
-| FMK-1 Minecraft label | **review** (sent back once) | Opus 5.5 / medium | cmsg_017jXErfLmkLcYLSb5FKAVcMK3CxUDUYdWKUzCFFncR3M3 | | | early, ∥ FMK-0 |
+| FMK-1 Minecraft label | **merged** b02fb0c | Opus 5.5 / medium | cmsg_017jXErfLmkLcYLSb5FKAVcMK3CxUDUYdWKUzCFFncR3M3 | | #51 | early, ∥ FMK-0 |
 | FMK-2 marker layer | waiting for GMK2 | Sonnet 5.5 / high | | | | FMK-0, FMK-1 |
 | FMK-3 live refresh | waiting for GMK2 | Sonnet 5.5 / medium | | | | FMK-0, ∥ FMK-2 |
 | FMK-6 docs | waiting for GMK2 | Haiku 5.5 / low | | | | FMK-2 |
 | FMK-7 integration, QA, security | waiting for GMK2 | Opus 5.5 / medium | | | | all |
 
 Gates: GFMK0 (FMK-0 + FMK-1 merged), GFMK1 (FMK-2 + FMK-3 merged, check/test/build/e2e on both scenarios), GFMK2 (FMK-7
-done, PR to `main` open for David): not started.
+done, PR to `main` open for David). **GFMK0 passed** 2026-11-16; GFMK1, GFMK2 wait for cakeutils GMK2.
 
 ## Markers decisions
 
@@ -134,7 +134,9 @@ done, PR to `main` open for David): not started.
   `max-age=5`, never a `304`; nothing kept → `503`. Page data `markers: MarkersLoad` (`ok` / `none` / `down`).
 - 2026-11-16 (FMK-1, brief §5.3/§8 tuning): label contrast target 3 : 1 (4.5 unreachable by lightening against 22 % over
   grey); the tint searches **lighter first for every colour**, darker only when lighter cannot reach the target (dark
-  titles merged into the solid black shadow on bright areas). Supersedes the L ≤ 0.6 direction rule.
+  titles merged into the solid black shadow on bright areas). Supersedes the L ≤ 0.6 direction rule. "Lighter" = lighter than the area as drawn (else black stays black on its
+  shadow). Yellow and white areas still get dark titles (no light tint reaches 3 : 1 there). FMK-2 needs
+  `unifontFor(titles)` in the map page's load for titles outside the bitmap sheets.
 
 ## Markers log
 
@@ -145,3 +147,5 @@ done, PR to `main` open for David): not started.
 - 2026-11-16 00:10Z: FMK-0 (#50) reviewed (diff, hide check before any call, 404 for staff and bad world, 304 round
   trip, POST refused; check 0 errors, 436 tests, build + leak check PASS, busy smoke) and merged.
 - 2026-11-16 00:15Z: FMK-1 (#51) reviewed: renderer good; sent back once for the lighter-first tint.
+- 2026-11-16 00:25Z: FMK-1 (#51, head 6102762) re-reviewed (check 0 errors, 473 tests, build + leak check, Chromium pixel
+  check DPR 1/2, screenshots) and merged. GFMK0 passed. Screenshots posted to "Map screenshots 4". FMK-2/3 wait for GMK2.

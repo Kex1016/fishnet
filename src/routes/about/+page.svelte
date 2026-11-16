@@ -96,7 +96,7 @@
       token never reaches your browser.
     </p>
     <p>
-      Tiles by <a href="https://github.com/jpenilla/squaremap">squaremap</a>.
+      Tiles by <a href="https://github.com/jpenilla/squaremap">squaremap</a>. Places on the map are added by players in game.
     </p>
   </section>
 </div>

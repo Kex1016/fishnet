@@ -117,10 +117,10 @@ extension, branch `claude/map-markers`); everything else after cakeutils GMK2. N
 | FMK-2 marker layer | **merged** 045f510 | Sonnet 5.5 / high | cmsg_017jXErfLmkLcYLSb5FKAVcMGL6MJWdCKxS1aoqqgc2vrV | claude/project-thread-kfo182 | #53 | FMK-0, FMK-1 |
 | FMK-3 live refresh | **merged** 30ec06f | Sonnet 5.5 / medium | cmsg_017jXErfLmkLcYLSb5FKAVcM5SqQLQwqEWjTzyUULc1sqB | | #52 | FMK-0, ∥ FMK-2 |
 | FMK-6 docs | **merged** 7f47eff | Haiku 5.5 / low | cmsg_017jXErfLmkLcYLSb5FKAVcM3LjTwFSaFcKntZcv1sKdvS | | #54 | FMK-2 |
-| FMK-7 integration, QA, security | **running** | Opus 5.5 / medium | cmsg_017jXErfLmkLcYLSb5FKAVcMXzRVJmqbXEF11E6Cg4GShF | | | all |
+| FMK-7 integration, QA, security | **merged** 50f6f00 | Opus 5.5 / medium | cmsg_017jXErfLmkLcYLSb5FKAVcMXzRVJmqbXEF11E6Cg4GShF | | #55 | all |
 
 Gates: GFMK0 (FMK-0 + FMK-1 merged), GFMK1 (FMK-2 + FMK-3 merged, check/test/build/e2e on both scenarios), GFMK2 (FMK-7
-done, PR to `main` open for David). **GFMK0 passed** 2026-11-16; cakeutils GMK2 passed 2026-11-16 02:30Z. **GFMK1 passed** 2026-11-16 03:10Z. GFMK2 not yet.
+done, PR to `main` open for David). **GFMK0 passed** 2026-11-16; cakeutils GMK2 passed 2026-11-16 02:30Z. **GFMK1 passed** 2026-11-16 03:10Z. **GFMK2 passed** 2026-11-16 03:50Z on both mock scenarios; PR `claude/fishnet-markers` → `main` open for David (not merged by the coordinator). Live API check after deploy: `bun run e2e --base https://fishnet.haiiro.moe --only "map markers" --hidden staff`.
 
 ## Markers decisions
 
@@ -148,6 +148,9 @@ done, PR to `main` open for David). **GFMK0 passed** 2026-11-16; cakeutils GMK2 
   the visitor opens it, never for links, Places or refetches; `markers.json` adds a site-side `uni` field (Unifont
   metrics for titles outside the bitmap sheets). Labels placed smallest area first, each inside its area, clear of
   areas drawn above and of placed labels (else no label at that zoom). Mock zig label within half a block of cakeutils'.
+- 2026-11-16 (FMK-7): known limits, not fixed: at the cakeutils maximum (1000 markers per world) a zoom end blocks the
+  page about 0.6 s and the page HTML is about 1.5 MB; typical worlds have a few dozen markers. Fixed: a stale
+  refetch keeps `x-as-of` as Places' "as of". e2e markers checks in `tests/e2e/map-markers.ts` (+ test-only upstream).
 
 ## Markers log
 
@@ -171,3 +174,5 @@ done, PR to `main` open for David). **GFMK0 passed** 2026-11-16; cakeutils GMK2 
   "Map screenshots 4". FMK-6 and FMK-7 briefs written and requested.
 - 2026-11-16 03:15Z: FMK-6 (#54) reviewed (facts match brief §2, no env var added) and merged; coordinator moved the
   README markers paragraph below the token command it had split.
+- 2026-11-16 03:50Z: FMK-7 (#55) reviewed (check, 510 tests, build + leak check, e2e 64/0 on busy and fresh) and merged.
+  GFMK2 passed; PR to `main` opened for David. Deploy needs nothing new beyond the map line's (same token scope).

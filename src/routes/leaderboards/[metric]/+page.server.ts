@@ -7,7 +7,8 @@ import { api, extras } from "#lib/server/cakeutils/client.ts";
 import { boardHref, fullType, metricKey, parseMetric, type Metric } from "#lib/api/metric.ts";
 import { scopeParam } from "#lib/api/scope.ts";
 import { findComposite, findFeatured } from "#lib/boards.ts";
-import { statTitle, typeLabel } from "#lib/format/labels.ts";
+import { boardParts, readerFor } from "#lib/server/featured.ts";
+import { statTitle, subjectLabel, typeLabel } from "#lib/format/labels.ts";
 import type { LeaderboardEntry, StatType, Subject } from "#lib/api/types.ts";
 import type { Failure } from "#lib/api/result.ts";
 import { formatStat } from "#lib/format/stat-display.ts";
@@ -24,21 +25,26 @@ export const load: PageServerLoad = async ({ params, url }) => {
 
   const composite = findComposite(params.metric);
   const featured = composite ? undefined : findFeatured(params.metric);
-  if (featured && metricKey(featured.metric) !== params.metric) redirect(308, `${boardHref(featured.metric)}${url.search}`);
+  // a featured board that counts more than one stat (`also`, e.g. diamond ore + deepslate diamond ore)
+  // keeps its own id as its URL; every other featured id redirects to the criterion form
+  const combined = featured?.also?.length ? featured : undefined;
+  if (featured && !combined && metricKey(featured.metric) !== params.metric) redirect(308, `${boardHref(featured.metric)}${url.search}`);
   const metric: Metric | null = composite ? null : (featured?.metric ?? parseMetric(params.metric));
   if (!composite && !metric) error(404, "No such board");
-  if (metric && metricKey(metric) !== params.metric) redirect(308, `${boardHref(metric)}${url.search}`);
+  if (metric && !combined && metricKey(metric) !== params.metric) redirect(308, `${boardHref(metric)}${url.search}`);
+  const reader = combined ? readerFor(c, combined) : c;
 
   const offset = Math.max(0, Math.floor(Number(url.searchParams.get("offset") ?? 0)) || 0);
   const stat = metric?.kind === "stat" ? metric : null;
-  // the leader per day (cakeutils history route); feature-detected, never for composite boards or mini scopes
-  const wantHistory = metric !== null && !scope.startsWith("mini:");
+  // the leader per day (cakeutils history route); feature-detected, never for composite or combined boards
+  // (the route answers one stat) or mini scopes
+  const wantHistory = metric !== null && !combined && !scope.startsWith("mini:");
   const [network, minis, types, subject, full, hist] = await Promise.all([
     c.network(),
     c.miniServers(),
     stat ? c.statTypes() : null,
     stat && stat.subject !== "*" ? c.subject(stat.subject) : null,
-    composite ? compositeBoard(c, composite, scope) : loadBoard(c, metric!, scope),
+    composite ? compositeBoard(c, composite, scope) : loadBoard(reader, metric!, scope),
     wantHistory ? extras().history(metric!, { scope, limit: 5 }) : null
   ]);
 
@@ -61,6 +67,10 @@ export const load: PageServerLoad = async ({ params, url }) => {
     }
     kicker = typeName;
   }
+  if (combined) {
+    title = combined.label;
+    about = combined.about ?? null;
+  }
 
   const servers = network.ok ? network.data.servers : [];
   const miniList = scopeMinis(scope, minis.ok ? minis.data.mini_servers.map((m) => ({ server: m.server, id: m.id, display_name: m.display_name })) : []);
@@ -70,6 +80,8 @@ export const load: PageServerLoad = async ({ params, url }) => {
     kicker,
     about,
     composite: composite ? { id: composite.id, label: composite.label } : null,
+    /** the single-stat boards a combined board adds together */
+    parts: combined ? boardParts(combined).map((m) => ({ href: boardHref(m, scope), label: m.kind === "stat" ? `${subjectLabel(null, m.subject)} only` : "Playtime" })) : [],
     typeKey: stat ? fullType(stat.type) : null,
     subjectKey: stat && stat.subject !== "*" ? stat.subject : null,
     subjectIcon: subjectRow?.icon ?? null,
@@ -93,7 +105,7 @@ export const load: PageServerLoad = async ({ params, url }) => {
   let tableFailed = false;
   if (rows.length === 0 && offset < d.total && d.capped && metric) {
     // a table page past the loaded part of a very large board asks the API for that page directly
-    const r = await c.leaderboard(metric, scope, { limit: PAGE, offset });
+    const r = await reader.leaderboard(metric, scope, { limit: PAGE, offset });
     if (r.ok) rows = withoutHidden(r.data.entries);
     else tableFailed = true;
   }

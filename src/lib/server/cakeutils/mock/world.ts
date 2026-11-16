@@ -180,6 +180,7 @@ const BLOCKS: Def[] = [
   { key: "minecraft:spruce_log", kind: "block", name: "Spruce Log", base: 2_200 },
   { key: "minecraft:deepslate", kind: "block", name: "Deepslate", base: 40_000 },
   { key: "minecraft:diamond_ore", kind: "block", name: "Diamond Ore", base: 120 },
+  { key: "minecraft:deepslate_diamond_ore", kind: "block", name: "Deepslate Diamond Ore", base: 260 },
   { key: "minecraft:iron_ore", kind: "block", name: "Iron Ore", base: 1_500 },
   { key: "minecraft:coal_ore", kind: "block", name: "Coal Ore", base: 2_500 },
   { key: "minecraft:sand", kind: "block", name: "Sand", base: 5_000 },

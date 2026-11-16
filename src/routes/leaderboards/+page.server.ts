@@ -2,8 +2,8 @@
 // A board whose stat answers 404 is hidden until it exists (PLAN §3.4); playtime always shows.
 import type { PageServerLoad } from "./$types";
 import { api } from "#lib/server/cakeutils/client.ts";
-import { COMPOSITES, FEATURED, compositeHref } from "#lib/boards.ts";
-import { boardHref as metricHref } from "#lib/api/metric.ts";
+import { COMPOSITES, FEATURED, compositeHref, featuredHref } from "#lib/boards.ts";
+import { featuredLeaderboard } from "#lib/server/featured.ts";
 import { scopeParam } from "#lib/api/scope.ts";
 import { withoutHidden } from "#lib/server/hidden.ts";
 import type { Result } from "#lib/api/result.ts";
@@ -20,12 +20,12 @@ export const load: PageServerLoad = async ({ url }) => {
   const [network, minis, featured, composites] = await Promise.all([
     c.network(),
     c.miniServers(),
-    Promise.all(FEATURED.map((b) => c.leaderboard(b.metric, scope, { limit: 10 }))),
+    Promise.all(FEATURED.map((b) => featuredLeaderboard(c, b, scope, { limit: 10 }))),
     Promise.all(COMPOSITES.map((b) => compositeBoard(c, b, scope)))
   ]);
 
   const cards: Card[] = [
-    ...FEATURED.map((b, i): Card => ({ id: b.id, label: b.label, href: metricHref(b.metric, scope), kind: "featured", result: featured[i] })),
+    ...FEATURED.map((b, i): Card => ({ id: b.id, label: b.label, href: featuredHref(b, scope), kind: "featured", result: featured[i] })),
     ...COMPOSITES.map((b, i): Card => ({ id: b.id, label: b.label, href: compositeHref(b, scope), kind: "composite", result: composites[i] }))
   ]
     // 404 = nobody ever recorded it: hidden until it exists. 400 and "off" cannot be shown either.

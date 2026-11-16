@@ -10,7 +10,8 @@ import type { Result } from "#lib/api/result.ts";
 import type { AdvancementRow, Leaderboard, MilestoneFeedRow } from "#lib/api/types.ts";
 import type { Scope } from "#lib/api/scope.ts";
 import { metricKey, type Metric } from "#lib/api/metric.ts";
-import { FEATURED, type FeaturedBoard } from "#lib/boards.ts";
+import { FEATURED, featuredKey, type FeaturedBoard } from "#lib/boards.ts";
+import { readerFor } from "#lib/server/featured.ts";
 import { type Db, getMeta, getMetaNumber, registerSeries, seriesSince, setMeta, tx } from "./db.ts";
 import { DAY, HOUR, KEEP_HOURLY_BOARDS, KEEP_LONG, KEEP_MINUTES, MINUTE, floorTo } from "./time.ts";
 
@@ -154,12 +155,12 @@ export async function recordPlayers(d: RecorderDeps): Promise<Outcome> {
 type BoardRead = { unit: string; total: number; entries: Leaderboard["entries"]; complete: boolean };
 
 /** null = the board does not exist (404 / 400): skip it. "down" = try again later. */
-async function readBoard(d: RecorderDeps, metric: Metric, scope: Scope, maxPages: number): Promise<BoardRead | null | "down"> {
+async function readBoard(d: RecorderDeps, metric: Metric, scope: Scope, maxPages: number, reader: Pick<RecorderDeps["client"], "leaderboard"> = d.client): Promise<BoardRead | null | "down"> {
   const seen = new Map<string, Leaderboard["entries"][number]>();
   let total = 0;
   let unit = "count";
   for (let page = 0; page < maxPages; page++) {
-    const r = await d.client.leaderboard(metric, scope, { limit: PAGE, offset: page * PAGE });
+    const r = await reader.leaderboard(metric, scope, { limit: PAGE, offset: page * PAGE });
     if (!r.ok) return r.kind === "not_found" || r.kind === "bad_request" || r.kind === "off" ? null : "down";
     if (r.stale) return "down";
     total = int(r.data.total) ?? 0;
@@ -181,10 +182,10 @@ export async function recordBoards(d: RecorderDeps): Promise<Outcome> {
   const t = floorTo(d.now(), HOUR);
   let wrote = false;
   for (const b of boardMetrics(d)) {
-    const read = await readBoard(d, b.metric, "network", b.metric.kind === "playtime" ? CAPS.playtimePages : 1);
+    const read = await readBoard(d, b.metric, "network", b.metric.kind === "playtime" ? CAPS.playtimePages : 1, readerFor(d.client, b));
     if (read === "down") return "down";
     if (!read) continue;
-    const key = metricKey(b.metric);
+    const key = featuredKey(b);
     const entries = read.entries.filter((e) => !d.hidden(e));
     tx(d.db, () => {
       d.db.prepare("DELETE FROM board_entry WHERE board = ? AND scope = ? AND t = ?").run(key, "network", t);
@@ -202,20 +203,22 @@ export async function recordBoards(d: RecorderDeps): Promise<Outcome> {
 
 export async function recordTotals(d: RecorderDeps): Promise<Outcome> {
   const t = floorTo(d.now(), HOUR);
-  const jobs: { metric: Metric; scope: Scope }[] = [];
+  // a featured board with `also` is stored under its id and read combined (src/lib/server/featured.ts)
+  const jobs: { metric: Metric; scope: Scope; key: string; board?: FeaturedBoard }[] = [];
   const keys = new Set<string>();
-  const add = (metric: Metric, scope: Scope) => {
-    const k = `${metricKey(metric)}|${scope}`;
+  const add = (metric: Metric, scope: Scope, board?: FeaturedBoard) => {
+    const key = board ? featuredKey(board) : metricKey(metric);
+    const k = `${key}|${scope}`;
     if (!keys.has(k)) {
       keys.add(k);
-      jobs.push({ metric, scope });
+      jobs.push({ metric, scope, key, board });
     }
   };
   const servers = knownServers(d.db);
   if (!servers.length) return "down"; // no network sample yet: wait for one, so server scopes are not missed
   for (const b of boardMetrics(d)) {
-    add(b.metric, "network");
-    for (const s of servers) add(b.metric, `server:${s}`);
+    add(b.metric, "network", b);
+    for (const s of servers) add(b.metric, `server:${s}`, b);
   }
   const types = await d.client.statTypes();
   if (!types.ok || types.stale) return "down";
@@ -225,7 +228,7 @@ export async function recordTotals(d: RecorderDeps): Promise<Outcome> {
   }
   let wrote = 0;
   for (const j of jobs) {
-    const read = await readBoard(d, j.metric, j.scope, CAPS.totalPages);
+    const read = await readBoard(d, j.metric, j.scope, CAPS.totalPages, j.board ? readerFor(d.client, j.board) : d.client);
     if (read === "down") return wrote ? "ok" : "down";
     if (!read || !read.complete) continue; // never record a partial sum
     // players inside one scope may be added (PLAN §2.2); scopes never are
@@ -236,7 +239,7 @@ export async function recordTotals(d: RecorderDeps): Promise<Outcome> {
       sum += int(e.value)!;
       players++;
     }
-    const key = metricKey(j.metric);
+    const key = j.key;
     tx(d.db, () => {
       d.db.prepare("INSERT OR REPLACE INTO stat_total (metric, scope, t, value, unit, players) VALUES (?, ?, ?, ?, ?, ?)").run(key, j.scope, t, sum, read.unit, players);
       registerSeries(d.db, `total:${key}:${j.scope}`, d.now());

@@ -11,6 +11,7 @@ import { parseScope, scopeOf, type Scope } from "#lib/api/scope.ts";
 import { fail, ok, type Result } from "#lib/api/result.ts";
 import type { BatchPlayer, Leaderboard, PlayerAdvancements, PlayerMilestones, StatList, StatValue } from "#lib/api/types.ts";
 import { COMPOSITES, FEATURED } from "#lib/boards.ts";
+import { featuredLeaderboard } from "#lib/server/featured.ts";
 import { batchIncludes, compositeValue, standing, type BoardStanding } from "#lib/players/ranks.ts";
 import { playerLabel, splitMini, titleCase } from "#lib/players/names.ts";
 import { showOnMap } from "#lib/map/showOnMap.ts";
@@ -76,7 +77,7 @@ export const load: PageServerLoad = async ({ params, url }) => {
     // advancement milestones (D-111) have no mini scope either; their rows name no player, so nothing to hide
     miniScope ? Promise.resolve(null) : c.playerAdvancements(ref, { scope, limit: 10 }),
     player.ok ? c.batch([ref], batchIncludes(FEATURED, COMPOSITES), scope) : Promise.resolve(null),
-    ...(player.ok ? FEATURED.map((b) => c.leaderboard(b.metric, scope, { limit: BOARD_PAGE })) : [])
+    ...(player.ok ? FEATURED.map((b) => featuredLeaderboard(c, b, scope, { limit: BOARD_PAGE })) : [])
   ] as const);
 
   // standings: a board that answers 404 does not exist yet and is left out (PLAN §3.4)

@@ -5,8 +5,9 @@ import type { PageServerLoad } from "./$types";
 import { api } from "#lib/server/cakeutils/client.ts";
 import { history } from "#lib/server/history.ts";
 import { withoutHidden } from "#lib/server/hidden.ts";
-import { FEATURED } from "#lib/boards.ts";
-import { boardHref, metricKey, PLAYTIME } from "#lib/api/metric.ts";
+import { FEATURED, featuredHref, featuredKey, type FeaturedBoard } from "#lib/boards.ts";
+import { readerFor } from "#lib/server/featured.ts";
+import { PLAYTIME } from "#lib/api/metric.ts";
 import type { Result } from "#lib/api/result.ts";
 import { formatStat, group } from "#lib/format/stat-display.ts";
 import { day } from "#lib/format/dates.ts";
@@ -28,20 +29,20 @@ export const load: PageServerLoad = async () => {
   const h = history();
   // Stat totals come from the featured boards (src/lib/boards.ts); playtime has its own tile.
   const featured = FEATURED.filter((b) => b.metric.kind === "stat");
-  const boards = [{ id: "playtime", label: "Time played", metric: PLAYTIME }, ...featured];
+  const boards: FeaturedBoard[] = [{ id: "playtime", label: "Time played", metric: PLAYTIME }, ...featured];
 
   const [network, online, seen, sums, milestones, advancements, onlineWeek, onlineRecent, joins, since, series, hours] = await Promise.all([
     c.network(),
     c.players({ online: true, limit: 100 }),
     c.players({ limit: 1 }),
-    Promise.all(boards.map((b) => boardSum(c, b.metric, "network", withoutHidden))),
+    Promise.all(boards.map((b) => boardSum(readerFor(c, b), b.metric, "network", withoutHidden))),
     c.milestones({ limit: 5 }).then(prepareFeed),
     c.advancements({ limit: 5 }).then(hideFromFeed),
     h.online("network", "week"),
     h.onlineRecent("network"),
     h.joinsPerWeek("month"),
     h.recordingSince(),
-    Promise.all(boards.map((b) => h.networkTotal(metricKey(b.metric), "network", "month"))),
+    Promise.all(boards.map((b) => h.networkTotal(featuredKey(b), "network", "month"))),
     h.activityByHour("network", "month")
   ]);
   if (online.ok) online.data.players = withoutHidden(online.data.players);
@@ -65,7 +66,7 @@ export const load: PageServerLoad = async () => {
         label: boards[i].label,
         value: show(r.data),
         note: s.points.length >= 2 && s.since ? `since ${day(s.since)}` : r.data.complete ? undefined : `first ${group(r.data.players)} players`,
-        href: boardHref(boards[i].metric),
+        href: featuredHref(boards[i]),
         spark: s.points.length >= 2 ? s.points : undefined
       });
     });

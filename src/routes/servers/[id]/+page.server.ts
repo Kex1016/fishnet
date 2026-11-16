@@ -6,8 +6,9 @@ import type { PageServerLoad } from "./$types";
 import { api, mapApi } from "#lib/server/cakeutils/client.ts";
 import { history } from "#lib/server/history.ts";
 import { withoutHidden } from "#lib/server/hidden.ts";
-import { FEATURED } from "#lib/boards.ts";
-import { boardHref, PLAYTIME } from "#lib/api/metric.ts";
+import { FEATURED, featuredHref } from "#lib/boards.ts";
+import { featuredLeaderboard } from "#lib/server/featured.ts";
+import { PLAYTIME } from "#lib/api/metric.ts";
 import { mapHref } from "#lib/map/links.ts";
 import { sortWorlds, worldLabel } from "#lib/map/worlds.ts";
 import { parseScope, type Scope } from "#lib/api/scope.ts";
@@ -30,7 +31,7 @@ export const load: PageServerLoad = async ({ params }) => {
     c.miniServers(),
     c.players({ online: true, limit: 100 }),
     boardSum(c, PLAYTIME, scope, withoutHidden),
-    Promise.all(featured.map((b) => c.leaderboard(b.metric, scope, { limit: 5 }))),
+    Promise.all(featured.map((b) => featuredLeaderboard(c, b, scope, { limit: 5 }))),
     c.milestones({ scope, limit: 5 }).then(prepareFeed),
     c.advancements({ scope, limit: 5 }).then(hideFromFeed),
     h.server(id, "week"),
@@ -53,7 +54,7 @@ export const load: PageServerLoad = async ({ params }) => {
   const boards = featured.flatMap((b, i) => {
     const r = stats[i];
     if (!r.ok || r.empty) return [];
-    return [{ id: b.id, label: b.label, href: boardHref(b.metric, scope), unit: r.data.unit, rows: barRows(withoutHidden(r.data.entries)), asOf: r.asOf, stale: r.stale }];
+    return [{ id: b.id, label: b.label, href: featuredHref(b, scope), unit: r.data.unit, rows: barRows(withoutHidden(r.data.entries)), asOf: r.asOf, stale: r.stale }];
   });
 
   // Busiest minis: the most players seen in each mini this week, from the recorder.

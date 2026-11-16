@@ -8,7 +8,7 @@
 import type { DayGrid, History, Point, Range, RankMove, RankMoves, Series, ServerSample, ServerSeries } from "../history.ts";
 import { parseScope, type Scope } from "#lib/api/scope.ts";
 import { metricKey, parseMetric } from "#lib/api/metric.ts";
-import { FEATURED, type FeaturedBoard } from "#lib/boards.ts";
+import { FEATURED, featuredKey, type FeaturedBoard } from "#lib/boards.ts";
 import { type Db, getMetaNumber, seriesSince } from "./db.ts";
 import { DAY, HOUR, MINUTE, RANGE_BUCKET, RANGE_MS, WEEK, floorTo, isRange, weekStart, weekday } from "./time.ts";
 import type { Hidden } from "./jobs.ts";
@@ -30,7 +30,7 @@ type Bucket = { t: number; max: number; sum: number; n: number; waitingMax: numb
 /** A metric key from either a FEATURED board id ("mined") or a metric in criterion form ("mined:*"). */
 export function resolveMetricKey(s: string, featured: FeaturedBoard[] = FEATURED): string | null {
   const b = featured.find((f) => f.id === s);
-  if (b) return metricKey(b.metric);
+  if (b) return featuredKey(b);
   const m = parseMetric(s);
   return m ? metricKey(m) : null;
 }

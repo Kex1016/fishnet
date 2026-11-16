@@ -114,13 +114,13 @@ extension, branch `claude/map-markers`); everything else after cakeutils GMK2. N
 |---|---|---|---|---|---|---|
 | FMK-0 contracts | **merged** df814ab | Sonnet 5.5 / high | cmsg_017jXErfLmkLcYLSb5FKAVcMNKkmuhzux3SoSxqmPjJLmW | | #50 | early |
 | FMK-1 Minecraft label | **merged** b02fb0c | Opus 5.5 / medium | cmsg_017jXErfLmkLcYLSb5FKAVcMK3CxUDUYdWKUzCFFncR3M3 | | #51 | early, ∥ FMK-0 |
-| FMK-2 marker layer | waiting for GMK2 | Sonnet 5.5 / high | | | | FMK-0, FMK-1 |
-| FMK-3 live refresh | waiting for GMK2 | Sonnet 5.5 / medium | | | | FMK-0, ∥ FMK-2 |
+| FMK-2 marker layer | **requested** | Sonnet 5.5 / high | | | | FMK-0, FMK-1 |
+| FMK-3 live refresh | **requested** | Sonnet 5.5 / medium | | | | FMK-0, ∥ FMK-2 |
 | FMK-6 docs | waiting for GMK2 | Haiku 5.5 / low | | | | FMK-2 |
 | FMK-7 integration, QA, security | waiting for GMK2 | Opus 5.5 / medium | | | | all |
 
 Gates: GFMK0 (FMK-0 + FMK-1 merged), GFMK1 (FMK-2 + FMK-3 merged, check/test/build/e2e on both scenarios), GFMK2 (FMK-7
-done, PR to `main` open for David). **GFMK0 passed** 2026-11-16; GFMK1, GFMK2 wait for cakeutils GMK2.
+done, PR to `main` open for David). **GFMK0 passed** 2026-11-16; cakeutils GMK2 passed 2026-11-16 02:30Z; GFMK1, GFMK2 not yet.
 
 ## Markers decisions
 
@@ -137,6 +137,9 @@ done, PR to `main` open for David). **GFMK0 passed** 2026-11-16; GFMK1, GFMK2 wa
   titles merged into the solid black shadow on bright areas). Supersedes the L ≤ 0.6 direction rule. "Lighter" = lighter than the area as drawn (else black stays black on its
   shadow). Yellow and white areas still get dark titles (no light tint reaches 3 : 1 there). FMK-2 needs
   `unifontFor(titles)` in the map page's load for titles outside the bitmap sheets.
+- 2026-11-16: `LiveHandlers.onMarkers({world, rev})` added to `liveClient.ts` by the coordinator (type only) so FMK-2
+  (page wiring) and FMK-3 (hub + client emission) run in parallel without touching each other's files. FMK-2 also
+  copies cakeutils' real marker fixtures into `tests/fixtures/markers/` and syncs the mock to them.
 
 ## Markers log
 
@@ -149,3 +152,5 @@ done, PR to `main` open for David). **GFMK0 passed** 2026-11-16; GFMK1, GFMK2 wa
 - 2026-11-16 00:15Z: FMK-1 (#51) reviewed: renderer good; sent back once for the lighter-first tint.
 - 2026-11-16 00:25Z: FMK-1 (#51, head 6102762) re-reviewed (check 0 errors, 473 tests, build + leak check, Chromium pixel
   check DPR 1/2, screenshots) and merged. GFMK0 passed. Screenshots posted to "Map screenshots 4". FMK-2/3 wait for GMK2.
+- 2026-11-16 02:15Z: cakeutils GMK2 passed (PR #122 to cakeutils main); brief §2 now cites the real fixtures (project
+  copy refreshed; no 503 on the route). FMK-2 and FMK-3 briefs written and requested.

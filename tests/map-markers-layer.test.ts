@@ -6,7 +6,7 @@ import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import type { MapMarkers } from "#lib/api/types.ts";
 import { centreLatLng, pixelsPerBlock, toLatLng } from "#lib/map/crs.ts";
-import { boxInsidePolygon, fitLabel, PAD } from "#lib/map/markers/fit.ts";
+import { boxesOverlap, boxInsidePolygon, boxOverlapsPolygon, fitLabel, fitLabels, PAD, type FitArea } from "#lib/map/markers/fit.ts";
 import { measureLabel, measureTitle, labelLines, SCALES } from "#lib/map/markers/McLabel.ts";
 import { kindText, markerName, sizeText, whereText } from "#lib/map/markers/text.ts";
 import type { Corner, MarkerView } from "#lib/map/markers/types.ts";
@@ -247,6 +247,90 @@ describe("fitLabel (brief §5.2)", () => {
     expect(pixelsPerBlock(3, 5)).toBe(4);
     expect(pixelsPerBlock(3, 3)).toBe(1);
     expect(pixelsPerBlock(3, 0)).toBe(0.125);
+  });
+});
+
+// ---- titles keep clear of the areas above them and of each other
+
+/** Whether a box (blocks) shares any cell with the polygon, by the raster oracle. */
+function oracleOverlap(p: readonly Corner[], b: { cx: number; cz: number; hw: number; hh: number }): boolean {
+  for (let x = Math.floor(b.cx - b.hw); x < Math.ceil(b.cx + b.hw); x++)
+    for (let z = Math.floor(b.cz - b.hh); z < Math.ceil(b.cz + b.hh); z++) {
+      // a cell is shared when the box covers part of it and the cell is inside the polygon
+      const w = Math.min(b.cx + b.hw, x + 1) - Math.max(b.cx - b.hw, x);
+      const h = Math.min(b.cz + b.hh, z + 1) - Math.max(b.cz - b.hh, z);
+      if (w > 0 && h > 0 && insideCell(p, x, z)) return true;
+    }
+  return false;
+}
+const boxOfFit = (a: FitArea, fit: { k: number; lines: string[] }, ppb: number) => {
+  const m = measureLabel(labelLines(fit.lines.join(" "), undefined)); // width only matters for one line; two lines use the widest
+  const lines = fit.lines.map((l) => measureTitle(l));
+  const w = Math.max(...lines.map((l) => l.w), fit.lines.length === 1 ? m.w : 0);
+  const h = 9 * fit.lines.length;
+  return { cx: a.label!.x, cz: a.label!.z, hw: ((w + 2 * PAD) * fit.k) / ppb / 2, hh: ((h + 2 * PAD) * fit.k) / ppb / 2 };
+};
+const rectArea = (minX: number, minZ: number, maxX: number, maxZ: number, title: string): FitArea => ({ polygon: [[minX, minZ], [minX, maxZ], [maxX, maxZ], [maxX, minZ]], label: { x: (minX + maxX) / 2, z: (minZ + maxZ) / 2, r: Math.min(maxX - minX, maxZ - minZ) / 2 }, title });
+
+describe("titles keep clear of areas above and of each other (fitLabels)", () => {
+  const BIG = rectArea(0, -96, 128, 0, "Spawn town and the surrounding fields of the northern realm");
+  const MARKET = rectArea(20, -60, 51, -42, "Market");
+
+  test("a big area's title is not drawn across the smaller area inside it; without that area it is", () => {
+    expect(fitLabels([BIG], 4)[0]).toEqual({ k: 1, lines: [BIG.title] });
+    const both = fitLabels([BIG, MARKET], 4); // draw order: the big one first, the small one above it
+    expect(both[0]).toBeNull(); // its one-line box (about 70 blocks) would run over Market; two lines do not fit beside it either
+    expect(both[1]).not.toBeNull();
+    // the other way round (the big one on top, which draw order never does): it has nothing above it and keeps its title
+    expect(fitLabels([MARKET, BIG], 4)[1]).toEqual({ k: 1, lines: [BIG.title] });
+  });
+
+  test("a title that clears the area above is kept", () => {
+    // a small area in the corner: the big title's box, centred, does not touch it
+    const corner = rectArea(2, -94, 12, -86, "Hut");
+    expect(fitLabels([BIG, corner], 4)[0]).toEqual({ k: 1, lines: [BIG.title] });
+  });
+
+  test("two areas that overlap: the one on top keeps its title and the other's never crosses it", () => {
+    const a = rectArea(0, 0, 40, 20, "Alpha field");
+    const b = rectArea(10, 0, 50, 20, "Beta field");
+    const [fa, fb] = fitLabels([a, b], 4);
+    expect(fb).not.toBeNull();
+    if (fa) expect(oracleOverlap(b.polygon, boxOfFit(a, fa, 4))).toBe(false);
+    // identical areas: only the top one is titled
+    const twin = rectArea(0, 0, 40, 20, "Twin");
+    expect(fitLabels([twin, { ...twin }], 4).map((f) => f !== null)).toEqual([false, true]);
+  });
+
+  test("on the busy world, at every zoom: each title is inside its area, crosses no area above and no other title", () => {
+    const set = generateMarkersBusy().find((x) => x.world === "minecraft_overworld")!;
+    const areas = drawOrder(markerViews(set.markers)).filter((v) => v.polygon);
+    const fitAreas: FitArea[] = areas.map((v) => ({ polygon: v.polygon!, label: v.label, title: v.title }));
+    let titled = 0;
+    for (const ppb of [0.5, 1, 2, 4, 8]) {
+      const fits = fitLabels(fitAreas, ppb);
+      const boxes: { i: number; b: ReturnType<typeof boxOfFit> }[] = [];
+      fits.forEach((f, i) => {
+        if (!f) return;
+        titled++;
+        const b = boxOfFit(fitAreas[i], f, ppb);
+        expect(oracle(fitAreas[i].polygon, b.cx, b.cz, b.hw, b.hh)).toBe(true);
+        for (let j = i + 1; j < fitAreas.length; j++) expect(oracleOverlap(fitAreas[j].polygon, b)).toBe(false);
+        boxes.push({ i, b });
+      });
+      for (const p of boxes) for (const q of boxes) if (p.i < q.i) expect(boxesOverlap(p.b, q.b)).toBe(false);
+    }
+    expect(titled).toBeGreaterThan(0);
+  });
+
+  test("the helpers: touching is not overlapping", () => {
+    expect(boxesOverlap({ cx: 0, cz: 0, hw: 2, hh: 2 }, { cx: 4, cz: 0, hw: 2, hh: 2 })).toBe(false);
+    expect(boxesOverlap({ cx: 0, cz: 0, hw: 2, hh: 2 }, { cx: 3.9, cz: 0, hw: 2, hh: 2 })).toBe(true);
+    const r: Corner[] = [[0, 0], [0, 10], [10, 10], [10, 0]];
+    expect(boxOverlapsPolygon(r, 12, 5, 2, 2)).toBe(false); // shares only an edge
+    expect(boxOverlapsPolygon(r, 11.9, 5, 2, 2)).toBe(true);
+    expect(boxOverlapsPolygon(r, 5, 5, 1, 1)).toBe(true); // wholly inside
+    expect(boxOverlapsPolygon(r, 5, 5, 20, 20)).toBe(true); // wholly around it
   });
 });
 

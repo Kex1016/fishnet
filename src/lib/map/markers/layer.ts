@@ -13,7 +13,7 @@
 import type * as Leaflet from "leaflet";
 import { mount, unmount } from "svelte";
 import { centreLatLng, pixelsPerBlock, toLatLng } from "../crs.ts";
-import { fitLabel } from "./fit.ts";
+import { fitLabels } from "./fit.ts";
 import { AREA_FILL_OPACITY, AREA_FILL_OPACITY_HOVER, labelTint } from "./labelColor.ts";
 import { fitLines, labelGeometry, measureLabel, renderFit } from "./McLabel.ts";
 import MarkerPopup from "./MarkerPopup.svelte";
@@ -285,9 +285,11 @@ export function createMarkerLayer(L: typeof Leaflet, map: Leaflet.Map, initial: 
     const ppb = pixelsPerBlock(props.max, map.getZoom());
     const dpr = typeof devicePixelRatio === "number" ? devicePixelRatio : 1;
     const jobs: Promise<{ v: MarkerView; canvas: HTMLCanvasElement; width: number; height: number; anchor: [number, number] }>[] = [];
-    for (const { v } of entries.values()) {
-      if (!v.polygon || !v.label) continue;
-      const fit = fitLabel({ polygon: v.polygon, label: v.label, title: v.title, ppb, uni: props.uni });
+    // the entries are in draw order: every title keeps clear of the areas drawn above its own and of the titles placed before it
+    const areas = [...entries.values()].map((e) => e.v).filter((v) => v.polygon);
+    const fits = fitLabels(areas.map((v) => ({ polygon: v.polygon!, label: v.label, title: v.title })), ppb, props.uni);
+    for (const [i, v] of areas.entries()) {
+      const fit = fits[i];
       if (!fit) continue;
       const geo = labelGeometry(measureLabel(fitLines(fit, props.uni)), fit.k);
       const canvas = document.createElement("canvas");

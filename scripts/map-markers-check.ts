@@ -179,7 +179,6 @@ await check("titles: the tiny area has none at any zoom but a popup; every drawn
       return { l: b.left, t: b.top, r: b.right, b: b.bottom, h: b.height, aria: c.getAttribute("aria-hidden") };
     }, id);
   let withTitle = 0;
-  const heights: number[] = [];
   for (const zoom of [0, 1, 2, 3, 4, 5]) {
     const v = await look(page, 96, -40, zoom);
     expect((await labelOf(WELL)) === null, `the 2 × 2 area has a title at zoom ${v.zoom}`);
@@ -191,12 +190,21 @@ await check("titles: the tiny area has none at any zoom but a popup; every drawn
       const a = await corner(page, nw[0], nw[1]);
       const b = await corner(page, se[0], se[1]);
       expect(l.l >= a.x - 0.6 && l.t >= a.y - 0.6 && l.r <= b.x + 0.6 && l.b <= b.y + 0.6, `title ${id} at zoom ${v.zoom} leaves its area: ${[l.l, l.t, l.r, l.b].map((n) => n.toFixed(1))} vs ${[a.x, a.y, b.x, b.y].map((n) => n.toFixed(1))}`);
-      if (id === SPAWN_TOWN) heights.push(l.h);
     }
   }
   expect(withTitle > 0, "no title was ever drawn");
-  // the long title of Spawn town is one line at the deepest zoom, two lines (twice the height) one zoom out
-  expect(heights.length >= 2 && Math.max(...heights) >= 2 * Math.min(...heights) - 1, `Spawn town's title heights per zoom: ${heights}`);
+  // Spawn town's long title is never drawn across Market, the smaller area on top of it (and Market keeps its own title)
+  for (const zoom of [2, 3, 4, 5]) {
+    await look(page, 35, -51, zoom);
+    const big = await labelOf(SPAWN_TOWN);
+    const small = await labelOf(MARKET);
+    if (!big) continue;
+    const a = await corner(page, 20, -60);
+    const b = await corner(page, 51, -42);
+    const apart = big.r <= a.x || big.l >= b.x || big.b <= a.y || big.t >= b.y;
+    expect(apart, `zoom ${zoom}: Spawn town's title runs across Market`);
+    if (small) expect(small.r <= big.l || small.l >= big.r || small.b <= big.t || small.t >= big.b, `zoom ${zoom}: titles overlap`);
+  }
   // the cathedral's 63-character title never fits (40 × 30 blocks at most 4 px per block)
   await look(page, -280, -185, 5);
   expect((await labelOf(CATHEDRAL)) === null, "the cathedral title is drawn although it cannot fit");
@@ -206,7 +214,7 @@ await check("titles: the tiny area has none at any zoom but a popup; every drawn
   await page.mouse.click(c.x, c.y);
   expect((await popupTitle(page)) === "Well", `popup of the tiny area: ${await popupTitle(page)}`);
   await page.context().close();
-  return `${withTitle} titles drawn, heights ${heights}`;
+  return `${withTitle} titles drawn`;
 });
 
 await check("a small area above a big one stays clickable; pins are above areas; clicking the bare map closes the popup", async () => {

@@ -12,6 +12,11 @@ export type LiveHandlers = {
   onStatus?: (state: LiveState, asOf: number | null) => void;
   /** "stream" or "poll": which transport is carrying the page now */
   onMode?: (mode: "stream" | "poll") => void;
+  /**
+   * Map markers (FMK-3 sends it, FMK-2 listens): the markers of `world` changed to `rev`; the page refetches
+   * `markers.json` for that world and redraws without moving the view. Never fires for a world nobody watches.
+   */
+  onMarkers?: (ev: { world: string; rev: number }) => void;
 };
 
 export type LiveDeps = {

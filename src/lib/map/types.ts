@@ -81,6 +81,8 @@ export type MapLayer = {
   /** shown now (the toggle's state) */
   on: boolean;
   data: LayerData;
+  /** what the toggle counts when `data` is not the whole story (FMK-2: the map's markers are drawn by their own layer) */
+  count?: number;
 };
 
 /** Props of src/lib/map/MapCanvas.svelte (FM-3). Leaflet mounts on the client; the server renders a still frame. */

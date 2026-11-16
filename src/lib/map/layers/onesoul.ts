@@ -42,5 +42,5 @@ export function roundLayers(map: DimMap | undefined, on: Record<string, boolean>
 
 /** How many things a layer draws, for its toggle ("3"). */
 export function layerCount(l: MapLayer): number {
-  return l.data.marks.length + l.data.paths.length;
+  return l.count ?? l.data.marks.length + l.data.paths.length;
 }

@@ -1,0 +1,6 @@
+{
+  "type": "urn:cakeutils:problem:not_found",
+  "title": "Not Found",
+  "status": 404,
+  "detail": "no such world on this server's map"
+}

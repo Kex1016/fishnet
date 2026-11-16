@@ -1,0 +1,41 @@
+/* Map markers (FMK-2, brief §5): panes, pins, areas, titles and the popup's frame. Classes: `mc-pin`, `mc-area`,
+   `mc-label`, `mc-mpop` (Leaflet's popup, restyled: its own stylesheet is not loaded) and `mk-pop` (the popup's content). */
+
+/* stacking: shapes 550 (map.css), titles 560 (no pointer events), pins 570, the popup pane 700 above the players (620) */
+.mc .leaflet-mc-labels-pane { z-index: 560; pointer-events: none; }
+.mc .leaflet-mc-pins-pane { z-index: 570; }
+.mc .leaflet-popup-pane { z-index: 700; }
+
+/* ---- areas */
+.mc .mc-area { cursor: pointer; transition: fill-opacity var(--duration-fast) var(--ease-soft); stroke-linejoin: miter; }
+.mc .mc-area:focus { outline: 0; }
+.mc .mc-area:focus-visible { outline: 2px solid var(--acc-ink); outline-offset: 2px; }
+
+/* ---- the title inside an area: crisp pixels, never in the way of the area under it */
+.mc-label-icon { pointer-events: none; background: transparent; border: 0; }
+.mc-label-icon canvas { display: block; max-width: none; image-rendering: pixelated; pointer-events: none; }
+
+/* ---- pins: one glyph, the marker's colour, the page background as the outline so it reads on any terrain */
+.mc-pin-icon { width: 24px; height: 24px; background: transparent; border: 0; }
+.mc-pin { position: relative; display: block; width: 24px; height: 24px; padding: 0; border: 0; background: transparent; cursor: pointer; border-radius: 50%; }
+.mc-pin svg { display: block; width: 24px; height: 24px; overflow: visible; filter: drop-shadow(0 1px 1.5px rgb(0 0 0 / 0.45)); transform-origin: 50% 100%; transition: transform var(--duration-fast) var(--ease-soft); }
+.mc-pin__body { fill: var(--pin); stroke: var(--bg); stroke-width: 1.5; stroke-linejoin: round; }
+.mc-pin__dot { fill: var(--bg); }
+.mc-pin:hover svg, .mc-pin--on svg { transform: scale(1.12); }
+.mc-pin:focus { outline: 0; }
+.mc-pin:focus-visible svg { filter: drop-shadow(0 0 0 var(--acc-ink)) drop-shadow(0 0 2px var(--acc-ink)) drop-shadow(0 0 2px var(--acc-ink)); }
+@media (pointer: coarse) {
+  /* the glyph stays 24 px; the touch target around it is 44 px */
+  .mc-pin::before { content: ""; position: absolute; left: 50%; top: 50%; width: 44px; height: 44px; margin: -22px 0 0 -22px; }
+}
+@media (prefers-reduced-motion: reduce) { .mc-pin svg, .mc .mc-area { transition: none; } }
+
+/* ---- the popup: Leaflet's layout hooks, the Fishnet card */
+.mc-mpop { position: absolute; margin-bottom: 0; text-align: left; }
+.mc-mpop .leaflet-popup-content-wrapper { border: 1px solid var(--line); border-radius: var(--radius-lg); background: var(--surface); box-shadow: var(--shadow-float); color: var(--text); }
+.mc-mpop .leaflet-popup-content { margin: 0; line-height: normal; }
+.mc-mpop .leaflet-popup-tip-container { position: absolute; left: 50%; width: 28px; height: 12px; margin-left: -14px; margin-top: -1px; overflow: hidden; pointer-events: none; }
+.mc-mpop .leaflet-popup-tip { width: 14px; height: 14px; margin: -8px auto 0; background: var(--surface); border: 1px solid var(--line); transform: rotate(45deg); }
+/* the entrance animates the card, not Leaflet's container: its inline transform places the popup */
+.mc-mpop .leaflet-popup-content-wrapper { animation: fp-rise var(--duration-fast) var(--ease-glide) both; }
+@media (prefers-reduced-motion: reduce) { .mc-mpop .leaflet-popup-content-wrapper { animation: none; } }

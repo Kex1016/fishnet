@@ -391,9 +391,10 @@ describe("markers.json", () => {
     expect(res.status).toBe(200);
     expect(res.headers.get("cache-control")).toBe("private, max-age=15");
     expect(res.headers.get("content-type")).toBe("application/json");
-    const d = (await res.json()) as MapMarkers;
+    const { uni, ...d } = (await res.json()) as MapMarkers & { uni: Record<string, unknown> };
     expect(res.headers.get("etag")).toBe(`"m${d.rev}"`);
-    expect(d).toEqual(await markersOf("survival", OW));
+    expect(d).toEqual(await markersOf("survival", OW)); // cakeutils' shape, untouched; `uni` is the site's own (FMK-2)
+    expect(uni).toEqual({}); // every busy title is in the bitmap fonts
     expect(res.headers.get("x-stale")).toBeNull();
   });
 

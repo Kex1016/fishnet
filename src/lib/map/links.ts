@@ -2,7 +2,7 @@
 // server. Every route that turns a URL into a cakeutils path or a disk path checks its parts here first.
 //
 //   /map                                              all servers with a map (FM-4)
-//   /map/<server>?world=&x=&z=&zoom=&follow=          one server's map; the query is the share link (FM-4, FM-8)
+//   /map/<server>?world=&x=&z=&zoom=&follow=&marker=  one server's map; the query is the share link (FM-4, FM-8, FMK-2)
 //   /map/<server>/live                                SSE of positions and tile changes (FM-2)
 //   /map/<server>/players.json                        the hub's last snapshot, the no-EventSource fallback (FM-2)
 //   /map/t/<server>/<world>/<z>/<x>_<y>.png?v=        a live tile through the disk cache (FM-1)
@@ -90,7 +90,7 @@ export const markersJsonHref = (server: string, world: string) => `/map/${encode
 export type MapView = { world: string; x: number; z: number; zoom: number };
 
 /** The share link's state: any part may be missing (the page fills in the world's defaults). */
-export type MapLink = Partial<MapView> & { follow?: string | null };
+export type MapLink = Partial<MapView> & { follow?: string | null; /** a map marker's id (FMK-2): the page opens on it with its popup */ marker?: number };
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
@@ -110,6 +110,8 @@ export function parseMapLink(url: UrlLike): MapLink {
   if (zoom !== null && zoom >= 0) out.zoom = zoom;
   const follow = q.get("follow")?.toLowerCase();
   if (follow && UUID.test(follow)) out.follow = follow;
+  const marker = q.get("marker") !== null ? parseInt10(q.get("marker")!, 2 ** 31 - 1) : null;
+  if (marker !== null && marker >= 1) out.marker = marker;
   return out;
 }
 
@@ -123,6 +125,7 @@ export function mapHref(server: string, link: MapLink = {}): string {
   }
   if (link.zoom !== undefined) q.set("zoom", String(Math.round(link.zoom)));
   if (link.follow) q.set("follow", link.follow);
+  if (link.marker !== undefined && link.marker >= 1) q.set("marker", String(Math.round(link.marker)));
   const s = q.toString();
   return `/map/${encodeURIComponent(server)}${s ? `?${s}` : ""}`;
 }

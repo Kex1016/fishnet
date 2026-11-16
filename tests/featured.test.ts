@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { featuredLeaderboard, readerFor } from "#lib/server/featured.ts";
+import { combinedLeaders, featuredLeaderboard, readerFor } from "#lib/server/featured.ts";
 import { findFeatured, type FeaturedBoard } from "#lib/boards.ts";
 import { metricKey, type Metric } from "#lib/api/metric.ts";
 import { fail, ok, type Result } from "#lib/api/result.ts";
@@ -80,5 +80,37 @@ describe("featured boards with also", () => {
     expect(d.ok && d.data.entries[0].value).toBe(3);
     const s = await r.leaderboard({ kind: "stat", type: "minecraft:mined", subject: "minecraft:stone" }, "network", { limit: 10 });
     expect(s.ok && s.data.entries[0].value).toBe(9);
+  });
+});
+
+describe("combinedLeaders", () => {
+
+  const row = (n: number, value: number) => ({ rank: 0, uuid: uuid(n), name: `P${n}`, value, display: String(value) });
+  const hist = (days: [string, [number, number][]][]) => ok({ metric: "m", scope: "network" as const, unit: "count", tracked: true, days: days.map(([day, rows]) => ({ day, entries: rows.map(([n, v]) => row(n, v)) })) }, 1);
+  const none = () => false;
+
+  test("sums a player's parts per day when the leader is certain", () => {
+    // short lists (fewer than the limit): nobody else exists, so every sum is exact
+    const r = combinedLeaders("diamonds", [hist([["2026-11-01", [[1, 5], [2, 3]]]]), hist([["2026-11-01", [[2, 10]]]])], 3, none);
+    expect(r.ok && r.data.days.map((d) => [d.day, d.entries[0].name, d.entries[0].value])).toEqual([["2026-11-01", "P2", 13]]);
+  });
+
+  test("leaves out a day whose leader could be beaten by someone unlisted", () => {
+    // full lists of 2: P1 has 9 + unknown deepslate (up to 8); P2 has 8 + unknown ore (up to 8)
+    const r = combinedLeaders("diamonds", [hist([["d", [[1, 9], [3, 8]]]]), hist([["d", [[2, 9], [4, 8]]]])], 2, none);
+    expect(r.ok && r.data.days).toEqual([]);
+    // P1 in both lists with 20 + 20 beats any bound (8 + 8, or 20 + 8)
+    const sure = combinedLeaders("diamonds", [hist([["d", [[1, 20], [3, 8]]]]), hist([["d", [[1, 20], [4, 8]]]])], 2, none);
+    expect(sure.ok && sure.data.days[0].entries[0].value).toBe(40);
+  });
+
+  test("a part nobody recorded counts as nothing; hidden players never lead; days missing in a part are skipped", () => {
+    const r = combinedLeaders("diamonds", [hist([["a", [[1, 4]]], ["b", [[1, 6]]]]), null], 10, none);
+    expect(r.ok && r.data.days.map((d) => d.entries[0].value)).toEqual([4, 6]);
+    const hidden = combinedLeaders("diamonds", [hist([["a", [[1, 9], [2, 4]]]]), null], 10, (e) => e.uuid === uuid(1));
+    expect(hidden.ok && hidden.data.days[0].entries[0].name).toBe("P2");
+    const gap = combinedLeaders("diamonds", [hist([["a", [[1, 4]]], ["b", [[1, 6]]]]), hist([["b", [[1, 1]]]])], 10, none);
+    expect(gap.ok && gap.data.days.map((d) => d.day)).toEqual(["b"]);
+    expect(!combinedLeaders("x", [null, null], 10, none).ok).toBe(true);
   });
 });

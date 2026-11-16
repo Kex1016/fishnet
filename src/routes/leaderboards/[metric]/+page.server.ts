@@ -7,12 +7,12 @@ import { api, extras } from "#lib/server/cakeutils/client.ts";
 import { boardHref, fullType, metricKey, parseMetric, type Metric } from "#lib/api/metric.ts";
 import { scopeParam } from "#lib/api/scope.ts";
 import { findComposite, findFeatured } from "#lib/boards.ts";
-import { boardParts, readerFor } from "#lib/server/featured.ts";
+import { boardParts, combinedLeaders, readerFor } from "#lib/server/featured.ts";
 import { statTitle, subjectLabel, typeLabel } from "#lib/format/labels.ts";
 import type { LeaderboardEntry, StatType, Subject } from "#lib/api/types.ts";
 import type { Failure } from "#lib/api/result.ts";
 import { formatStat } from "#lib/format/stat-display.ts";
-import { withoutHidden } from "#lib/server/hidden.ts";
+import { isHiddenPlayer, withoutHidden } from "#lib/server/hidden.ts";
 import { compositeBoard } from "../composite.server.ts";
 import { loadBoard } from "../load.server.ts";
 import { distribution, median, scopeLabel, scopeMinis, sum } from "../board.ts";
@@ -36,16 +36,23 @@ export const load: PageServerLoad = async ({ params, url }) => {
 
   const offset = Math.max(0, Math.floor(Number(url.searchParams.get("offset") ?? 0)) || 0);
   const stat = metric?.kind === "stat" ? metric : null;
-  // the leader per day (cakeutils history route); feature-detected, never for composite or combined boards
-  // (the route answers one stat) or mini scopes
-  const wantHistory = metric !== null && !combined && !scope.startsWith("mini:");
+  // the leader per day (cakeutils history route); feature-detected, never for composite boards or mini
+  // scopes. A combined board reads every part's daily top 10 and keeps the days whose leader is certain.
+  const wantHistory = metric !== null && !scope.startsWith("mini:");
+  const HIST_TOP = 10;
+  const readHistory = () =>
+    combined
+      ? Promise.all(boardParts(combined).map((m) => extras().history(m, { scope, limit: HIST_TOP }))).then((rs) =>
+          combinedLeaders(combined.id, rs.map((r) => (!r.ok && r.kind === "not_found" ? null : r)), HIST_TOP, isHiddenPlayer)
+        )
+      : extras().history(metric!, { scope, limit: 5 });
   const [network, minis, types, subject, full, hist] = await Promise.all([
     c.network(),
     c.miniServers(),
     stat ? c.statTypes() : null,
     stat && stat.subject !== "*" ? c.subject(stat.subject) : null,
     composite ? compositeBoard(c, composite, scope) : loadBoard(reader, metric!, scope),
-    wantHistory ? extras().history(metric!, { scope, limit: 5 }) : null
+    wantHistory ? readHistory() : null
   ]);
 
   // names: the catalogue's, with the title-cased key as the fallback (PLAN §2.2)

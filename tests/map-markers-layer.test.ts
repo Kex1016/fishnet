@@ -182,7 +182,7 @@ describe("fitLabel (brief §5.2)", () => {
   test("one line: the biggest whole scale that fits, at every zoom (Farm, 10 × 10)", () => {
     const farm = byId(4);
     const got = PPB.map((ppb) => fitLabel({ polygon: farm.polygon!, label: farm.label!, title: farm.title, ppb })?.k ?? null);
-    expect(got).toEqual(PPB.map((ppb) => expectedScale("Farm", 10, 10, ppb)));
+    expect(got as (number | null)[]).toEqual(PPB.map((ppb) => expectedScale("Farm", 10, 10, ppb)));
     expect(got.some((k) => k === null)).toBe(true); // far out: no label
     expect(new Set(got.filter(Boolean)).size).toBeGreaterThanOrEqual(3); // and several scales in between
     for (const ppb of PPB) {

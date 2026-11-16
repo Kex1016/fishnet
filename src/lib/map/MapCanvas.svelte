@@ -254,7 +254,7 @@
         map.setView(b.getCenter(), map.getBoundsZoom(b, false, L.point(48, 48)), { animate });
       }
     }
-    markerLayer.open(id, { focus: o.focus });
+    markerLayer.open(id, { focus: o.focus, pan: false }); // the view was just set: the popup is already in the middle
     return true;
   }
 

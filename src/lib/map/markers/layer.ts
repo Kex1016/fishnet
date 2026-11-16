@@ -25,7 +25,7 @@ export type MarkerLayer = {
   /** new props (any subset): other markers, `on`, another `selected`, new metrics */
   update(p: Partial<MarkerLayerProps>): void;
   /** open a marker's popup; `focus` moves the keyboard focus into it (Enter on a pin, the Places popout) */
-  open(id: number, o?: { focus?: boolean; at?: Leaflet.LatLng }): void;
+  open(id: number, o?: { focus?: boolean; at?: Leaflet.LatLng; pan?: boolean }): void;
   /** close the popup; the pin or area it belonged to gets the focus back when `focus` */
   close(o?: { focus?: boolean }): void;
   /** the element a keyboard can reach for a marker (its pin button or area path) */
@@ -109,7 +109,13 @@ export function createMarkerLayer(L: typeof Leaflet, map: Leaflet.Map, initial: 
     open = null;
     if (was) restyle(entries.get(was.id), false);
   }
-  function openPopup(id: number, o: { hover?: boolean; focus?: boolean; at?: Leaflet.LatLng } = {}): void {
+  /** Room the popup must keep clear of: the popouts' row along the top (it wraps on a phone) and the footer. */
+  function clearTop(): number {
+    const c = map.getContainer();
+    const row = c.closest(".mc-stage")?.querySelector(".mc-over__row");
+    return Math.max(16, row ? Math.ceil(row.getBoundingClientRect().bottom - c.getBoundingClientRect().top) + 8 : 16);
+  }
+  function openPopup(id: number, o: { hover?: boolean; focus?: boolean; at?: Leaflet.LatLng; pan?: boolean } = {}): void {
     const e = entries.get(id);
     if (!e || !attached) return;
     cancelClose();
@@ -118,11 +124,14 @@ export function createMarkerLayer(L: typeof Leaflet, map: Leaflet.Map, initial: 
     unmountPopup();
     const holder = document.createElement("div");
     app = mount(MarkerPopup, { target: holder, props: { marker: e.v, href: href(id), onclose: () => closeFromUi(true) } });
+    // options first: replacing a hover popup (already on the map) pans as soon as its content and place change
+    popup.options.offset = L.point(0, e.v.kind === "point" ? -26 : -4);
+    // a popup the visitor asked for slides into view clear of the popouts; a hover one never moves the map
+    popup.options.autoPan = !o.hover && o.pan !== false;
+    popup.options.autoPanPaddingTopLeft = L.point(16, clearTop());
+    popup.options.autoPanPaddingBottomRight = L.point(16, 48);
     popup.setContent(holder);
     popup.setLatLng(o.at ?? e.anchor);
-    popup.options.offset = L.point(0, e.v.kind === "point" ? -26 : -4);
-    popup.options.autoPan = !o.hover && !!o.focus;
-    popup.options.autoPanPadding = L.point(24, 24);
     internal = true;
     popup.openOn(map);
     internal = false;
@@ -263,7 +272,7 @@ export function createMarkerLayer(L: typeof Leaflet, map: Leaflet.Map, initial: 
     for (const v of drawOrder(props.markers)) (v.kind === "point" ? addPin : addArea)(v);
     // the open popup follows the marker through a refetch, or goes with it
     if (keep !== null && attached) {
-      if (entries.has(keep)) openPopup(keep);
+      if (entries.has(keep)) openPopup(keep, { pan: false });
       else select(null);
     }
     void retitle();
@@ -344,7 +353,7 @@ export function createMarkerLayer(L: typeof Leaflet, map: Leaflet.Map, initial: 
   }
 
   attach(props.on);
-  if (props.selected !== null && attached) openPopup(props.selected);
+  if (props.selected !== null && attached) openPopup(props.selected, { pan: false });
 
   return {
     update(p) {
@@ -356,7 +365,7 @@ export function createMarkerLayer(L: typeof Leaflet, map: Leaflet.Map, initial: 
       if (p.selected !== undefined && p.selected !== before.selected) {
         if (props.selected === null) {
           if (open && !open.hover) dropPopup();
-        } else if (open?.id !== props.selected || open.hover) openPopup(props.selected);
+        } else if (open?.id !== props.selected || open.hover) openPopup(props.selected, { pan: false }); // a link or the page said so: the view stays
       }
     },
     open(id, o = {}) {

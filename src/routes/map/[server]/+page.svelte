@@ -28,7 +28,7 @@
   import type { MapLayer } from "#lib/map/types.ts";
   import { readout } from "#lib/map/crs.ts";
   import { connectLive } from "#lib/map/liveClient.ts";
-  import { mapHref } from "#lib/map/links.ts";
+  import { mapHref, markersJsonHref } from "#lib/map/links.ts";
   import { followText } from "#lib/map/showOnMap.ts";
   import { groupPlayers } from "#lib/map/pages.ts";
   import type { LiveState, MapView, PlayerDot, TilesEvent } from "#lib/map/types.ts";
@@ -105,8 +105,13 @@
       onStatus: (s, t) => {
         liveState = s;
         liveAt = t;
+      },
+      // the hub's first `rev` for a world is only its baseline: a change between this page's load and the stream's open is
+      // caught by asking once as the stream opens (FMK-3's note); later changes arrive as `markers` events
+      onMode: (mode) => {
+        if (mode === "stream") void refetchMarkers(cur.server, cur.id);
       }
-    });
+    }, { markersRev: untrack(() => (mk.state === "ok" ? mk.rev : null)) });
     return () => conn.close();
   });
 
@@ -115,10 +120,12 @@
   function refetchMarkers(server: string, world: string): Promise<void> {
     return (refetching ??= (async () => {
       try {
-        const res = await fetch(`/map/${encodeURIComponent(server)}/markers.json?world=${encodeURIComponent(world)}`, { headers: { accept: "application/json" } });
+        // `no-cache`: the browser revalidates (If-None-Match) instead of serving its 15 s copy of an older list
+        const res = await fetch(markersJsonHref(server, world), { headers: { accept: "application/json" }, cache: "no-cache" });
         if (!res.ok || data.view?.id !== world) return;
         const body = await res.json();
         if (!body || !Array.isArray(body.markers) || typeof body.rev !== "number") return;
+        if (mk.state === "ok" && mk.world === world && mk.rev === body.rev && !mk.stale && res.headers.get("x-stale") !== "1") return; // nothing new: nothing redrawn
         mk = { world, state: "ok", rev: body.rev, markers: body.markers, asOf: Date.now(), stale: res.headers.get("x-stale") === "1" };
         if (body.uni && typeof body.uni === "object") uni = body.uni;
         if (selected !== null && !mk.markers.some((m: { id: number }) => m.id === selected)) selected = null;

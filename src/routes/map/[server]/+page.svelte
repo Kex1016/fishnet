@@ -126,7 +126,10 @@
         const body = await res.json();
         if (!body || !Array.isArray(body.markers) || typeof body.rev !== "number") return;
         if (mk.state === "ok" && mk.world === world && mk.rev === body.rev && !mk.stale && res.headers.get("x-stale") !== "1") return; // nothing new: nothing redrawn
-        mk = { world, state: "ok", rev: body.rev, markers: body.markers, asOf: Date.now(), stale: res.headers.get("x-stale") === "1" };
+        // a stale list keeps the time it was last good (x-as-of), so Places says how old it really is
+        const stale = res.headers.get("x-stale") === "1";
+        const kept = Number(res.headers.get("x-as-of"));
+        mk = { world, state: "ok", rev: body.rev, markers: body.markers, asOf: stale && kept > 0 ? kept : Date.now(), stale };
         if (body.uni && typeof body.uni === "object") uni = body.uni;
         if (selected !== null && !mk.markers.some((m: { id: number }) => m.id === selected)) selected = null;
       } catch {

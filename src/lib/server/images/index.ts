@@ -4,8 +4,10 @@ import { api } from "../cakeutils/client.ts";
 import { config } from "../env.ts";
 import { createFaces } from "./faces.ts";
 import { createIcons } from "./icons.ts";
+import { createSkins } from "./skins.ts";
 
 let faces: ReturnType<typeof createFaces> | null = null;
+let skins: ReturnType<typeof createSkins> | null = null;
 let icons: ReturnType<typeof createIcons> | null = null;
 
 export function faceService() {
@@ -21,4 +23,9 @@ export function iconService() {
       return r.ok ? { ok: true, png: r.data.png } : { ok: false, kind: r.kind };
     }
   }));
+}
+
+export function skinService() {
+  const c = config();
+  return (skins ??= createSkins({ dir: join(c.dataDir, "cache", "skins"), offline: c.mock !== null }));
 }

@@ -207,3 +207,119 @@ test("faces: offline-mode UUIDs and unknown accounts", async () => {
   expect(faces.stats().reasons.noProfile).toBe(1);
   expect(missTtl("noProfile")).toBe(FACE_MISS_TTL_MS);
 });
+
+// ---- full-body skins (FDC-1) ----
+import { bodyFromSkin, createSkins, defaultSkinFor, isFloodgateUuid, skinResponse } from "../src/lib/server/images/skins.ts";
+
+/** A skin whose every part is a flat colour: head red, hat green dot, body blue, right arm yellow, left arm magenta,
+ *  right leg cyan, left leg white; jacket and sleeves left empty. */
+async function colouredSkin(legacy = false): Promise<Buffer> {
+  const fill = (w: number, h: number, c: [number, number, number]) => sharp({ create: { width: w, height: h, channels: 4, background: { r: c[0], g: c[1], b: c[2], alpha: 1 } } }).png().toBuffer();
+  const parts: [number, number, number, number, [number, number, number]][] = [
+    [8, 8, 8, 8, [255, 0, 0]], [20, 20, 8, 12, [0, 0, 255]], [44, 20, 4, 12, [255, 255, 0]], [4, 20, 4, 12, [0, 255, 255]]
+  ];
+  if (!legacy) parts.push([36, 52, 4, 12, [255, 0, 255]], [20, 52, 4, 12, [255, 255, 255]]);
+  const input = await Promise.all(parts.map(async ([x, y, w, h, c]) => ({ input: await fill(w, h, c), left: x, top: y })));
+  return sharp({ create: { width: 64, height: legacy ? 32 : 64, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } } }).composite(input).png().toBuffer();
+}
+const px = (d: Buffer, x: number, y: number) => [...d.subarray((y * 128 + x) * 4, (y * 128 + x) * 4 + 4)];
+
+test("body render: 128x256, layout of head, arms, legs; transparent around", async () => {
+  const { data, info } = await sharp(await bodyFromSkin(await colouredSkin(), { slim: false })).raw().toBuffer({ resolveWithObject: true });
+  expect([info.width, info.height, info.channels]).toEqual([128, 256, 4]);
+  expect(px(data, 64, 32)).toEqual([255, 0, 0, 255]); // head
+  expect(px(data, 64, 128)).toEqual([0, 0, 255, 255]); // body
+  expect(px(data, 16, 128)).toEqual([255, 255, 0, 255]); // right arm, viewer's left
+  expect(px(data, 112, 128)).toEqual([255, 0, 255, 255]); // left arm, viewer's right
+  expect(px(data, 40, 224)).toEqual([0, 255, 255, 255]); // right leg
+  expect(px(data, 88, 224)).toEqual([255, 255, 255, 255]); // left leg
+  expect(px(data, 4, 4)[3]).toBe(0);
+  expect(px(data, 64, 250)[3]).toBe(255);
+});
+
+test("body render: slim arms are 3 pixels wide, legacy skins mirror the right limbs, HD skins scale", async () => {
+  const slim = (await sharp(await bodyFromSkin(await colouredSkin(), { slim: true })).raw().toBuffer());
+  expect(px(slim, 4, 128)[3]).toBe(0); // right arm starts one pixel in (8 px at 8x)
+  expect(px(slim, 12, 128)).toEqual([255, 255, 0, 255]);
+  expect(px(slim, 110, 128)).toEqual([255, 0, 255, 255]);
+  expect(px(slim, 124, 128)[3]).toBe(0);
+  const legacy = await sharp(await bodyFromSkin(await colouredSkin(true), { slim: false })).raw().toBuffer();
+  expect(px(legacy, 112, 128)).toEqual([255, 255, 0, 255]); // left arm copies the right
+  expect(px(legacy, 88, 224)).toEqual([0, 255, 255, 255]);
+  const hd = await sharp(await bodyFromSkin(await sharp(await colouredSkin()).resize(128, 128, { kernel: "nearest" }).png().toBuffer(), { slim: false })).raw().toBuffer({ resolveWithObject: true });
+  expect([hd.info.width, hd.info.height]).toEqual([128, 256]);
+  await expect(bodyFromSkin(await sharp({ create: { width: 10, height: 10, channels: 4, background: "red" } }).png().toBuffer(), { slim: false })).rejects.toThrow();
+});
+
+test("body render: the overlay layers are drawn over the base", async () => {
+  const jacket = await sharp({ create: { width: 8, height: 12, channels: 4, background: { r: 0, g: 255, b: 0, alpha: 1 } } }).png().toBuffer();
+  const withJacket = await sharp(await colouredSkin()).composite([{ input: jacket, left: 20, top: 36 }]).png().toBuffer();
+  const d = await sharp(await bodyFromSkin(withJacket, { slim: false })).raw().toBuffer();
+  expect(px(d, 64, 128)).toEqual([0, 255, 0, 255]);
+});
+
+test("default skin: vanilla's UUID rule, Floodgate recognised", () => {
+  expect(defaultSkinFor("00000000-0000-0000-0000-000000000000")).toBe("steve");
+  expect(defaultSkinFor("00000000-0000-0000-0000-000000000001")).toBe("alex");
+  expect(defaultSkinFor("00000000-0000-0001-0000-000000000000")).toBe("alex");
+  expect(isFloodgateUuid("00000000-0000-0000-0009-01f64f65c7c3")).toBe(true);
+  expect(isFloodgateUuid(UUID)).toBe(false);
+});
+
+const slimTex = (url: string) => ({ properties: [{ name: "textures", value: Buffer.from(JSON.stringify({ textures: { SKIN: { url, metadata: { model: "slim" } } } })).toString("base64") }] });
+
+test("skins: a normal and a slim skin are fetched, rendered and cached", async () => {
+  for (const slim of [false, true]) {
+    const dir = mkdtempSync(join(tmpdir(), "skins-"));
+    const png = await colouredSkin();
+    let calls = 0;
+    const fake = (async (url: string) => {
+      calls++;
+      return url.includes("sessionserver") ? Response.json((slim ? slimTex : tex)("http://textures.minecraft.net/texture/abc")) : new Response(png as unknown as BodyInit);
+    }) as unknown as typeof fetch;
+    const skins = createSkins({ dir, fetch: fake });
+    const r = await skins.skin(UUID);
+    expect(r.kind).toBe("skin");
+    const d = await sharp(r.kind === "skin" ? r.png : Buffer.alloc(0)).raw().toBuffer();
+    expect(px(d, 124, 128)[3]).toBe(slim ? 0 : 255); // viewer's right arm: slim leaves its outer pixel empty
+    expect(px(d, 64, 32)).toEqual([255, 0, 0, 255]);
+    await skins.skin(UUID);
+    expect(calls).toBe(2);
+  }
+});
+
+test("skins: hidden, unknown, Floodgate, offline and failing lookups all redirect to a default", async () => {
+  const dir = mkdtempSync(join(tmpdir(), "skins-"));
+  const urls: string[] = [];
+  const fake = (async (url: string) => {
+    urls.push(url);
+    return url.includes("2222") ? new Response(null, { status: 204 }) : new Response("", { status: 503 });
+  }) as unknown as typeof fetch;
+  const skins = createSkins({ dir, fetch: fake, log: () => {} });
+  const route = (uuid: string, hidden = false) => skinResponse(uuid, { hidden: () => hidden, skin: skins.skin });
+  const loc = (r: Response) => [r.status, r.headers.get("location"), r.headers.get("cache-control")];
+  const steve = [302, "/img/skin-default-steve.png", "public, max-age=300"];
+  // hidden: never asked
+  expect(loc(await route(UUID, true)).slice(0, 2)).toEqual([302, `/img/skin-default-${defaultSkinFor(UUID)}.png`]);
+  expect(urls).toEqual([]);
+  // Floodgate and offline-mode UUIDs: never asked
+  expect(loc(await route("00000000-0000-0000-0009-01f64f65c7c3"))).toEqual([302, `/img/skin-default-${defaultSkinFor("00000000-0000-0000-0009-01f64f65c7c3")}.png`, "public, max-age=300"]);
+  expect(loc(await route("00000000-0000-3000-8000-000000000000"))[0]).toBe(302);
+  expect(urls).toEqual([]);
+  // unknown account (204) and a Mojang failure (503)
+  const unknown = "22222222-2222-4222-8222-222222222222";
+  expect((await route(unknown)).status).toBe(302);
+  expect((await route(UUID)).status).toBe(302);
+  expect(urls.length).toBe(2);
+  expect(loc(await route("00000000-0000-0000-0000-000000000000"))).toEqual(steve);
+  // offline option (mock mode): never calls Mojang
+  const off = createSkins({ dir, offline: true, fetch: (async () => { throw new Error("called"); }) as unknown as typeof fetch });
+  expect((await off.skin(UUID)).kind).toBe("default");
+});
+
+test("skins: the static defaults exist and are 128x256 PNGs", async () => {
+  for (const n of ["steve", "alex"]) {
+    const m = await sharp(join(import.meta.dir, "..", "static", "img", `skin-default-${n}.png`)).metadata();
+    expect([m.width, m.height, m.hasAlpha]).toEqual([128, 256, true]);
+  }
+});

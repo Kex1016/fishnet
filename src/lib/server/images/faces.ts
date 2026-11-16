@@ -27,6 +27,10 @@ export type FaceOptions = {
   /** mock mode and tests: never call Mojang */
   offline?: boolean;
   log?: (line: string) => void;
+  /** what is made of the downloaded skin; heads by default (the full-body skin service passes its own) */
+  render?: (skin: Uint8Array, info: { slim: boolean }) => Promise<Buffer>;
+  /** the word log lines start with, "faces" by default */
+  label?: string;
 };
 
 /** For /healthz: how often Mojang said no, so a rejection can be told apart from cakeutils' own. */
@@ -73,16 +77,22 @@ export async function headFromSkin(skin: Uint8Array): Promise<Buffer> {
 /** The skin URL out of a session-server profile, only when it is on Mojang's texture host. Mojang writes
  *  these as `http://textures.minecraft.net/...`; the same path is served over https, so it is fetched that way. */
 export function skinUrlFromProfile(profile: unknown): string | null {
+  return skinFromProfile(profile)?.url ?? null;
+}
+
+/** Same as `skinUrlFromProfile`, plus whether the profile says the skin has slim (Alex-model) arms. */
+export function skinFromProfile(profile: unknown): { url: string; slim: boolean } | null {
   const props = (profile as { properties?: { name?: string; value?: string }[] } | null)?.properties;
   const tex = props?.find((p) => p?.name === "textures")?.value;
   if (typeof tex !== "string") return null;
   try {
-    const url = JSON.parse(Buffer.from(tex, "base64").toString("utf8"))?.textures?.SKIN?.url;
+    const skin = JSON.parse(Buffer.from(tex, "base64").toString("utf8"))?.textures?.SKIN;
+    const url = skin?.url;
     if (typeof url !== "string") return null;
     const u = new URL(url);
     if ((u.protocol !== "https:" && u.protocol !== "http:") || u.hostname !== "textures.minecraft.net" || u.port || u.username || u.password) return null;
     u.protocol = "https:";
-    return u.toString();
+    return { url: u.toString(), slim: skin?.metadata?.model === "slim" };
   } catch {
     return null;
   }
@@ -91,6 +101,8 @@ export function skinUrlFromProfile(profile: unknown): string | null {
 export function createFaces(opts: FaceOptions) {
   const f = opts.fetch ?? fetch;
   const log = opts.log ?? ((l: string) => console.warn(l));
+  const render = opts.render ?? headFromSkin;
+  const label = opts.label ?? "faces";
   const stats = {
     fetched: 0,
     failed: 0,
@@ -123,7 +135,7 @@ export function createFaces(opts: FaceOptions) {
       const t = Date.now();
       stats.mojang429++;
       stats.last429At = t;
-      if (t >= backoffUntil) log(`faces: Mojang rate-limited the skin lookup (429); serving cached or default heads for ${BACKOFF_MS / 1000} s`);
+      if (t >= backoffUntil) log(`${label}: Mojang rate-limited the skin lookup (429); serving cached or default heads for ${BACKOFF_MS / 1000} s`);
       backoffUntil = t + BACKOFF_MS;
       return "throttled";
     }
@@ -140,16 +152,16 @@ export function createFaces(opts: FaceOptions) {
       if (profileRes.status === 204 || profileRes.status === 404) return { miss: "noProfile" };
       if (!profileRes.ok) return { miss: "error", detail: `profile: HTTP ${profileRes.status}` };
       const profile = await profileRes.json();
-      const skin = skinUrlFromProfile(profile);
-      if (!skin) return hasTextures(profile) ? { miss: "noSkin" } : { miss: "error", detail: "profile: no textures" };
+      const found = skinFromProfile(profile);
+      if (!found) return hasTextures(profile) ? { miss: "noSkin" } : { miss: "error", detail: "profile: no textures" };
       step = "skin";
-      const skinRes = await get(skin, "bytes");
+      const skinRes = await get(found.url, "bytes");
       if (skinRes === "throttled") return skinRes;
       if (!skinRes.ok) return { miss: "error", detail: `skin: HTTP ${skinRes.status}` };
       const bytes = new Uint8Array(await skinRes.arrayBuffer());
       if (bytes.length > MAX_SKIN_BYTES || !isPng(bytes)) return { miss: "error", detail: "skin: not a png" };
       step = "crop";
-      return await headFromSkin(bytes);
+      return await render(bytes, { slim: found.slim });
     } catch (e) {
       return { miss: "error", detail: `${step}: ${errText(e)}` };
     }
@@ -164,7 +176,7 @@ export function createFaces(opts: FaceOptions) {
     // one line per kind of failure per process, so a broken route to Mojang shows in `docker logs` once
     if (!logged.has(stats.lastError)) {
       logged.add(stats.lastError);
-      log(`faces: skin lookup failed (${stats.lastError}); serving default heads for ${FACE_ERROR_TTL_MS / 60_000} min, then asking again`);
+      log(`${label}: skin lookup failed (${stats.lastError}); serving default heads for ${FACE_ERROR_TTL_MS / 60_000} min, then asking again`);
     }
   }
 

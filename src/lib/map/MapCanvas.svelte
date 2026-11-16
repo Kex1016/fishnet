@@ -10,18 +10,22 @@
   //   applyTiles(event)              a `tiles` event of the live stream (tiles.ts)
   //   setView(view), view()          move the map, read where it looks
   //   pointOf(block)                 where a raw block coordinate is inside the frame, in px
+  //   showMarker(id, {focus})        centre on a map marker (fit its box) and open its popup (FMK-2)
   import { onMount, untrack } from "svelte";
   import type * as Leaflet from "leaflet";
   import { Home, Minus, Plus, X } from "@lucide/svelte";
   import "./map.css";
-  import { centreLatLng, faceSrc, maxZoom, openingView, readout, stillOffset, stillTiles, toBlock, toLatLng } from "./crs.ts";
+  import "./markers/markers.css";
+  import { centreLatLng, clampZoom, faceSrc, maxZoom, openingView, readout, stillOffset, stillTiles, toBlock, toLatLng } from "./crs.ts";
   import { tilePath, tileVersion } from "./links.ts";
   import { drawLayers } from "./overlays.ts";
   import { createPlayers, type MapPlayers } from "./players.ts";
   import { createTiles, type MapTiles } from "./tiles.ts";
+  import { createMarkerLayer, type MarkerLayer } from "./markers/layer.ts";
+  import type { MapCanvasMarkers } from "./markers/types.ts";
   import type { Block, MapCanvasProps, MapView, TilesEvent } from "./types.ts";
 
-  let { world, players, glideMs, view: viewProp, follow: followProp = null, layers = [], label, onview, onfollow, onpick }: MapCanvasProps = $props();
+  let { world, players, glideMs, view: viewProp, follow: followProp = null, layers = [], label, onview, onfollow, onpick, markers }: MapCanvasProps & { /** the world's markers (FMK-2, markers/layer.ts) */ markers?: MapCanvasMarkers } = $props();
 
   // ---- the still frame (server and first paint)
   const opening = $derived(openingView(world, viewProp));
@@ -49,6 +53,7 @@
   let tiles: MapTiles | null = null;
   let dots: MapPlayers | null = null;
   let marks: Leaflet.LayerGroup | null = null;
+  let markerLayer: MarkerLayer | null = null;
   let ready = $state(false);
 
   const max = $derived(world.zoom.max);
@@ -150,6 +155,8 @@
       if (viewTimer) clearTimeout(viewTimer);
       tiles?.destroy();
       dots?.destroy();
+      markerLayer?.destroy();
+      markerLayer = null;
       map?.remove();
       map = null;
     };
@@ -183,6 +190,20 @@
   $effect(() => {
     const list = layers;
     if (ready && L && map && marks) drawLayers(L, map, marks, list, { max: untrack(() => max) });
+  });
+  // the markers (FMK-2): the layer is made once Leaflet is up and the world's view is set, then handed every change
+  $effect(() => {
+    const m = markers ? { ...markers, reveal: undefined } : null;
+    const reveal = markers?.reveal ?? null;
+    const w = max;
+    if (!ready || !L || !map) return;
+    untrack(() => {
+      if (!m) return markerLayer?.update({ markers: [], selected: null });
+      if (!markerLayer) {
+        markerLayer = createMarkerLayer(L!, map!, { max: w, ...m });
+        if (reveal !== null) showMarker(reveal, { animate: false });
+      } else markerLayer.update({ max: w, ...m });
+    });
   });
   // the page changed the tile source (a new epoch or versions from a reload): same as a `tiles` event
   let source = untrack(() => world.tiles);
@@ -219,6 +240,22 @@
     if (!map) return null;
     const p = map.latLngToContainerPoint(toLatLng(max, b.x, b.z));
     return { x: p.x, y: p.y };
+  }
+
+  /** Centres the map on a marker (an area: the zoom that fits its box; a point: the world's default zoom) and opens its popup. */
+  export function showMarker(id: number, o: { focus?: boolean; view?: boolean; animate?: boolean } = {}): boolean {
+    const v = markers?.markers.find((m) => m.id === id);
+    if (!v || !map || !L || !markerLayer) return false;
+    if (o.view !== false) {
+      const animate = o.animate !== false && !reduced();
+      if (v.point) map.setView(centreLatLng(max, v.point), clampZoom(world.zoom, world.zoom.default), { animate });
+      else {
+        const b = L.latLngBounds(toLatLng(max, v.bbox.minX, v.bbox.maxZ), toLatLng(max, v.bbox.maxX, v.bbox.minZ));
+        map.setView(b.getCenter(), map.getBoundsZoom(b, false, L.point(48, 48)), { animate });
+      }
+    }
+    markerLayer.open(id, { focus: o.focus });
+    return true;
   }
 
   function stopFollowing(): void {

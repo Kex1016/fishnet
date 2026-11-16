@@ -4,6 +4,9 @@
 // The opening world's markers (FMK-0) ride along with the rest so the Places popout renders without JS and the canvas draws at
 // once; `markers` is a MarkersLoad (markers/types.ts): `none` for a world that cannot have any, `down` when cakeutils is
 // unreachable and nothing good is kept. A hidden server never gets this far (404 above), so none of its markers load.
+// `?marker=<id>` (FMK-2, brief §5.5) opens the map on that marker: the load asks the markers of each listed world, the
+// link's own world first, until one holds the id (at most the server's worlds), and opens that world; an id nobody holds
+// is `markerMissing` (a Notice, the map opens normally). `uni` = Unifont metrics for the titles that need them.
 // A server that is not on /v2/map (no map, hidden, One Soul, unknown) is a 404 like any page that does not exist.
 import { error } from "@sveltejs/kit";
 import type { PageServerLoad } from "./$types";
@@ -18,6 +21,8 @@ import type { MapWorldView, PlayerDot } from "#lib/map/types.ts";
 import type { MarkersLoad } from "#lib/map/markers/types.ts";
 import type { Result } from "#lib/api/result.ts";
 import type { MapMarkers } from "#lib/api/types.ts";
+import { unifontFor } from "#lib/server/onesoul/unifont.ts";
+import type { Uni } from "#lib/onesoul/book/layout.ts";
 
 /** Why a server's map cannot be drawn: its backend is down, its squaremap is too old, or it lists no world. */
 export type MapProblem = "offline" | "format" | "no_worlds" | "missing";
@@ -51,6 +56,13 @@ export const load: PageServerLoad = async ({ params, url }) => {
     pollMs: 2000,
     /** the opening world's markers; `none` until a world is chosen */
     markers: noMarkers(null),
+    /** Unifont metrics for the markers' titles outside the bitmap sheets (the Minecraft-font labels) */
+    uni: {} as Uni,
+    /** the marker the link opens (found in the opening world), and whether the view should fit it (the link has no x/z) */
+    markerId: null as number | null,
+    markerFit: false,
+    /** the link names a marker that no world of this server holds any more */
+    markerMissing: false,
     problem: null as MapProblem | null,
     /** the player the link asks to follow, when they are on this map; the page starts following them */
     follow: null as string | null,
@@ -79,8 +91,39 @@ export const load: PageServerLoad = async ({ params, url }) => {
     if (!base.followNote) link = { ...link, follow: null };
   }
   base.link = link;
-  const ref = pickWorld(worlds, link.world);
+  let ref = pickWorld(worlds, link.world);
   if (!ref) return { ...base, problem: "no_worlds" as MapProblem };
+
+  // ?marker=<id>: the world that holds it (the link's world first), else the link forgets it
+  let markerId: number | null = null;
+  let markerMissing = false;
+  let markerFit = false;
+  if (link.marker !== undefined) {
+    const want = link.marker;
+    const order = [ref, ...worlds.filter((x) => x.id !== ref!.id)];
+    let found: (typeof worlds)[number] | null = null;
+    for (const cand of order) {
+      const r = await m.markers(entry.server, cand.id);
+      if (r.ok && r.data.markers.some((x) => x.id === want)) {
+        found = cand;
+        break;
+      }
+    }
+    if (found) {
+      markerId = want;
+      if (found.id !== ref.id) {
+        // another world: the link's coordinates belonged to the first one
+        link = { world: found.id, marker: want, ...(link.follow ? { follow: link.follow } : {}) };
+        ref = found;
+      }
+      markerFit = link.x === undefined;
+    } else {
+      markerMissing = true;
+      const { marker: _gone, ...rest } = link;
+      link = rest;
+    }
+    base.link = link;
+  }
 
   const [w, changes, markers] = await Promise.all([m.mapWorld(entry.server, ref.id), m.mapChanges(entry.server, ref.id), m.markers(entry.server, ref.id)]);
   if (!w.ok) return { ...base, problem: (w.kind === "off" ? "format" : w.kind === "not_found" ? "missing" : "offline") as MapProblem };
@@ -97,6 +140,10 @@ export const load: PageServerLoad = async ({ params, url }) => {
     players,
     positions,
     markers: markersLoad(ref.id, markers),
+    uni: markers.ok ? unifontFor(markers.data.markers.map((x) => x.title)) : ({} as Uni),
+    markerId,
+    markerFit,
+    markerMissing,
     pollMs: Math.max(2000, w.data.player_update_ms) // the live hub's interval (brief §4.3)
   };
 };

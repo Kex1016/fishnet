@@ -7,8 +7,11 @@
 // max-age=15`; the ETag is cakeutils' (`"m<rev>"`, derived from `rev`) and `If-None-Match` gets a 304 with no body.
 // While cakeutils is down the last good list is sent as it is with `x-as-of` (epoch ms) and `x-stale: 1`: never a
 // 304 (the page must learn that it is old), for 5 s only; with nothing kept: 503 and `retry-after`.
+// One field is the site's own (FMK-2): `uni`, Unifont metrics for the titles whose characters the bitmap fonts lack, so a
+// refetched list draws its Minecraft-font labels as wide as the game does (layout.ts `Uni`); cakeutils sends no such key.
 import { validServerId, validWorldId } from "#lib/map/links.ts";
 import type { MapClient } from "../cakeutils/map.ts";
+import { unifontFor } from "../onesoul/unifont.ts";
 
 /** `If-None-Match`: `*`, or a list of tags (weak ones compare equal) that holds ours. */
 export function etagMatches(header: string | null, etag: string): boolean {
@@ -39,5 +42,5 @@ export async function markersResponse(m: MapClient, server: string, world: strin
     headers["x-stale"] = "1";
     headers["x-as-of"] = String(r.asOf);
   }
-  return new Response(JSON.stringify(r.data), { headers });
+  return new Response(JSON.stringify({ ...r.data, uni: unifontFor(r.data.markers.map((m) => m.title)) }), { headers });
 }

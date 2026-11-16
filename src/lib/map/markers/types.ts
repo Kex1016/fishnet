@@ -11,6 +11,7 @@
 // Text is text: `title` and `subtitle` come from players and are raw (`<b>`, `&` and `§c` are literal characters).
 // Render them as Svelte text nodes, `textContent` or glyph drawing; never `{@html}`, never `innerHTML`, never parsed.
 import type { MapMarker, MapMarkerKind } from "#lib/api/types.ts";
+import type { Uni } from "#lib/onesoul/book/layout.ts";
 import type { Block } from "../types.ts";
 
 export type { MapMarkerKind };
@@ -99,6 +100,10 @@ export type MarkerLayerProps = {
   selected: number | null;
   /** a pin or area was opened or the popup closed (null); the page keeps `?marker=` in step */
   onselect?: (id: number | null) => void;
+  /** Unifont metrics for the titles outside the bitmap sheets (server `unifontFor`, FMK-2); missing = cell widths */
+  uni?: Uni;
+  /** the share link of a marker, for "Copy link" (`?marker=<id>`, links.ts `mapHref`) */
+  href?: (id: number) => string;
 };
 
 /**
@@ -118,6 +123,8 @@ export type PlacesPopoutProps = {
   worldName: string;
   /** an entry was chosen: centre the map on it and open its popup */
   onpick: (id: number) => void;
+  /** pages without JavaScript: the entries are the buttons of a GET form to `action` (the map page), so `?marker=<id>` opens one */
+  form?: { action: string; world: string };
 };
 
 /** Props of src/lib/map/markers/MarkerPopup.svelte (FMK-2): title, subtitle, coordinates or size, "Updated", "Copy link". */
@@ -127,4 +134,10 @@ export type MarkerPopupProps = {
   href: string;
   /** Escape or the close button: focus returns to the pin or area */
   onclose: () => void;
+};
+
+/** What MapCanvas takes beside the frozen props (FMK-2): the markers to draw and the one whose popup is open. */
+export type MapCanvasMarkers = Omit<MarkerLayerProps, "max"> & {
+  /** a marker to centre on (its box) when the layer is first made: the deep link `?marker=<id>` without x and z */
+  reveal?: number | null;
 };

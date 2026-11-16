@@ -115,7 +115,7 @@ extension, branch `claude/map-markers`); everything else after cakeutils GMK2. N
 | FMK-0 contracts | **merged** df814ab | Sonnet 5.5 / high | cmsg_017jXErfLmkLcYLSb5FKAVcMNKkmuhzux3SoSxqmPjJLmW | | #50 | early |
 | FMK-1 Minecraft label | **merged** b02fb0c | Opus 5.5 / medium | cmsg_017jXErfLmkLcYLSb5FKAVcMK3CxUDUYdWKUzCFFncR3M3 | | #51 | early, ∥ FMK-0 |
 | FMK-2 marker layer | **running** | Sonnet 5.5 / high | cmsg_017jXErfLmkLcYLSb5FKAVcMGL6MJWdCKxS1aoqqgc2vrV | | | FMK-0, FMK-1 |
-| FMK-3 live refresh | **running** | Sonnet 5.5 / medium | cmsg_017jXErfLmkLcYLSb5FKAVcM5SqQLQwqEWjTzyUULc1sqB | | | FMK-0, ∥ FMK-2 |
+| FMK-3 live refresh | **merged** 30ec06f | Sonnet 5.5 / medium | cmsg_017jXErfLmkLcYLSb5FKAVcM5SqQLQwqEWjTzyUULc1sqB | | #52 | FMK-0, ∥ FMK-2 |
 | FMK-6 docs | waiting for GMK2 | Haiku 5.5 / low | | | | FMK-2 |
 | FMK-7 integration, QA, security | waiting for GMK2 | Opus 5.5 / medium | | | | all |
 
@@ -140,6 +140,10 @@ done, PR to `main` open for David). **GFMK0 passed** 2026-11-16; cakeutils GMK2 
 - 2026-11-16: `LiveHandlers.onMarkers({world, rev})` added to `liveClient.ts` by the coordinator (type only) so FMK-2
   (page wiring) and FMK-3 (hub + client emission) run in parallel without touching each other's files. FMK-2 also
   copies cakeutils' real marker fixtures into `tests/fixtures/markers/` and syncs the mock to them.
+- 2026-11-16 (FMK-3): hub revalidates 30 s after the last answer (background priority waits for a fresh answer, so no
+  SWR lag); the hub's first `rev` after a world becomes watched is its baseline, so the page refetches once when the
+  stream opens (FMK-2) and passes `markersRev` in `connectLive` deps for the poll fallback. Mock-only
+  `POST /__mock/markers/bump` in `scripts/mock-server.ts` (not in the site build).
 
 ## Markers log
 
@@ -154,3 +158,5 @@ done, PR to `main` open for David). **GFMK0 passed** 2026-11-16; cakeutils GMK2 
   check DPR 1/2, screenshots) and merged. GFMK0 passed. Screenshots posted to "Map screenshots 4". FMK-2/3 wait for GMK2.
 - 2026-11-16 02:15Z: cakeutils GMK2 passed (PR #122 to cakeutils main); brief §2 now cites the real fixtures (project
   copy refreshed; no 503 on the route). FMK-2 and FMK-3 briefs written and requested.
+- 2026-11-16 02:35Z: FMK-3 (#52) reviewed (diff, LRU/priority semantics, hidden and 404 stop polling; check, 485 tests,
+  build + leak check, e2e 54/0) and merged.

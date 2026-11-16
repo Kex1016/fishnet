@@ -66,7 +66,7 @@
 <section class="mk-preview" aria-labelledby="mk-preview-h">
   <h2 id="mk-preview-h" class="t-heading">Area titles</h2>
   <p class="t-small mk-note">
-    Minecraft font, tinted from the area colour for {LABEL_CONTRAST} : 1 against the area as drawn (the colour at {AREA_FILL_OPACITY * 100} % over grey),
+    Minecraft font, tinted from the area colour: lighter than the area until {LABEL_CONTRAST} : 1 against it as drawn (the colour at {AREA_FILL_OPACITY * 100} % over grey), darker only where no lighter tint gets there;
     solid black shadow one font pixel right and down. Made-up titles, preview only.
   </p>
   <h3 class="t-kicker">Scales k 1 to 4</h3>

@@ -8,28 +8,28 @@ import { textWidth } from "#lib/onesoul/book/layout.ts";
 
 // [name, area colour, title colour]; the 16 dyes are Minecraft's dye diffuse colours (cakeutils MAPD-49)
 const TABLE: [string, string, string][] = [
-  ["pure_red", "#ff0000", "#5c0000"],
-  ["navy", "#000080", "#9bbcff"],
+  ["pure_red", "#ff0000", "#ffbeb3"],
+  ["navy", "#000080", "#9cbdff"],
   ["pure_yellow", "#ffff00", "#4f4f00"],
   ["pure_white", "#ffffff", "#4e4e4e"],
-  ["pure_black", "#000000", "#0b0b0b"],
+  ["pure_black", "#000000", "#bababa"],
   ["mid_grey", "#808080", "#e1e1e1"],
-  ["white", "#f9fffe", "#494e4d"],
-  ["orange", "#f9801d", "#612c00"],
-  ["magenta", "#c74ebd", "#63005e"],
-  ["light_blue", "#3ab3da", "#004356"],
-  ["yellow", "#fed83d", "#564600"],
-  ["lime", "#80c71f", "#2a4800"],
-  ["pink", "#f38baa", "#74163c"],
-  ["gray", "#474f52", "#c8d2d5"],
-  ["light_gray", "#9d9d97", "#3c3c37"],
-  ["cyan", "#169c9c", "#003f3f"],
-  ["purple", "#8932b8", "#e7c5ff"],
-  ["blue", "#3c44aa", "#c2ceff"],
-  ["brown", "#835432", "#ffcca9"],
+  ["white", "#f9fffe", "#4a4f4e"],
+  ["orange", "#f9801d", "#ffe3d3"],
+  ["magenta", "#c74ebd", "#ffcff8"],
+  ["light_blue", "#3ab3da", "#cef1ff"],
+  ["yellow", "#fed83d", "#554600"],
+  ["lime", "#80c71f", "#cdffa1"],
+  ["pink", "#f38baa", "#ffe6ec"],
+  ["gray", "#474f52", "#cad3d7"],
+  ["light_gray", "#9d9d97", "#eaeae3"],
+  ["cyan", "#169c9c", "#83f4f3"],
+  ["purple", "#8932b8", "#e7c7ff"],
+  ["blue", "#3c44aa", "#c3cfff"],
+  ["brown", "#835432", "#ffcba7"],
   ["green", "#5e7c16", "#c5e888"],
-  ["red", "#b02e26", "#ffc3ba"],
-  ["black", "#1d1d21", "#1d1d21"],
+  ["red", "#b02e26", "#ffc2b9"],
+  ["black", "#1d1d21", "#c2c2c7"],
 ];
 
 describe("labelTint (§5.3)", () => {
@@ -56,9 +56,16 @@ describe("labelTint (§5.3)", () => {
       expect(d).toBeLessThan(0.12);
     }
   });
-  test("dark colours lighten first, light ones darken first", () => {
-    expect(toOklch(parseHex(labelTint("#000080").color)!).l).toBeGreaterThan(toOklch([0, 0, 128]).l);
-    expect(toOklch(parseHex(labelTint("#fed83d").color)!).l).toBeLessThan(toOklch(parseHex("#fed83d")!).l);
+  test("lighter first for every colour, lighter than the area as drawn; darker only when that cannot reach the target", () => {
+    for (const area of ["#000080", "#fed83d", "#f38baa", "#1d1d21", "#80c71f", "#3ab3da"]) {
+      const t = labelTint(area);
+      const lighter = toOklch(parseHex(t.color)!).l > toOklch(parseHex(t.ground)!).l;
+      // darker only for yellow, whose ground no lighter title can reach 3 : 1 on
+      expect(lighter).toBe(area !== "#fed83d");
+    }
+    const y = parseHex("#fed83d")!;
+    const top = fromOklch({ ...toOklch(y), l: L_MAX }).map(Math.round) as [number, number, number];
+    expect(contrast(top, areaGround(y))).toBeLessThan(LABEL_CONTRAST);
   });
   test("the area as drawn is the colour at 22 % over grey", () => {
     expect(areaGround([255, 0, 0])).toEqual([156, 100, 100]);

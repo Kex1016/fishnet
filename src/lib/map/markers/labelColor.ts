@@ -1,5 +1,5 @@
-// The colour of an area's title (brief §5.3): the area colour's hue and chroma in OKLCH, its lightness moved
-// until the text reaches LABEL_CONTRAST against the area as the map draws it (the colour at AREA_FILL_OPACITY
+// The colour of an area's title (brief §5.3): the area colour's hue and chroma in OKLCH, its lightness raised (or,
+// when no lighter value can, lowered) until the text reaches LABEL_CONTRAST against the area as the map draws it (the colour at AREA_FILL_OPACITY
 // over a neutral grey that stands in for terrain). Pure: runs on the server, in the browser and in bun:test.
 
 /** Fill opacity of an area on the map (brief §5.2); FMK-2 draws the polygon with it. */
@@ -15,8 +15,6 @@ export const LABEL_CONTRAST = 3;
 /** The lightness range the search moves in. */
 export const L_MAX = 0.97;
 export const L_MIN = 0.15;
-/** At or below this lightness the search lightens first, above it darkens first. */
-export const L_SPLIT = 0.6;
 
 export type Rgb = [r: number, g: number, b: number]; // 0..255
 export type LabelTint = { color: string; contrast: number; l: number; ground: string };
@@ -106,16 +104,21 @@ export function labelTint(hex: string, target: number = LABEL_CONTRAST): LabelTi
     const c = fromOklch({ ...o, l }).map(Math.round) as Rgb;
     return { c, k: contrast(c, ground), l };
   };
+  // "lighter" means lighter than the area as drawn, not only than the colour itself: a near-black area already
+  // passes at its own lightness, and that title would vanish into its shadow
+  const gl = toOklch(ground).l;
   const walk = (dir: 1 | -1) => {
     const end = dir > 0 ? L_MAX : L_MIN;
-    for (let l = Math.min(L_MAX, Math.max(L_MIN, o.l)); dir > 0 ? l <= end + 1e-9 : l >= end - 1e-9; l += dir * STEP) {
+    const from = dir > 0 ? Math.max(o.l, gl) : Math.min(o.l, gl);
+    for (let l = Math.min(L_MAX, Math.max(L_MIN, from)); dir > 0 ? l <= end + 1e-9 : l >= end - 1e-9; l += dir * STEP) {
       const r = at(l);
       if (r.k >= target) return r;
     }
     return null;
   };
-  const first: 1 | -1 = o.l <= L_SPLIT ? 1 : -1;
-  let hit = walk(first) ?? walk(first > 0 ? -1 : 1);
+  // lighter first for every colour (markers coordinator, 16 Nov 2026: light text over a black shadow is the
+  // Minecraft look; dark titles merge into their shadow); darker only when lightening cannot reach the target
+  let hit = walk(1) ?? walk(-1);
   if (!hit) {
     const up = at(L_MAX);
     const down = at(L_MIN);

@@ -1,0 +1,32 @@
+{
+  "server": "map",
+  "world": "minecraft_the_end",
+  "rev": 1,
+  "markers": [
+    {
+      "id": 1,
+      "kind": "point",
+      "title": "\u00a7cSection <red>sign",
+      "subtitle": "&aLegacy and <b>tags</b>",
+      "color": "#336699",
+      "color_auto": false,
+      "point": {
+        "x": 5,
+        "y": 64,
+        "z": 5
+      },
+      "bounds": null,
+      "polygon": null,
+      "label": null,
+      "bbox": {
+        "min_x": 5,
+        "min_z": 5,
+        "max_x": 6,
+        "max_z": 6
+      },
+      "created_at": 1700000000000,
+      "updated_at": 1700000000000,
+      "revision": 1
+    }
+  ]
+}

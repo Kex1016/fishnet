@@ -1,0 +1,283 @@
+{
+  "server": "map",
+  "world": "minecraft_overworld",
+  "rev": 5,
+  "markers": [
+    {
+      "id": 2,
+      "kind": "point",
+      "title": "Spawn",
+      "subtitle": "Meeting point",
+      "color": "#b02e26",
+      "color_auto": false,
+      "point": {
+        "x": 10,
+        "y": 100,
+        "z": 20
+      },
+      "bounds": null,
+      "polygon": null,
+      "label": null,
+      "bbox": {
+        "min_x": 10,
+        "min_z": 20,
+        "max_x": 11,
+        "max_z": 21
+      },
+      "created_at": 1794790125984,
+      "updated_at": 1794790125984,
+      "revision": 1
+    },
+    {
+      "id": 3,
+      "kind": "point",
+      "title": "Beacon",
+      "subtitle": null,
+      "color": "#9591f2",
+      "color_auto": true,
+      "point": {
+        "x": 40,
+        "y": 100,
+        "z": 20
+      },
+      "bounds": null,
+      "polygon": null,
+      "label": null,
+      "bbox": {
+        "min_x": 40,
+        "min_z": 20,
+        "max_x": 41,
+        "max_z": 21
+      },
+      "created_at": 1794790129968,
+      "updated_at": 1794790129968,
+      "revision": 1
+    },
+    {
+      "id": 4,
+      "kind": "area",
+      "title": "Farm",
+      "subtitle": "Wheat",
+      "color": "#3a7d44",
+      "color_auto": false,
+      "point": null,
+      "bounds": {
+        "min_x": 100,
+        "min_z": 100,
+        "max_x": 109,
+        "max_z": 109
+      },
+      "polygon": [
+        [
+          100,
+          100
+        ],
+        [
+          100,
+          110
+        ],
+        [
+          110,
+          110
+        ],
+        [
+          110,
+          100
+        ]
+      ],
+      "label": {
+        "x": 105.0,
+        "z": 105.0,
+        "r": 5.0
+      },
+      "bbox": {
+        "min_x": 100,
+        "min_z": 100,
+        "max_x": 110,
+        "max_z": 110
+      },
+      "created_at": 1794790137969,
+      "updated_at": 1794790137969,
+      "revision": 1
+    },
+    {
+      "id": 5,
+      "kind": "poly",
+      "title": "Zig",
+      "subtitle": null,
+      "color": "#3c44aa",
+      "color_auto": false,
+      "point": null,
+      "bounds": null,
+      "polygon": [
+        [
+          200,
+          200
+        ],
+        [
+          200,
+          201
+        ],
+        [
+          199,
+          201
+        ],
+        [
+          199,
+          203
+        ],
+        [
+          198,
+          203
+        ],
+        [
+          198,
+          205
+        ],
+        [
+          199,
+          205
+        ],
+        [
+          199,
+          206
+        ],
+        [
+          200,
+          206
+        ],
+        [
+          200,
+          207
+        ],
+        [
+          201,
+          207
+        ],
+        [
+          201,
+          208
+        ],
+        [
+          202,
+          208
+        ],
+        [
+          202,
+          209
+        ],
+        [
+          203,
+          209
+        ],
+        [
+          203,
+          210
+        ],
+        [
+          204,
+          210
+        ],
+        [
+          204,
+          211
+        ],
+        [
+          206,
+          211
+        ],
+        [
+          206,
+          210
+        ],
+        [
+          208,
+          210
+        ],
+        [
+          208,
+          209
+        ],
+        [
+          210,
+          209
+        ],
+        [
+          210,
+          208
+        ],
+        [
+          212,
+          208
+        ],
+        [
+          212,
+          207
+        ],
+        [
+          213,
+          207
+        ],
+        [
+          213,
+          204
+        ],
+        [
+          212,
+          204
+        ],
+        [
+          212,
+          201
+        ],
+        [
+          211,
+          201
+        ],
+        [
+          211,
+          200
+        ]
+      ],
+      "label": {
+        "x": 205.5,
+        "z": 204.5,
+        "r": 4.5
+      },
+      "bbox": {
+        "min_x": 198,
+        "min_z": 200,
+        "max_x": 213,
+        "max_z": 211
+      },
+      "created_at": 1794790161968,
+      "updated_at": 1794790161968,
+      "revision": 1
+    },
+    {
+      "id": 6,
+      "kind": "point",
+      "title": "<red>Hue&c",
+      "subtitle": "<b>Bold</b> &a green",
+      "color": "#b984df",
+      "color_auto": true,
+      "point": {
+        "x": 60,
+        "y": 100,
+        "z": 60
+      },
+      "bounds": null,
+      "polygon": null,
+      "label": null,
+      "bbox": {
+        "min_x": 60,
+        "min_z": 60,
+        "max_x": 61,
+        "max_z": 61
+      },
+      "created_at": 1794790173975,
+      "updated_at": 1794790173975,
+      "revision": 1
+    }
+  ]
+}

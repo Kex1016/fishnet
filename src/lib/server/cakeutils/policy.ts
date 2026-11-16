@@ -13,6 +13,7 @@
 // | catalogue | /v2/stats/types, /v2/stats/subjects...   | 30 min | 6 h                          |
 // | icon      | /v2/icons/<sha>.png (content-addressed)  | always | -                            |
 // | map-world | /v2/map/<server>/worlds/<world>          | 5 min  | 1 h                          |
+// | map-markers| /v2/map/<server>/worlds/<world>/markers | 30 s   | 10 min                       |
 // | map-direct| map tiles, positions, change logs        | never cached here (tile disk cache, live hub) |
 //
 // The map index (/v2/map) is `live`; a finished round's map settings
@@ -24,7 +25,7 @@
 // for a fresh answer. When cakeutils is down or throttling, the last good answer is served up to
 // 24 h with "as of" (core.ts), whatever the tier.
 
-export type RouteClass = "health" | "live" | "player" | "board" | "feed" | "catalogue" | "icon" | "map-world" | "map-direct";
+export type RouteClass = "health" | "live" | "player" | "board" | "feed" | "catalogue" | "icon" | "map-world" | "map-markers" | "map-direct";
 
 export type Policy = {
   cls: RouteClass;
@@ -51,11 +52,16 @@ const POLICIES: Record<RouteClass, Policy> = {
   catalogue: { cls: "catalogue", floorMs: 30 * MIN, swrMs: 6 * HOUR, negativeMs: 5 * MIN, staleOk: true },
   icon: { cls: "icon", floorMs: Number.POSITIVE_INFINITY, swrMs: 0, negativeMs: 10 * MIN, staleOk: true },
   "map-world": { cls: "map-world", floorMs: 5 * MIN, swrMs: 1 * HOUR, negativeMs: 1 * MIN, staleOk: true },
+  // MARKERS §3.4: cakeutils sends max-age=30; the answer is small JSON with an ETag ("m<rev>"), so the LRU keeps it and
+  // revalidates with If-None-Match (a 304 costs one map-bucket request and no body). A 404 (no map, hidden world,
+  // private mini) is remembered for the same 30 s.
+  "map-markers": { cls: "map-markers", floorMs: 30 * SEC, swrMs: 10 * MIN, negativeMs: 30 * SEC, staleOk: true },
   // never in the LRU: core.direct() answers them (FM-1's disk cache and FM-2's hub keep what they need)
   "map-direct": { cls: "map-direct", floorMs: 0, swrMs: 0, negativeMs: 0, staleOk: false }
 };
 
 const MAP_DIRECT = /^\/v2\/(map\/[^/]+\/(tiles\/|players$|worlds\/[^/]+\/changes$)|onesoul\/rounds\/[^/]+\/map\/tiles\/)/;
+const MAP_MARKERS = /^\/v2\/map\/[^/]+\/worlds\/[^/]+\/markers$/;
 const MAP_WORLD = /^\/v2\/map\/[^/]+\/worlds\/[^/]+$/;
 const ROUND_MAP_WORLD = /^\/v2\/onesoul\/rounds\/[^/]+\/map\/worlds\/[^/]+$/;
 
@@ -71,6 +77,7 @@ export function policyFor(path: string): Policy {
   if (p === "/v2/health") return POLICIES.health;
   if (p.startsWith("/v2/icons/")) return POLICIES.icon;
   if (MAP_DIRECT.test(p)) return POLICIES["map-direct"];
+  if (MAP_MARKERS.test(p)) return POLICIES["map-markers"];
   if (MAP_WORLD.test(p)) return POLICIES["map-world"];
   if (ROUND_MAP_WORLD.test(p)) return POLICIES.catalogue;
   if (p === "/v2/map") return POLICIES.live;

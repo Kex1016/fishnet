@@ -9,6 +9,8 @@ import { parseMapLink } from "#lib/map/links.ts";
 import { liveWorldView } from "#lib/map/view.ts";
 import { sortWorlds } from "#lib/map/worlds.ts";
 import type { MapWorldView, PlayerDot } from "#lib/map/types.ts";
+import { unifontFor } from "#lib/server/onesoul/unifont.ts";
+import { LABEL_SAMPLES } from "./label-samples.ts";
 
 export const load: PageServerLoad = async ({ locals, url }) => {
   if (!dev && !locals.mock) error(404, "Not found");
@@ -32,5 +34,5 @@ export const load: PageServerLoad = async ({ locals, url }) => {
       players = live.data.players.map((p) => ({ uuid: p.uuid, name: p.name, world: p.world, x: Math.floor(p.x), z: Math.floor(p.z), yaw: p.yaw }));
     } else positions = live.kind === "off" ? "off" : "down";
   }
-  return { title: "Map preview", crumbs: [{ label: "Design", href: "/design" }, { label: "Map" }], servers, pick: pick?.server ?? null, view, players, positions, pollMs, link: parseMapLink(url) };
+  return { title: "Map preview", crumbs: [{ label: "Design", href: "/design" }, { label: "Map" }], servers, pick: pick?.server ?? null, view, players, positions, pollMs, link: parseMapLink(url), labelUni: unifontFor(Object.values(LABEL_SAMPLES)) };
 };

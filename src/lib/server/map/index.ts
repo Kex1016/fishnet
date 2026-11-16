@@ -63,6 +63,7 @@ export function liveHub(): LiveHub {
   return (hub = createLiveHub({
     players: (server) => m.mapPlayers(server, { priority: "background" }),
     changes: (server, world) => m.mapChanges(server, world, { priority: "background" }),
+    markers: (server, world) => m.markers(server, world, { priority: "background" }),
     playerUpdateMs,
     worlds: async (server) => {
       const r = await m.mapServers();

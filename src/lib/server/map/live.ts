@@ -53,6 +53,12 @@ export type LiveDeps = {
   worlds?(server: string): Promise<ReadonlySet<string> | null>;
   /** squaremap's player update interval for this server (the largest of its worlds), null when unknown */
   playerUpdateMs(server: string): Promise<number | null>;
+  /**
+   * GET /v2/map/{server}/worlds/{world}/markers at background priority (FMK-3): only `rev` is read. Through the map
+   * client's LRU, so a revalidation is an `If-None-Match` request (a 304 costs one token and no body). Optional: a hub
+   * without it sends no `markers` events. `not_found` = no markers access for this world.
+   */
+  markers?(server: string, world: string): Promise<Result<{ rev: number }>>;
   /** may the live map show this server (not hidden, not One Soul)? asked at every subscribe and every poll */
   visible(server: string): boolean;
   /** an opted-out player (hidden.ts): never in any frame */
@@ -78,6 +84,8 @@ export type LiveLimits = {
   /** ceiling of the players poll, whatever squaremap says */
   maxPollMs: number;
   changesMs: number;
+  /** a watched world's markers are revalidated this long after the last answer (the markers tier's TTL is 30 s) */
+  markersMs: number;
   /** a world without a change log (or gone) is asked again after this long */
   noLogRetryMs: number;
   /** positions off (`404 off`) or server not on the map: ask again after this long */
@@ -105,6 +113,7 @@ export const DEFAULT_LIMITS: LiveLimits = {
   minPollMs: 2_000,
   maxPollMs: 60_000,
   changesMs: 5_000,
+  markersMs: 30_000,
   noLogRetryMs: 5 * 60_000,
   offRetryMs: 60_000,
   staleMs: 30_000,
@@ -230,6 +239,12 @@ type WorldPoll = {
   timer: unknown;
   inFlight: boolean;
   alive: boolean;
+  /** markers revalidation (FMK-3): the last `rev` seen (null = none yet, so the next one fires nothing), its timer */
+  mrev: number | null;
+  mtimer: unknown;
+  minFlight: boolean;
+  /** polling markers now: while watched, until a 404 or the last watcher leaves */
+  mon: boolean;
 };
 
 type ServerHub = {
@@ -426,6 +441,7 @@ export function createLiveHub(deps: LiveDeps): LiveHub {
   function stopWorld(h: ServerHub, w: WorldPoll): void {
     w.alive = false;
     clock.clearTimeout(w.timer);
+    stopMarkers(w);
     h.worlds.delete(w.id);
   }
 
@@ -457,23 +473,76 @@ export function createLiveHub(deps: LiveDeps): LiveHub {
     for (const s of [...h.streams]) if (s.world === w.id) deliver(w, s, frames, backwards);
   }
 
+  // ---- markers (FMK-3): one revalidation per watched world per markersMs; `markers` events to that world's streams
+
+  function stopMarkers(w: WorldPoll): void {
+    w.mon = false;
+    w.mrev = null;
+    clock.clearTimeout(w.mtimer);
+    w.mtimer = null;
+  }
+
+  function startMarkers(h: ServerHub, w: WorldPoll): void {
+    if (!deps.markers || w.mon) return;
+    w.mon = true;
+    w.mrev = null;
+    void pollMarkers(h, w);
+  }
+
+  async function pollMarkers(h: ServerHub, w: WorldPoll): Promise<void> {
+    if (!deps.markers || !h.alive || !w.alive || !w.mon || w.minFlight) return;
+    if (w.watchers === 0 || !deps.visible(h.server)) return stopMarkers(w);
+    w.minFlight = true;
+    let next = L.markersMs;
+    try {
+      const r = await deps.markers(h.server, w.id).catch(() => ({ ok: false, kind: "down" }) as Result<{ rev: number }>);
+      if (!h.alive || !w.alive || !w.mon || w.watchers === 0) return;
+      if (r.ok) {
+        // an answer served stale (cakeutils down) says nothing new
+        if (!r.stale && Number.isInteger(r.data?.rev)) {
+          const prev = w.mrev;
+          w.mrev = r.data.rev;
+          if (prev !== null && prev !== r.data.rev) {
+            const frame = sse("markers", { world: w.id, rev: r.data.rev });
+            for (const s of [...h.streams]) if (s.world === w.id) send(s, frame);
+          }
+        }
+      } else if (r.kind === "not_found" || r.kind === "off" || r.kind === "bad_request") {
+        // this world has no markers access: quiet until somebody starts watching it again
+        return stopMarkers(w);
+      } else if (r.retryAfter) next = Math.max(L.markersMs, r.retryAfter * 1000);
+    } finally {
+      w.minFlight = false;
+      // measured from the answer, not the request: the cached answer is fresh for 30 s after it, so an earlier tick would only hit the LRU
+      if (h.alive && w.alive && w.mon) {
+        clock.clearTimeout(w.mtimer);
+        w.mtimer = clock.setTimeout(() => void pollMarkers(h, w), next);
+      }
+    }
+  }
+
   function watch(h: ServerHub, world: string): void {
     let w = h.worlds.get(world);
     if (!w) {
-      w = { id: world, watchers: 0, idleUntil: 0, log: null, timer: null, inFlight: false, alive: true };
+      w = { id: world, watchers: 0, idleUntil: 0, log: null, timer: null, inFlight: false, alive: true, mrev: null, mtimer: null, minFlight: false, mon: false };
       h.worlds.set(world, w);
       w.watchers++;
       void pollWorld(h, w);
+      startMarkers(h, w);
       return;
     }
     w.watchers++;
+    startMarkers(h, w);
   }
 
   function unwatch(h: ServerHub, world: string): void {
     const w = h.worlds.get(world);
     if (!w) return;
     w.watchers = Math.max(0, w.watchers - 1);
-    if (w.watchers === 0) w.idleUntil = clock.now() + L.idleMs;
+    if (w.watchers === 0) {
+      w.idleUntil = clock.now() + L.idleMs;
+      stopMarkers(w);
+    }
   }
 
   // ---- hub lifecycle

@@ -60,7 +60,7 @@ export type Opened = {
   close(): Promise<void>;
 };
 
-export type OpenOptions = { width?: number; height?: number; theme?: Theme; js?: boolean; reducedMotion?: boolean; /** a phone: touch, a coarse pointer */ touch?: boolean; wait?: "networkidle" | "load" | "domcontentloaded"; before?: (page: any) => Promise<void> };
+export type OpenOptions = { width?: number; height?: number; theme?: Theme; js?: boolean; reducedMotion?: boolean; /** a phone: touch, a coarse pointer */ touch?: boolean; /** device pixel ratio (1 unless asked) */ dpr?: number; wait?: "networkidle" | "load" | "domcontentloaded"; before?: (page: any) => Promise<void> };
 
 /** A second site started for one check (other limits, another upstream); `stop` ends it and removes its data. */
 export type Booted = { base: string; dir: string; /** what the site has printed so far */ logs(): string; stop(): Promise<void> };
@@ -101,7 +101,8 @@ export class Ctx {
       javaScriptEnabled: o.js ?? true,
       reducedMotion: o.reducedMotion ? "reduce" : "no-preference",
       hasTouch: !!o.touch,
-      isMobile: !!o.touch
+      isMobile: !!o.touch,
+      deviceScaleFactor: o.dpr ?? 1
     });
     if (o.theme) await ctx.addCookies([{ name: "theme", value: o.theme, url: base }]);
     const page = await ctx.newPage();

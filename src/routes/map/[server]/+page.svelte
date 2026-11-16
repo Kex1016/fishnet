@@ -8,6 +8,10 @@
   // ?follow= (FM-8, "Show on map" on a profile) opens the player's world centred on them and follows them; when they
   // are not here a Notice says why and links to the server they are on. A followed player who changes world keeps the
   // follow: the page switches world with them.
+  // Markers (FMK-2): the world's pins and areas are drawn by the canvas (markers/layer.ts), listed in the Places popout
+  // (the keyboard twin) and toggled in the Layers popout. `?marker=<id>` opens the map on one with its popup, in
+  // whichever world holds it (the load finds it); the link follows the open popup. A `markers` live event (FMK-3)
+  // refetches this world's list from markers.json and redraws it without moving the view.
   import { onMount, untrack } from "svelte";
   import { goto, replaceState } from "$app/navigation";
   import { page } from "$app/state";
@@ -17,9 +21,14 @@
   import MapCanvas from "#lib/map/MapCanvas.svelte";
   import WorldPicker from "#lib/map/WorldPicker.svelte";
   import MapPopout from "#lib/map/MapPopout.svelte";
+  import LayersPopout from "#lib/map/layers/LayersPopout.svelte";
+  import PlacesPopout from "#lib/map/markers/PlacesPopout.svelte";
+  import { drawOrder, markerViews } from "#lib/map/markers/view.ts";
+  import type { MarkersLoad } from "#lib/map/markers/types.ts";
+  import type { MapLayer } from "#lib/map/types.ts";
   import { readout } from "#lib/map/crs.ts";
   import { connectLive } from "#lib/map/liveClient.ts";
-  import { mapHref } from "#lib/map/links.ts";
+  import { mapHref, markersJsonHref } from "#lib/map/links.ts";
   import { followText } from "#lib/map/showOnMap.ts";
   import { groupPlayers } from "#lib/map/pages.ts";
   import type { LiveState, MapView, PlayerDot, TilesEvent } from "#lib/map/types.ts";
@@ -35,8 +44,17 @@
   let canvas = $state<ReturnType<typeof MapCanvas> | null>(null);
   let mounted = $state(false);
   let copied = $state(false);
+  let mk = $state<MarkersLoad>(untrack(() => data.markers));
+  let uni = $state(untrack(() => data.uni));
+  let selected = $state<number | null>(untrack(() => data.markerId));
+  let markersOn = $state(true);
+  let placesOpen = $state(false);
 
   const v = $derived(data.view);
+  const views = $derived(markerViews(mk.markers));
+  const places = $derived(drawOrder(views));
+  const layerList = $derived<MapLayer[]>(mk.state === "ok" && views.length > 0 ? [{ id: "markers", label: "Markers", shape: "circle", on: markersOn, data: { marks: [], paths: [] }, count: views.length }] : []);
+  const markerLink = (id: number) => (v ? mapHref(v.server, { world: v.id, marker: id }) : "");
   const groups = $derived(v ? groupPlayers(players, v.id) : { here: [], elsewhere: [] });
   const worldName = $derived(new Map<string, string>(data.worlds.map((w: { id: string; name: string }) => [w.id, w.name])));
 
@@ -44,6 +62,9 @@
   let shownServer = untrack(() => data.server);
   $effect(() => {
     players = data.players;
+    mk = data.markers;
+    uni = data.uni;
+    selected = data.markerId;
     at = null;
     liveState = "live";
     liveAt = null;
@@ -78,16 +99,58 @@
       onTiles: (ev: TilesEvent) => {
         if (ev.world === cur.id) canvas?.applyTiles(ev);
       },
+      onMarkers: (ev) => {
+        if (ev.world === cur.id) void refetchMarkers(cur.server, cur.id);
+      },
       onStatus: (s, t) => {
         liveState = s;
         liveAt = t;
+      },
+      // the hub's first `rev` for a world is only its baseline: a change between this page's load and the stream's open is
+      // caught by asking once as the stream opens (FMK-3's note); later changes arrive as `markers` events
+      onMode: (mode) => {
+        if (mode === "stream") void refetchMarkers(cur.server, cur.id);
       }
-    });
+    }, { markersRev: untrack(() => (mk.state === "ok" ? mk.rev : null)) });
     return () => conn.close();
   });
 
+  // the world's markers again after a `markers` event: the last good list stays when the answer is not a good one
+  let refetching: Promise<void> | null = null;
+  function refetchMarkers(server: string, world: string): Promise<void> {
+    return (refetching ??= (async () => {
+      try {
+        // `no-cache`: the browser revalidates (If-None-Match) instead of serving its 15 s copy of an older list
+        const res = await fetch(markersJsonHref(server, world), { headers: { accept: "application/json" }, cache: "no-cache" });
+        if (!res.ok || data.view?.id !== world) return;
+        const body = await res.json();
+        if (!body || !Array.isArray(body.markers) || typeof body.rev !== "number") return;
+        if (mk.state === "ok" && mk.world === world && mk.rev === body.rev && !mk.stale && res.headers.get("x-stale") !== "1") return; // nothing new: nothing redrawn
+        // a stale list keeps the time it was last good (x-as-of), so Places says how old it really is
+        const stale = res.headers.get("x-stale") === "1";
+        const kept = Number(res.headers.get("x-as-of"));
+        mk = { world, state: "ok", rev: body.rev, markers: body.markers, asOf: stale && kept > 0 ? kept : Date.now(), stale };
+        if (body.uni && typeof body.uni === "object") uni = body.uni;
+        if (selected !== null && !mk.markers.some((m: { id: number }) => m.id === selected)) selected = null;
+      } catch {
+        /* offline or cakeutils down: what is drawn stays, the next event tries again */
+      } finally {
+        refetching = null;
+      }
+    })());
+  }
+  function pickPlace(id: number) {
+    selected = id;
+    canvas?.showMarker(id, { focus: true });
+  }
+  function toggleLayer(id: string) {
+    if (id !== "markers") return;
+    markersOn = !markersOn;
+    if (!markersOn) selected = null;
+  }
+
   // the share link: the view as the address bar
-  const here = $derived(v && at ? mapHref(v.server, { world: v.id, x: at.x, z: at.z, zoom: at.zoom, follow }) : v ? mapHref(v.server, { world: v.id }) : "");
+  const here = $derived(v && at ? mapHref(v.server, { world: v.id, x: at.x, z: at.z, zoom: at.zoom, follow, marker: selected ?? undefined }) : v ? mapHref(v.server, { world: v.id }) : "");
   const absolute = $derived(here ? page.url.origin + here : "");
   $effect(() => {
     const to = at ? here : null;
@@ -166,6 +229,7 @@
         label="Map of {data.name}, {v.name}"
         onview={(m) => (at = m)}
         onfollow={(u) => (follow = u)}
+        markers={{ markers: views, on: markersOn && mk.state === "ok", selected, uni, href: markerLink, onselect: (id) => (selected = id), reveal: data.markerFit ? data.markerId : null }}
       />
     {/key}
     <div class="mc-over">
@@ -223,7 +287,10 @@
             {/if}
           {/if}
         </MapPopout>
-        <!-- layers of the live map (none yet; FM-5's LayersPopout serves finished rounds) join this row -->
+        <PlacesPopout markers={places} state={mk.state} {selected} asOf={mk.asOf} stale={mk.stale} worldName={v.name} onpick={pickPlace} form={{ action: mapHref(v.server), world: v.id }} bind:open={placesOpen} />
+        {#if layerList.length}
+          <LayersPopout layers={layerList} ontoggle={toggleLayer} hint="Pins and named areas that players placed in game." />
+        {/if}
         <MapPopout label="Share" icon={Link2}>
           <span class="mc-pop__line">This link opens the map as you see it now.</span>
           <input class="fp-field mp-url t-mono" type="text" readonly value={absolute} aria-label="Link to this view" onfocus={(e) => e.currentTarget.select()} />
@@ -233,6 +300,11 @@
             </button>
           {/if}
         </MapPopout>
+        {#if data.markerMissing}
+          <div class="mp-note">
+            <Notice kind="info">This marker is not on the map any more.</Notice>
+          </div>
+        {/if}
         {#if data.followNote}
           {@const n = data.followNote}
           <div class="mp-note">

@@ -1,7 +1,7 @@
 // The browser side of the live map (FM-4, brief §4.3): one EventSource on /map/<server>/live; after three failed
 // attempts in a row (or without EventSource) it polls /map/<server>/players.json every 5 s instead. Tolerant of
 // anything odd: a bad frame is dropped, never thrown. The page owns what the events mean; this only transports.
-import { liveHref, playersJsonHref } from "./links.ts";
+import { liveHref, markersJsonHref, playersJsonHref } from "./links.ts";
 import { mergePlayers } from "./pages.ts";
 import type { LiveState, PlayerDot, PlayersEvent, PlayersSnapshot, StatusEvent, TilesEvent } from "./types.ts";
 
@@ -12,6 +12,11 @@ export type LiveHandlers = {
   onStatus?: (state: LiveState, asOf: number | null) => void;
   /** "stream" or "poll": which transport is carrying the page now */
   onMode?: (mode: "stream" | "poll") => void;
+  /**
+   * Map markers (FMK-3 sends it, FMK-2 listens): the markers of `world` changed to `rev`; the page refetches
+   * `markers.json` for that world and redraws without moving the view. Never fires for a world nobody watches.
+   */
+  onMarkers?: (ev: { world: string; rev: number }) => void;
 };
 
 export type LiveDeps = {
@@ -19,6 +24,10 @@ export type LiveDeps = {
   fetch?: typeof fetch;
   setTimeout?: (fn: () => void, ms: number) => unknown;
   clearTimeout?: (t: unknown) => void;
+  /** the clock of the markers check in the poll fallback (tests) */
+  now?: () => number;
+  /** the `rev` of the markers the page loaded with: the poll fallback fires `onMarkers` only for a different one */
+  markersRev?: number | null;
 };
 
 export type LiveConnection = { close(): void };
@@ -27,6 +36,8 @@ export type LiveConnection = { close(): void };
 export type Since = { epoch: string; seq: number };
 
 export const POLL_MS = 5000;
+/** the poll fallback looks at the world's markers no more often than this (FMK-3; brief §4: 2 requests a minute) */
+export const MARKERS_POLL_MS = 30_000;
 export const MAX_FAILURES = 3;
 const RETRY_MS = [1000, 3000];
 
@@ -58,6 +69,9 @@ export function connectLive(server: string, world: string, since: Since | null, 
   let failures = 0;
   let players: PlayerDot[] = [];
   let at: Since | null = since ? { ...since } : null;
+  const clockNow = deps.now ?? (() => Date.now());
+  let mrev: number | null = typeof deps.markersRev === "number" ? deps.markersRev : null;
+  let markersAt = 0;
   let fresh = true; // the next `players` event is a full snapshot (a connect or reconnect)
 
   function applyPlayers(ev: unknown): void {
@@ -68,8 +82,27 @@ export function connectLive(server: string, world: string, since: Since | null, 
     h.onPlayers(players, typeof ev.at === "number" ? ev.at : Date.now());
   }
 
+  /** Poll fallback: markers.json with If-None-Match; a 304 or an unchanged rev says nothing. */
+  async function checkMarkers(): Promise<void> {
+    if (!doFetch || !h.onMarkers) return;
+    try {
+      const headers: Record<string, string> = { accept: "application/json" };
+      if (mrev !== null) headers["if-none-match"] = `"m${mrev}"`;
+      const res = await doFetch(markersJsonHref(server, world), { headers });
+      if (closed || !res.ok || res.status === 304) return;
+      const body = (await res.json()) as { rev?: unknown };
+      if (closed || typeof body.rev !== "number" || !Number.isInteger(body.rev)) return;
+      const prev = mrev;
+      mrev = body.rev;
+      if (prev !== null && prev !== body.rev) h.onMarkers({ world, rev: body.rev });
+    } catch {
+      /* the next check tries again */
+    }
+  }
+
   function startPolling(): void {
     h.onMode?.("poll");
+    markersAt = clockNow();
     const tick = async () => {
       timer = null;
       if (closed) return;
@@ -87,6 +120,10 @@ export function connectLive(server: string, world: string, since: Since | null, 
         } catch {
           /* the next poll tries again */
         }
+      }
+      if (!closed && clockNow() - markersAt >= MARKERS_POLL_MS && !(typeof document !== "undefined" && document.hidden)) {
+        markersAt = clockNow();
+        await checkMarkers();
       }
       if (!closed) timer = later(tick, POLL_MS);
     };
@@ -112,6 +149,10 @@ export function connectLive(server: string, world: string, since: Since | null, 
         if (typeof ev.epoch === "string") at = { epoch: ev.epoch, seq: Math.max(ev.epoch === at?.epoch ? at.seq : 0, ...ev.tiles.map((t) => Number(String(t[0]).split(".").pop()) || 0)) };
         h.onTiles?.(ev);
       }
+    });
+    src.addEventListener("markers", (e) => {
+      const v = parse((e as MessageEvent).data);
+      if (isObj(v) && typeof v.world === "string" && typeof v.rev === "number" && Number.isInteger(v.rev)) h.onMarkers?.({ world: v.world, rev: v.rev });
     });
     src.addEventListener("status", (e) => {
       const v = parse((e as MessageEvent).data) as Partial<StatusEvent> | null;

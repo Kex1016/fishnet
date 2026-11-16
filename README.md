@@ -49,6 +49,11 @@ The live map draws squaremap's tiles, with players and the layers each server sh
 `/v2/map`. It needs the token scope `read:map` (`read` includes it). Round maps of finished One Soul rounds
 also need `read:onesoul`; without it those maps are hidden, and the rest of the map still works.
 
+**Markers** (points and areas with titles) are made only in game, by players with cakeutils' `cakeutils.map.marker.*`
+permissions (`/cakemap marker`). The site only reads them, with the same `read:map` token: there is no new scope and
+no new environment variable, and the site never edits them. A hidden server's markers never show. They refresh within
+about 30 seconds without a reload, and `?marker=<id>` links open the map on one marker.
+
 ```sh
 cakectl token create fishnet read:players read:stats read:onesoul read:map --rate 600/120
 ```

@@ -114,8 +114,8 @@ extension, branch `claude/map-markers`); everything else after cakeutils GMK2. N
 |---|---|---|---|---|---|---|
 | FMK-0 contracts | **merged** df814ab | Sonnet 5.5 / high | cmsg_017jXErfLmkLcYLSb5FKAVcMNKkmuhzux3SoSxqmPjJLmW | | #50 | early |
 | FMK-1 Minecraft label | **merged** b02fb0c | Opus 5.5 / medium | cmsg_017jXErfLmkLcYLSb5FKAVcMK3CxUDUYdWKUzCFFncR3M3 | | #51 | early, ∥ FMK-0 |
-| FMK-2 marker layer | **requested** | Sonnet 5.5 / high | | | | FMK-0, FMK-1 |
-| FMK-3 live refresh | **requested** | Sonnet 5.5 / medium | | | | FMK-0, ∥ FMK-2 |
+| FMK-2 marker layer | **running** | Sonnet 5.5 / high | cmsg_017jXErfLmkLcYLSb5FKAVcMGL6MJWdCKxS1aoqqgc2vrV | | | FMK-0, FMK-1 |
+| FMK-3 live refresh | **running** | Sonnet 5.5 / medium | cmsg_017jXErfLmkLcYLSb5FKAVcM5SqQLQwqEWjTzyUULc1sqB | | | FMK-0, ∥ FMK-2 |
 | FMK-6 docs | waiting for GMK2 | Haiku 5.5 / low | | | | FMK-2 |
 | FMK-7 integration, QA, security | waiting for GMK2 | Opus 5.5 / medium | | | | all |
 

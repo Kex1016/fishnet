@@ -15,6 +15,7 @@
   import { mapHref } from "#lib/map/links.ts";
   import type { MapLayer, MapView, PlayerDot, PlayersSnapshot, TilesEvent } from "#lib/map/types.ts";
   import { Globe, Layers, Map as MapIcon, Users } from "@lucide/svelte";
+  import LabelPreview from "./LabelPreview.svelte";
   let { data } = $props();
 
   // the load's snapshot seeds the live list; a navigation resets it below
@@ -160,6 +161,8 @@
     </div>
   </div>
 {/if}
+
+<LabelPreview uni={data.labelUni} />
 
 <style>
   .mp-link { display: block; overflow-wrap: anywhere; white-space: normal; max-width: 100%; }

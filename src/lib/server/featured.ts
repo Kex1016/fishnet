@@ -11,6 +11,7 @@ import type { Client } from "#lib/server/cakeutils/client.ts";
 import type { FeaturedBoard } from "#lib/boards.ts";
 import { metricKey, type Metric } from "#lib/api/metric.ts";
 import type { Scope } from "#lib/api/scope.ts";
+import type { BoardHistory } from "#lib/network/types.ts";
 import { fail, ok, type Result } from "#lib/api/result.ts";
 import type { Leaderboard, LeaderboardEntry, Unit } from "#lib/api/types.ts";
 import { formatStat } from "#lib/format/stat-display.ts";
@@ -107,4 +108,53 @@ async function build(c: Reader, b: FeaturedBoard, scope: Scope): Promise<Result<
   const excluded = oks[0].data.excluded;
   const board: Leaderboard = { metric: b.id, scope: oks[0].data.scope, unit, total: entries.length, entries, ...(excluded ? { excluded } : {}) };
   return ok({ board, asOf: Math.min(...oks.map((p) => p.asOf)), stale: oks.some((p) => p.stale) }, Date.now());
+}
+
+// ---- the leader per day of a combined board, from each part's daily top (cakeutils history route)
+
+type History = BoardHistory;
+type Day = History["days"][number];
+type DayRow = Day["entries"][number];
+
+/**
+ * The combined board's leader on each day, from every part's daily top `limit` players. A day is kept
+ * only when the leader is certain: the leader's sum is exact (every part lists them, or a part listing
+ * fewer than `limit` players has nobody else), and no other visible player can reach it, counting a
+ * part's last listed value as the most an unlisted player can have there. Otherwise the day is left
+ * out, never guessed. `parts`: one answer per part, null for a part nobody has recorded (404).
+ * Hidden players are never the leader; they still count toward the bounds.
+ */
+export function combinedLeaders(id: string, parts: (Result<History> | null)[], limit: number, hidden: (e: DayRow) => boolean): Result<History> {
+  const answered = parts.filter((p): p is Result<History> => p !== null);
+  for (const p of answered) if (!p.ok) return p;
+  const oks = answered as Extract<Result<History>, { ok: true }>[];
+  if (oks.length === 0) return fail("not_found");
+  const first = oks[0].data;
+  if (oks.some((p) => p.data.tracked === false || p.data.unit !== first.unit)) return ok({ metric: id, scope: first.scope, unit: first.unit, tracked: false, days: [] }, oks[0].asOf);
+  const byDay = oks.map((p) => new Map(p.data.days.map((d) => [String(d.day), d.entries])));
+  const days: Day[] = [];
+  for (const day of byDay[0].keys()) {
+    const lists = byDay.map((m) => m.get(day));
+    if (lists.some((l) => l === undefined)) continue; // a part has no snapshot that day
+    const bounds = lists.map((l) => (l!.length < limit ? 0 : Math.min(...l!.map((e) => e.value))));
+    const rows = new Map<string, { row: DayRow; low: number; high: number }>();
+    lists.forEach((l) => {
+      const seen = new Set<string>();
+      for (const e of l!) {
+        if (seen.has(e.uuid)) continue;
+        seen.add(e.uuid);
+        const r = rows.get(e.uuid) ?? { row: e, low: 0, high: 0 };
+        r.low += e.value;
+        rows.set(e.uuid, r);
+      }
+    });
+    for (const [uuid, r] of rows) r.high = r.low + lists.reduce((a, l, i) => a + (l!.some((e) => e.uuid === uuid) ? 0 : bounds[i]), 0);
+    const visible = [...rows.values()].filter((r) => !hidden(r.row));
+    const best = visible.filter((r) => r.low === r.high).sort((a, b) => b.low - a.low || (a.row.uuid < b.row.uuid ? -1 : 1))[0];
+    if (!best || best.low <= 0) continue;
+    const outsider = bounds.reduce((a, b) => a + b, 0);
+    if (outsider > best.low || visible.some((r) => r !== best && r.high > best.low)) continue;
+    days.push({ day, entries: [{ rank: 1, uuid: best.row.uuid, name: best.row.name, value: best.low, display: formatStat((first.unit ?? "count") as Unit, best.low) }] });
+  }
+  return ok({ metric: id, scope: first.scope, unit: first.unit, tracked: true, days }, Math.min(...oks.map((p) => p.asOf)), { stale: oks.some((p) => p.stale) });
 }

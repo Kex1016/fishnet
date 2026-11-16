@@ -206,6 +206,9 @@ function onlineSeries(w: World, s: Scope, bucket: string, since: number, until: 
   return { series: out, peak: peak.count >= 0 ? peak : null };
 }
 
+/** Stats the mock snapshots daily besides type totals and playtime (cakeutils `stats.snapshots.extra-stats`). */
+const SNAPSHOT_EXTRAS = ["minecraft:mined|minecraft:diamond_ore", "minecraft:mined|minecraft:deepslate_diamond_ore"];
+
 export function handleExtras(w: World, url: URL, seg: string[], req: Request, kit: Pick<Kit, "json" | "problem" | "paging">): Response | null {
   const key = seg.join("/");
   const known = ["firsts", "milestones/criteria", "deaths", "activity/playtime", "activity/heatmap", "activity/online", "milestones/playtime"];
@@ -313,25 +316,26 @@ export function handleExtras(w: World, url: URL, seg: string[], req: Request, ki
     }
   }
 
-  // board history: playtime and type totals are snapshotted; anything else is not tracked
+  // board history: playtime, type totals and the configured extra stats (cakeutils
+  // `stats.snapshots.extra-stats`; here both diamond ores) are snapshotted; anything else is not tracked
   const lim = Math.min(10, Math.max(1, num("limit", 5)));
   const metric = seg.slice(2).join("/");
   const days = 14;
   const value = (p: WorldPlayer): number | null => {
     if (metric === "playtime") return played(w, p, s);
     const [type, subject] = [seg[2], seg[3]];
-    if (subject !== "*") return null;
     const full = type.includes(":") ? type : `minecraft:${type}`;
+    if (subject !== "*" && !SNAPSHOT_EXTRAS.includes(`${full}|${subject}`)) return null;
     let v = 0;
     for (const [leaf, vals] of Object.entries(p.stats)) {
       if (leaf.startsWith("round:")) continue;
       if (s.kind === "server" && leaf !== `server:${s.id}` && !leaf.startsWith(`mini:${s.id}/`)) continue;
       if (s.kind === "network" && !regular(w).some((id) => leaf === `server:${id}` || leaf.startsWith(`mini:${id}/`))) continue;
-      for (const [k, x] of Object.entries(vals)) if (k.startsWith(`${full}|`)) v += x;
+      for (const [k, x] of Object.entries(vals)) if (subject === "*" ? k.startsWith(`${full}|`) : k === `${full}|${subject}`) v += x;
     }
     return v;
   };
-  if (metric !== "playtime" && seg[3] !== "*") return kit.json(req, { metric, scope: sc, tracked: false, days: [] });
+  if (metric !== "playtime" && seg[3] !== "*" && !SNAPSHOT_EXTRAS.includes(`${seg[2].includes(":") ? seg[2] : `minecraft:${seg[2]}`}|${seg[3]}`)) return kit.json(req, { metric, scope: sc, tracked: false, days: [] });
   const unit = metric === "playtime" ? "ms" : "count";
   const out = [];
   for (let d = days - 1; d >= 0; d--) {

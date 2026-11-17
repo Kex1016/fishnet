@@ -152,7 +152,8 @@ database. Deleting the database loses history, never anything from cakeutils.
 
 - Every number comes from the cakeutils API or from the site's own recorder. Nothing is made up.
 - When cakeutils is down, pages show the last good data with the time it was taken.
-- Players who opt out are removed from every page and from the recorder.
+- Players who opt out are removed from every page and from the recorder. The One Soul section is the
+  exception: it shows every soul of a round as they played.
 - Stats for a network are never added together with those of a server; a server's numbers include
   its mini-servers, and breakdowns are not summed.
 

@@ -60,7 +60,7 @@ container for `bun run shots`; they are not a dependency.
 | `src/lib/server/env.ts`, `src/env.ts` | runtime config; the token lives here only | W1 |
 | `src/lib/server/history.ts` | the `History` interface; `emptyHistory` until W2 | W2 |
 | `src/lib/server/recorder/` | scheduler + SQLite (`data/fishnet.db`) | W2 |
-| `src/lib/server/hidden.ts` | opted-out players (`HIDDEN_PLAYERS_FILE`) | W5 |
+| `src/lib/server/hidden.ts` | opted-out players (`HIDDEN_PLAYERS_FILE`): they leave every page and the recorder. The One Soul section (`src/routes/one-soul/`, `src/lib/server/onesoul/`) does not apply the list, on purpose (David, 17 Nov 2026): do not add it there without asking | W5 |
 | `src/lib/server/hidden-servers.ts`, `src/lib/server/cakeutils/hide.ts` | hidden servers (`HIDDEN_SERVERS_FILE`): the client wrapper drops them from every answer and asks cakeutils for network figures with `exclude=` (D-113) | post-W10 |
 | `src/lib/format/` | `stat-display.ts` (StatDisplay port, cakeutils' tests), `dates.ts` | W1 |
 | `src/lib/charts/` | `types.ts` (props, frozen) + components, stubbed | W3 |

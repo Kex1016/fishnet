@@ -4,17 +4,16 @@
   import Face from "#lib/design/Face.svelte";
   import Notice from "#lib/design/Notice.svelte";
   import ScopeSwitch from "#lib/design/ScopeSwitch.svelte";
-  import { ColumnChart, Heatmap, LineChart, StatTile, ViewSwitch, viewParam } from "#lib/charts/index.ts";
+  import { ColumnChart, Heatmap, LineChart, StatTile } from "#lib/charts/index.ts";
   import { durationMs } from "#lib/format/stat-display.ts";
-  import { dateTime, day } from "#lib/format/dates.ts";
+  import { WEEKDAYS, dateTime, day } from "#lib/format/dates.ts";
+  import { playerHref, playerRowLabel } from "#lib/players/names.ts";
   import { withParams } from "#lib/url.ts";
   let { data } = $props();
-  const view = $derived(viewParam(page.url));
-  const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
   // weekday 0 is taken as Monday (ISO); an open contract question, the page says UTC either way
   const heat = $derived.by(() => {
     if (!data.heat?.ok) return null;
-    const rows = DAYS.map((label) => ({ label, cells: Array.from({ length: 24 }, () => null as number | null) }));
+    const rows = WEEKDAYS.map((label) => ({ label, cells: Array.from({ length: 24 }, () => null as number | null) }));
     for (const [wd, h, ms] of data.heat.data.cells) if (wd >= 0 && wd < 7 && h >= 0 && h < 24) rows[wd].cells[h] = ms;
     return rows;
   });
@@ -34,7 +33,6 @@
   </header>
   <div class="ax-bar">
     {#if data.network.ok}<ScopeSwitch url={page.url} scope={data.scope} servers={data.network.data.servers} />{/if}
-    <ViewSwitch url={page.url} {view} />
   </div>
 
   {#if data.mini}
@@ -69,7 +67,6 @@
             unit="count"
             asOf={data.online?.ok ? data.online.asOf : undefined}
             stale={data.online?.ok ? data.online.stale : false}
-            {view}
             emptyTitle="Nobody online yet"
             emptyLine="The graph fills in as players join."
           />
@@ -82,12 +79,11 @@
           points={playPts.map((p) => ({ t: p.start, v: p.ms }))}
           unit="ms"
           format={fmtH}
-          {view}
           emptyTitle="Nobody has played yet"
         />
       {/if}
       {#if heat}
-        <Heatmap title="Busiest hours" sub="time played by weekday and hour, UTC, last 90 days" rows={heatRows} columns={hours} unit="ms" format={fmtH} {view} emptyTitle="Nobody has played yet" />
+        <Heatmap title="Busiest hours" sub="time played by weekday and hour, UTC, last 90 days" rows={heatRows} columns={hours} unit="ms" format={fmtH} emptyTitle="Nobody has played yet" />
       {/if}
       {#if data.milestones?.ok}
         <section class="fp-card ax-firsts">
@@ -99,8 +95,8 @@
               {#each data.firstTo as m (m.threshold_ms)}
                 <li>
                   <span class="ax-th"><Clock class="fp-ico fp-ico--sm" strokeWidth={1.4} aria-hidden="true" />{m.display}</span>
-                  <Face uuid={m.uuid} name={m.name} size="sm" />
-                  <a href="/players/{encodeURIComponent(m.name)}">{m.name}</a>
+                  <Face uuid={m.uuid} name={playerRowLabel(m)} size="sm" />
+                  <a href={playerHref(m)}>{playerRowLabel(m)}</a>
                   <span class="t-caption ax-when">{m.reached_at === null ? "before tracking began" : day(m.reached_at)}</span>
                 </li>
               {/each}

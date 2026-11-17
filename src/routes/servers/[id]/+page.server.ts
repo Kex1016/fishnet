@@ -6,7 +6,7 @@ import type { PageServerLoad } from "./$types";
 import { api, mapApi } from "#lib/server/cakeutils/client.ts";
 import { history } from "#lib/server/history.ts";
 import { withoutHidden } from "#lib/server/hidden.ts";
-import { FEATURED, featuredHref } from "#lib/boards.ts";
+import { barRows, FEATURED, featuredHref } from "#lib/boards.ts";
 import { featuredLeaderboard } from "#lib/server/featured.ts";
 import { PLAYTIME } from "#lib/api/metric.ts";
 import { mapHref } from "#lib/map/links.ts";
@@ -14,8 +14,8 @@ import { sortWorlds, worldLabel } from "#lib/map/worlds.ts";
 import { parseScope, type Scope } from "#lib/api/scope.ts";
 import { formatStat, group } from "#lib/format/stat-display.ts";
 import type { TimePoint } from "#lib/charts/index.ts";
-import { hideFromFeed, prepareFeed } from "#lib/milestones/prepare.server.ts";
-import { activityGrid, barRows, boardSum, isOutage } from "../boards.ts";
+import { prepareAdvancements, prepareFeed } from "#lib/milestones/prepare.server.ts";
+import { activityGrid, boardSum, isOutage } from "../boards.ts";
 
 export const load: PageServerLoad = async ({ params }) => {
   const id = params.id;
@@ -33,7 +33,7 @@ export const load: PageServerLoad = async ({ params }) => {
     boardSum(c, PLAYTIME, scope, withoutHidden),
     Promise.all(featured.map((b) => featuredLeaderboard(c, b, scope, { limit: 5 }))),
     c.milestones({ scope, limit: 5 }).then(prepareFeed),
-    c.advancements({ scope, limit: 5 }).then(hideFromFeed),
+    c.advancements({ scope, limit: 5 }).then(prepareAdvancements),
     h.server(id, "week"),
     h.online(scope, "week"),
     h.onlineRecent(scope),
@@ -54,7 +54,7 @@ export const load: PageServerLoad = async ({ params }) => {
   const boards = featured.flatMap((b, i) => {
     const r = stats[i];
     if (!r.ok || r.empty) return [];
-    return [{ id: b.id, label: b.label, href: featuredHref(b, scope), unit: r.data.unit, rows: barRows(withoutHidden(r.data.entries)), asOf: r.asOf, stale: r.stale }];
+    return [{ id: b.id, label: b.label, href: featuredHref(b, scope), unit: r.data.unit, rows: barRows(withoutHidden(r.data.entries), 5), asOf: r.asOf, stale: r.stale }];
   });
 
   // Busiest minis: the most players seen in each mini this week, from the recorder.
@@ -81,7 +81,7 @@ export const load: PageServerLoad = async ({ params }) => {
     live: live.map((m) => ({ id: m.id, name: m.display_name, count: m.player_count, players: withoutHidden(m.players) })),
     busiest,
     playtime: playtime.ok
-      ? { ok: true as const, empty: playtime.empty, players: playtime.data.players, time: formatStat("ms", playtime.data.sum), rows: barRows(playtime.data.top), asOf: playtime.asOf, stale: playtime.stale }
+      ? { ok: true as const, empty: playtime.empty, players: playtime.data.players, time: formatStat("ms", playtime.data.sum), rows: barRows(playtime.data.top, 5), asOf: playtime.asOf, stale: playtime.stale }
       : { ok: false as const, outage: isOutage(playtime) },
     boards,
     outage: stats.some(isOutage),

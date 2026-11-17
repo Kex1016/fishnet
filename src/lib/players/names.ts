@@ -24,6 +24,19 @@ export function playerLabel(name: string): string {
   return isUuidName(name) ? "Unnamed player" : name;
 }
 
+/**
+ * A player's name in a row among other players (a board, a feed, a table): the name, or "Player 1a2b3c4d"
+ * while it is still a UUID, so two unnamed players stay apart.
+ */
+export function playerRowLabel(p: { uuid: string; name: string }): string {
+  return isUuidName(p.name) ? `Player ${shortUuid(p.uuid)}` : p.name;
+}
+
+/** The profile link: by name, or by UUID while the name is one. */
+export function playerHref(p: { uuid: string; name: string }): string {
+  return `/players/${encodeURIComponent(isUuidName(p.name) ? p.uuid : p.name)}`;
+}
+
 /** The first 8 hex digits of a UUID, for a mono hint beside an unnamed player. */
 export function shortUuid(uuid: string): string {
   return uuid.replace(/-/g, "").slice(0, 8);

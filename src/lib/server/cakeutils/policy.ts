@@ -9,7 +9,7 @@
 // | live      | /v2/network, /v2/mini-servers, unknown   | 15 s   | 45 s                         |
 // | player    | /v2/players..., /v2/players:batch        | 30 s   | 90 s                         |
 // | board     | /v2/leaderboards/...                     | 60 s   | 4 min                        |
-// | feed      | /v2/milestones...                        | 60 s   | 4 min                        |
+// | feed      | /v2/milestones..., /v2/firsts, /v2/deaths| 60 s   | 4 min                        |
 // | catalogue | /v2/stats/types, /v2/stats/subjects...   | 30 min | 6 h                          |
 // | icon      | /v2/icons/<sha>.png (content-addressed)  | always | -                            |
 // | map-world | /v2/map/<server>/worlds/<world>          | 5 min  | 1 h                          |
@@ -84,6 +84,8 @@ export function policyFor(path: string): Policy {
   if (p.startsWith("/v2/leaderboards/")) return POLICIES.board;
   if (p === "/v2/stats/types" || p.startsWith("/v2/stats/subjects")) return POLICIES.catalogue;
   if (p === "/v2/milestones" || p.startsWith("/v2/milestones/")) return POLICIES.feed;
+  // the merged firsts feed and the death log are feeds too: a row appears when somebody does something
+  if (p === "/v2/firsts" || p === "/v2/deaths") return POLICIES.feed;
   // One Soul: the status and the live card are live data; the lists and journals change at a feed's pace
   if (p.startsWith("/v2/onesoul/") && p !== "/v2/onesoul/live") return POLICIES.feed;
   if (/^\/v2\/players\/[^/]+\/onesoul$/.test(p)) return POLICIES.player;

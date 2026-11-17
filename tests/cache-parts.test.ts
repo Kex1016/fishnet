@@ -66,6 +66,8 @@ test("policies and Cache-Control", () => {
   expect(policyFor("/v2/players:batch").cls).toBe("player");
   expect(policyFor("/v2/milestones?limit=1").cls).toBe("feed");
   expect(policyFor("/v2/milestones/advancement?id=x").cls).toBe("feed");
+  expect(policyFor("/v2/firsts?limit=50").cls).toBe("feed");
+  expect(policyFor("/v2/deaths?scope=server%3Aa").cls).toBe("feed");
   expect(policyFor("/v2/mini-servers").cls).toBe("live");
   expect(policyFor("/v2/something-new").cls).toBe("live");
   expect(ttlMs(policyFor("/v2/icons/abc.png"), null)).toBe(Infinity);

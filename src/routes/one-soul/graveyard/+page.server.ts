@@ -2,6 +2,7 @@
 import type { PageServerLoad } from "./$types";
 import { oneSoul } from "#lib/server/onesoul/index.ts";
 import { roundParam } from "#lib/onesoul/links.ts";
+import { offsetParam } from "#lib/url.ts";
 
 const LIMIT = 24;
 
@@ -12,7 +13,7 @@ export const load: PageServerLoad = async ({ parent, url }) => {
   const round = roundParam(url);
   const cl = url.searchParams.get("claimed");
   const claimed = cl === "true" ? true : cl === "false" ? false : null;
-  const offset = Math.max(0, Math.min(1_000_000, Number(url.searchParams.get("offset")) || 0));
+  const offset = offsetParam(url);
   const graves = await oneSoul().graves({ server: os.server, cycle: round ?? undefined, claimed: claimed ?? undefined, limit: LIMIT, offset });
   return { title: "Graveyard", crumbs, graves, round, rounds: Array.from({ length: os.cycle }, (_, i) => os.cycle - i), claimed, limit: LIMIT, offset };
 };

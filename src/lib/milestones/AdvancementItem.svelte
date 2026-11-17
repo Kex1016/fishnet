@@ -1,9 +1,10 @@
 <script lang="ts">
-  // Internal: one advancement row. The advancement (title, tab or mod), who completed it first and where, and
-  // when. A time that came from the operator's import is tagged, because live tracking did not see it.
+  // Internal: one advancement row. The advancement (its picture, title, tab or mod), who completed it first and
+  // where, and when. A time that came from the operator's import is tagged, because live tracking did not see it.
   import { Award } from "@lucide/svelte";
   import type { AdvancementRow } from "#lib/api/types.ts";
   import PlayerName from "#lib/design/PlayerName.svelte";
+  import Slot from "#lib/design/Slot.svelte";
   import { dateTime, ago, iso } from "#lib/format/dates.ts";
   import { titleCase } from "#lib/players/names.ts";
   import { whoOf } from "./helpers.ts";
@@ -21,7 +22,7 @@
 </script>
 
 <li class="fp-ms fp-adv">
-  <span class="fp-slot" title={m.advancement}><Award class="fp-ico fp-slot__glyph" strokeWidth={1.4} /></span>
+  <Slot icon={m.icon} glyph={Award} name={m.advancement} />
   <div class="fp-ms__main">
     <div class="fp-ms__what">
       <a class="fp-adv__title" href={advHref(m.advancement)}>{title}</a>

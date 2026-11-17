@@ -9,7 +9,8 @@ import { withoutHidden } from "#lib/server/hidden.ts";
 import type { Result } from "#lib/api/result.ts";
 import type { Leaderboard } from "#lib/api/types.ts";
 import { compositeBoard } from "./composite.server.ts";
-import { scopeLabel, scopeMinis } from "./board.ts";
+import { scopeMinis } from "./board.ts";
+import { scopeLabel } from "#lib/servers.ts";
 
 
 type Card = { id: string; label: string; href: string; kind: "featured" | "composite"; result: Result<Leaderboard> };

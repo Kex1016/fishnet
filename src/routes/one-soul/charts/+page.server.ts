@@ -3,17 +3,15 @@ import type { PageServerLoad } from "./$types";
 import { oneSoul } from "#lib/server/onesoul/index.ts";
 import { allEvents, allGraves, allSouls, roundSummaries } from "#lib/server/onesoul/section.ts";
 import { roundParam } from "#lib/onesoul/links.ts";
-import { viewParam } from "#lib/charts/view.ts";
 import { causes, deathsPerDay, graveStatus, perRound, prankHeatmap, secondChances, signupsOverTime, survivalPerSoul, timeToClaim } from "#lib/onesoul/charts.ts";
 
 export const load: PageServerLoad = async ({ parent, url }) => {
   const { os } = await parent();
   const crumbs = [{ label: "One Soul", href: "/one-soul" }, { label: "Charts", href: "/one-soul/charts" }];
-  const view = viewParam(url);
-  if (!os) return { title: "Charts", crumbs, ok: false as const, view };
+  if (!os) return { title: "Charts", crumbs, ok: false as const };
   const round = url.searchParams.get("round") === "all" ? null : Math.min(roundParam(url) ?? os.cycle, os.cycle);
   const [souls, graves, summaries] = await Promise.all([allSouls(os.server, round), allGraves(os.server, round), roundSummaries(os.server, os.cycle)]);
-  if (!souls.ok) return { title: "Charts", crumbs, ok: false as const, view };
+  if (!souls.ok) return { title: "Charts", crumbs, ok: false as const };
   const finishedRound = round !== null && round !== os.cycle && summaries.rounds.some((r) => r.cycle === round && r.ended_at !== null);
   const [regs, pranks] = await Promise.all([
     round !== null ? oneSoul().registrations({ round, limit: 100 }) : Promise.resolve(null),
@@ -24,7 +22,6 @@ export const load: PageServerLoad = async ({ parent, url }) => {
     title: round === null ? "Charts, every round" : `Charts, round ${round}`,
     crumbs,
     ok: true as const,
-    view,
     round,
     rounds: Array.from({ length: os.cycle }, (_, i) => os.cycle - i),
     asOf: souls.asOf,

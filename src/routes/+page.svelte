@@ -1,18 +1,16 @@
 <script lang="ts">
-  import { page } from "$app/state";
   import { SITE } from "#lib/nav.ts";
   import AsOf from "#lib/design/AsOf.svelte";
   import EmptyState from "#lib/design/EmptyState.svelte";
   import Face from "#lib/design/Face.svelte";
   import Notice from "#lib/design/Notice.svelte";
-  import { BarList, ColumnChart, Heatmap, LineChart, StatTile, ViewSwitch, viewParam } from "#lib/charts/index.ts";
+  import { BarList, ColumnChart, Heatmap, LineChart, StatTile } from "#lib/charts/index.ts";
   import { HOURS, meanPlayers } from "./servers/boards.ts";
   import { AdvancementFeed, MilestoneFeed } from "#lib/milestones/index.ts";
   import HiddenServersNote from "#lib/milestones/HiddenServersNote.svelte";
   import { boardHref, PLAYTIME } from "#lib/api/metric.ts";
   import { titleCase } from "#lib/players/names.ts";
   let { data } = $props();
-  const view = $derived(viewParam(page.url));
   const net = $derived(data.network);
   const names = $derived(net.ok ? Object.fromEntries(net.data.servers.map((s) => [s.id, s.display_name])) : {});
   // Players waiting for a server are people, so adding them across servers counts people, not scopes.
@@ -90,14 +88,12 @@
     {/if}
   </section>
 
-  <div class="fp-filters" style="justify-content: flex-end"><ViewSwitch url={page.url} {view} /></div>
   <div class="fp-panels">
     {#if data.top.ok}
       <BarList
         title="Playtime"
         href={boardHref(PLAYTIME)}
         sub="network · top 5"
-        {view}
         faces
         unit="ms"
         asOf={data.top.asOf}
@@ -113,7 +109,6 @@
       title="Online over the week"
       sub="network · players online"
       since={data.onlineWeek.since}
-      {view}
       points={data.onlineWeek.points}
       emptyTitle="No history yet"
       emptyLine="Online counts are recorded every minute once the site is live."
@@ -122,7 +117,6 @@
       title="New players per week"
       sub="network · by first login"
       since={data.joins.since}
-      {view}
       points={data.joins.points}
       emptyTitle="Not enough weeks yet"
       emptyLine="New players are counted by the week they first logged in."
@@ -131,7 +125,6 @@
       title="Busiest hours"
       sub="network · mean players online · last 30 days · UTC"
       since={data.busiestHours.since ?? data.since}
-      {view}
       rows={data.busiestHours.rows}
       columns={HOURS}
       format={meanPlayers}

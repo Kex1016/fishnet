@@ -2,13 +2,14 @@
   import { page } from "$app/state";
   import Pager from "#lib/design/Pager.svelte";
   import ScopeSwitch from "#lib/design/ScopeSwitch.svelte";
-  import { BarList, Heatmap, ViewSwitch, viewParam } from "#lib/charts/index.ts";
+  import { BarList, Heatmap } from "#lib/charts/index.ts";
   import { AdvancementFeed, advHref, dayGrid } from "#lib/milestones/index.ts";
   import { group } from "#lib/format/stat-display.ts";
+  import { playerHref, playerRowLabel } from "#lib/players/names.ts";
+  import { scopeLabel } from "#lib/servers.ts";
   let { data } = $props();
 
-  const view = $derived(viewParam(page.url));
-  const scopeLabel = $derived(data.scope === "network" ? "Network" : (data.serverNames[data.scope.slice(7)] ?? data.scope));
+  const scopeName = $derived(scopeLabel(data.scope, data.network.ok ? data.network.data.servers : []));
   const f = $derived(data.countedFrom);
   const grid = $derived(dayGrid(data.perDay.days, data.perDay.since, Date.now()));
 </script>
@@ -21,7 +22,6 @@
 
   <div class="fp-adv-bar">
     {#if data.network.ok}<ScopeSwitch url={page.url} scope={data.scope} servers={data.network.data.servers} />{/if}
-    <ViewSwitch url={page.url} {view} />
   </div>
 
   {#if data.miniScope}
@@ -36,10 +36,9 @@
       <div class="fp-adv-side">
         <BarList
           title="Most firsts"
-          sub="{scopeLabel} · advancements completed before anyone else"
-          {view}
+          sub="{scopeName} · advancements completed before anyone else"
           faces
-          rows={data.firsts.map((p, i) => ({ rank: i + 1, key: p.uuid, label: p.name, v: p.count, display: group(p.count), href: `/players/${encodeURIComponent(p.name)}`, uuid: p.uuid }))}
+          rows={data.firsts.map((p, i) => ({ rank: i + 1, key: p.uuid, label: playerRowLabel(p), v: p.count, display: group(p.count), href: playerHref(p), uuid: p.uuid }))}
           asOf={f.asOf ?? undefined}
           stale={f.stale}
           emptyTitle={f.ok ? "No firsts yet" : "Firsts are not available"}
@@ -47,8 +46,7 @@
         />
         <BarList
           title="Most completed"
-          sub="{scopeLabel} · players who have it"
-          {view}
+          sub="{scopeName} · players who have it"
           rows={data.completed.map((a, i) => ({ rank: i + 1, key: a.advancement, label: a.title, v: a.earners, display: group(a.earners), href: advHref(a.advancement) }))}
           asOf={f.asOf ?? undefined}
           stale={f.stale}
@@ -60,8 +58,7 @@
         {/if}
         <Heatmap
           title="Firsts per day"
-          sub="{scopeLabel} · by week, UTC · imported completions on their own day"
-          {view}
+          sub="{scopeName} · by week, UTC · imported completions on their own day"
           since={data.perDay.since}
           rows={grid.rows}
           columns={grid.columns}

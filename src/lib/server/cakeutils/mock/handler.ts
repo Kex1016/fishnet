@@ -462,7 +462,20 @@ export async function handleMock(world: World, req: Request): Promise<Response> 
   if (os) return os;
 
   // the planned network routes (firsts, deaths, activity, ...): network reads honour exclude= via `world`
-  const ex2 = handleExtras(world, url, seg, req, { json, problem, paging });
+  const ex2 = handleExtras(world, url, seg, req, {
+    json,
+    problem,
+    paging,
+    // the firsts feed merges the scope's advancement firsts and stat milestones, as cakeutils does
+    advancements: () => {
+      const sc = scopeOf(world, url);
+      return sc instanceof Response || sc.mini ? [] : advRows(world, sc);
+    },
+    milestones: () => {
+      const sc = scopeOf(world, url);
+      return sc instanceof Response || sc.mini || !world.milestones ? [] : feedRows(world, sc, null);
+    }
+  });
   if (ex2) return ex2;
 
   if (seg[0] === "openapi.json" && seg.length === 1) {

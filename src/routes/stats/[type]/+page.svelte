@@ -5,12 +5,11 @@
   import Notice from "#lib/design/Notice.svelte";
   import Pager from "#lib/design/Pager.svelte";
   import Slot from "#lib/design/Slot.svelte";
-  import { BarList, ViewSwitch, viewParam } from "#lib/charts/index.ts";
+  import { BarList } from "#lib/charts/index.ts";
   import { boardHref } from "#lib/api/metric.ts";
   import { subjectName } from "#lib/players/names.ts";
-  import { barRows } from "../../leaderboards/board.ts";
+  import { barRows } from "#lib/boards.ts";
   let { data } = $props();
-  const view = $derived(viewParam(page.url));
 </script>
 
 <div class="fp-page">
@@ -24,7 +23,6 @@
     {/if}
     <div class="fp-filters">
       <a class="fp-chip" href="/stats">All stats</a>
-      {#if data.total?.ok && !data.total.empty}<ViewSwitch url={page.url} {view} />{/if}
     </div>
   </header>
 
@@ -39,7 +37,6 @@
           title="{data.label} total"
           href={boardHref({ kind: "stat", type: data.key, subject: "*" })}
           sub="Network · top 5 of {data.total.data.total}"
-          {view}
           faces
           unit={data.total.data.unit}
           asOf={data.total.asOf}
@@ -70,7 +67,7 @@
           {#each data.subjects.data.subjects as s (s.key + s.kind)}
             <li>
               <a class="fp-row" style="grid-template-columns: 36px minmax(0, 1fr)" href={boardHref({ kind: "stat", type: data.key, subject: s.key })}>
-                <Slot icon={s.icon} kind={s.kind as never} name={subjectName(s.name, s.key)} />
+                <Slot icon={s.icon} kind={s.kind} name={subjectName(s.name, s.key)} />
                 <span class="fp-row__name">{subjectName(s.name, s.key)}</span>
               </a>
             </li>

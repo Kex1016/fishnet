@@ -12,7 +12,7 @@ import type { Scope } from "#lib/api/scope.ts";
 import { metricKey, type Metric } from "#lib/api/metric.ts";
 import { FEATURED, featuredKey, type FeaturedBoard } from "#lib/boards.ts";
 import { readerFor } from "#lib/server/featured.ts";
-import { type Db, getMeta, getMetaNumber, registerSeries, seriesSince, setMeta, tx } from "./db.ts";
+import { type Db, deleteMeta, getMeta, getMetaNumber, registerSeries, seriesSince, setMeta, tx } from "./db.ts";
 import { DAY, HOUR, KEEP_HOURLY_BOARDS, KEEP_LONG, KEEP_MINUTES, MINUTE, floorTo } from "./time.ts";
 
 export type Hidden = (p: { uuid: string; name: string }) => boolean;
@@ -27,12 +27,15 @@ export type RecorderDeps = {
   featured?: FeaturedBoard[];
 };
 
-/** ok = recorded; skipped = nothing to record (feature off, nothing new); down = try again soon. */
-export type Outcome = "ok" | "skipped" | "down";
+/**
+ * ok = recorded; skipped = nothing to record (feature off, nothing new); down = try again soon;
+ * more = recorded a part and stopped at its page cap: the scheduler runs it again in a minute.
+ */
+export type Outcome = "ok" | "skipped" | "down" | "more";
 
 const PAGE = 100;
 /** Page caps, so one job never turns into a flood: playtime board 10 pages, totals 50, players 100. */
-export const CAPS = { playtimePages: 10, totalPages: 50, playerPages: 100, profilesPerRun: 30, milestonePagesFirst: 20, milestonePages: 3, advancementPagesFirst: 20, advancementPages: 5 };
+export const CAPS = { playtimePages: 10, totalPages: 50, playerPages: 100, profilesPerRun: 30, milestonePagesFirst: 20, milestonePages: 3, advancementPagesFirst: 20, advancementPages: 5, sweepPages: 40 };
 
 const ID = /^[A-Za-z0-9._-]{1,64}$/;
 
@@ -259,7 +262,7 @@ export async function recordMilestones(d: RecorderDeps, scope: Scope): Promise<O
   const now = d.now();
   const exists = d.db.prepare("SELECT 1 AS x FROM milestone WHERE scope = ? AND metric = ? AND threshold = ?");
   const ins = d.db.prepare(
-    "INSERT OR REPLACE INTO milestone (scope, metric, threshold, uuid, name, reached_at, backfilled, seen_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
+    "INSERT OR REPLACE INTO milestone (scope, metric, threshold, uuid, name, reached_at, backfilled, seen_at, type) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"
   );
   for (let page = 0; page < maxPages; page++) {
     const r = await d.client.milestones({ scope, limit: PAGE, offset: page * PAGE });
@@ -285,7 +288,7 @@ export async function recordMilestones(d: RecorderDeps, scope: Scope): Promise<O
           caughtUp = true; // newest first: the rest is already stored
           break;
         }
-        ins.run(scope, metric, threshold, uuid, name, reached, 0, now);
+        ins.run(scope, metric, threshold, uuid, name, reached, 0, now, str(m.type));
       }
       registerSeries(d.db, seriesKey, now);
     });
@@ -303,6 +306,89 @@ export async function recordServerMilestones(d: RecorderDeps): Promise<Outcome> 
     const o = await recordMilestones(d, `server:${s}`);
     if (o === "down") return "down";
     if (o === "ok") any = true;
+  }
+  return any ? "ok" : "skipped";
+}
+
+// ---- 1 h: the whole milestone feed, once a day per scope, for "milestones per player"
+
+/** A scope's feed is read in full again this long after the last full read. */
+export const SWEEP_EVERY = DAY;
+
+export const sweepKeys = (scope: Scope) => ({ start: `ms_sweep_start:${scope}`, offset: `ms_sweep_offset:${scope}`, done: `ms_sweep_done:${scope}` });
+
+/**
+ * Keeps the `milestone` table a full copy of every scope's feed (network and each server), so the site can
+ * say how many milestones each player holds: the API has no such route, and counting on a page view would
+ * mean reading the whole feed. recordMilestones above adds new rows at the head every few minutes; this
+ * reads a scope's feed from the first page to the last (dated rows, then the ones reached before tracking
+ * began), rewrites every row and, at the end, drops the rows it did not meet (a milestone that left the
+ * feed). One read can take several runs: at most CAPS.sweepPages pages per run, all scopes together, the
+ * place kept in `meta`; the run answers "more" and the scheduler comes back in a minute. A scope is read
+ * again a day after its last full read (removals, a player taken off the opt-out list).
+ *
+ * `ms_sweep_done:<scope>` is when the last full read ended: History.milestoneHolders calls its counts
+ * complete from then on (a later read in progress does not take that back).
+ */
+export async function sweepMilestones(d: RecorderDeps): Promise<Outcome> {
+  if (!(await d.client.milestonesEnabled())) return "skipped";
+  const scopes: Scope[] = ["network", ...knownServers(d.db).map((s): Scope => `server:${s}`)];
+  let budget = CAPS.sweepPages;
+  let any = false;
+  const ins = d.db.prepare(
+    "INSERT OR REPLACE INTO milestone (scope, metric, threshold, uuid, name, reached_at, backfilled, seen_at, type) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"
+  );
+  for (const scope of scopes) {
+    const k = sweepKeys(scope);
+    let start = getMetaNumber(d.db, k.start);
+    if (start === null) {
+      const done = getMetaNumber(d.db, k.done);
+      if (done !== null && d.now() - done < SWEEP_EVERY) continue; // read in full less than a day ago
+      start = d.now();
+      tx(d.db, () => {
+        setMeta(d.db, k.start, start!);
+        setMeta(d.db, k.offset, 0);
+      });
+    }
+    let offset = getMetaNumber(d.db, k.offset) ?? 0;
+    for (;;) {
+      if (budget <= 0) return "more";
+      const r = await d.client.milestones({ scope, limit: PAGE, offset });
+      if (!r.ok && (r.kind === "off" || r.kind === "not_found" || r.kind === "bad_request")) {
+        // the scope has no feed (a server that left): nothing to copy, do not come back for a day
+        tx(d.db, () => {
+          deleteMeta(d.db, k.start);
+          deleteMeta(d.db, k.offset);
+        });
+        break;
+      }
+      if (!r.ok || r.stale) return "down"; // the place is kept: the next run goes on from here
+      budget--;
+      const rows: MilestoneFeedRow[] = Array.isArray(r.data.milestones) ? r.data.milestones : [];
+      const now = d.now();
+      const last = rows.length < PAGE || offset + rows.length >= (int(r.data.total) ?? 0);
+      tx(d.db, () => {
+        for (const m of rows) {
+          const metric = str(m?.metric);
+          const threshold = typeof m?.threshold === "number" && Number.isFinite(m.threshold) ? m.threshold : null;
+          if (!metric || threshold === null) continue;
+          const uuid = str(m.uuid);
+          const name = str(m.name);
+          if ((uuid || name) && d.hidden({ uuid: uuid ?? "", name: name ?? "" })) continue;
+          const reached = int(m.reached_at);
+          ins.run(scope, metric, threshold, uuid, name, reached, m.backfilled || reached === null ? 1 : 0, now, str(m.type));
+        }
+        if (last) {
+          d.db.prepare("DELETE FROM milestone WHERE scope = ? AND seen_at < ?").run(scope, start!);
+          setMeta(d.db, k.done, now);
+          deleteMeta(d.db, k.start);
+          deleteMeta(d.db, k.offset);
+        } else setMeta(d.db, k.offset, offset + rows.length);
+      });
+      any = true;
+      if (last) break;
+      offset += rows.length;
+    }
   }
   return any ? "ok" : "skipped";
 }

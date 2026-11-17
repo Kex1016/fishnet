@@ -7,6 +7,7 @@ import type { Metric } from "#lib/api/metric.ts";
 import { ok, type Result } from "#lib/api/result.ts";
 import type { Scope } from "#lib/api/scope.ts";
 import type { Leaderboard, LeaderboardEntry, Unit } from "#lib/api/types.ts";
+import { WEEKDAYS } from "#lib/format/dates.ts";
 import type { Client } from "#lib/server/cakeutils/client.ts";
 
 const PAGE = 100;
@@ -56,14 +57,8 @@ export async function boardSum(c: Pick<Client, "leaderboard">, metric: Metric, s
   );
 }
 
-/** Rows for BarList from board entries. */
-export function barRows(entries: LeaderboardEntry[], limit = 5) {
-  return entries.slice(0, limit).map((e) => ({ rank: e.rank, key: e.uuid, uuid: e.uuid, label: e.name, v: e.value, display: e.display, href: `/players/${encodeURIComponent(e.name)}` }));
-}
-
 /** UTC hours "00".."23": the columns of the busiest-hours heatmap. */
 export const HOURS = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, "0"));
-const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
 /**
  * Heatmap rows from History.activityByHour: `cells[d][h]` (d = 0 Monday, h = UTC hour, null = no

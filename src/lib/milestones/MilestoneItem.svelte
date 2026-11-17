@@ -1,7 +1,7 @@
 <script lang="ts">
   // Internal: one feed row as a sentence ("Sealily picked up Pufferfish for the 10th time!"), its icon and
   // when. The stat's words come from #lib/format/labels.ts (owner overrides included). Every null has words.
-  import type { Kind, MilestoneFeedRow } from "#lib/api/types.ts";
+  import type { MilestoneFeedRow } from "#lib/api/types.ts";
   import PlayerName from "#lib/design/PlayerName.svelte";
   import Slot from "#lib/design/Slot.svelte";
   import { dateTime, ago, iso } from "#lib/format/dates.ts";
@@ -32,7 +32,7 @@
 </script>
 
 <li class="fp-ms">
-  {#if showStat}<Slot icon={m.icon} kind={(m.kind as Kind | null | undefined) ?? (m.subject === "*" ? "custom" : null)} {name} />{/if}
+  {#if showStat}<Slot icon={m.icon} kind={m.kind ?? (m.subject === "*" ? "custom" : null)} {name} />{/if}
   <div class="fp-ms__main">
     <!-- one line on purpose: whitespace between the parts would show up inside the sentence ("time !") -->
     <p class="fp-ms__what">{#each phrase.parts as p, i (i)}{#if p.kind === "player"}{#if who && showPlayer}<span class="fp-ms__who"><PlayerName uuid={who.uuid} name={who.name} /></span>{:else}<span class="fp-ms__name" class:t-muted={!who && !playerName}>{p.text}</span>{/if}{:else if p.kind === linkOn && href}<a class="fp-ms__stat" class:fp-ms__thr={p.kind === "number"} {href}>{p.text}</a>{:else if p.kind === "number"}<span class="fp-ms__thr">{p.text}</span>{:else}{p.text}{/if}{/each}</p>

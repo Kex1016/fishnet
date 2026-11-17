@@ -3,6 +3,7 @@
 import type { PageServerLoad } from "./$types";
 import { oneSoul } from "#lib/server/onesoul/index.ts";
 import { roundParam } from "#lib/onesoul/links.ts";
+import { offsetParam } from "#lib/url.ts";
 
 const LIMIT = 25;
 
@@ -11,7 +12,7 @@ export const load: PageServerLoad = async ({ parent, url }) => {
   const crumbs = [{ label: "One Soul", href: "/one-soul" }, { label: "Chronicle", href: "/one-soul/chronicle" }];
   if (!os) return { title: "Chronicle", crumbs, souls: null, round: null, rounds: [], sort: "turn", limit: LIMIT, offset: 0 };
   const round = roundParam(url) ?? os.cycle;
-  const offset = Math.max(0, Math.min(1_000_000, Number(url.searchParams.get("offset")) || 0));
+  const offset = offsetParam(url);
   const sort = osFeatures.tracking && url.searchParams.get("sort") === "duration" ? "duration" : "turn";
   const souls = await oneSoul().souls({ server: os.server, cycle: round, limit: LIMIT, offset, ...(sort === "duration" ? { sort: "duration", order: "desc" } : {}) });
   const rounds = Array.from({ length: os.cycle }, (_, i) => os.cycle - i);

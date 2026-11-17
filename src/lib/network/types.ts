@@ -7,7 +7,23 @@ export type Who = { uuid: string; name: string };
 
 /** GET /v2/firsts: one merged "world firsts" feed, newest first, undated (backfilled) last. */
 export type FirstKind = "stat" | "advancement" | "criterion" | "playtime" | "dimension" | "biome" | "structure" | "item" | (string & {});
-export type First = Who & { kind: FirstKind; at: number | null; server: string | null; title: string; detail?: Record<string, unknown> | null; backfilled?: boolean; imported?: boolean };
+export type First = {
+  /** null when no single holder is known (a backfilled first several players were already past) */
+  uuid: string | null;
+  name: string | null;
+  kind: FirstKind;
+  at: number | null;
+  /** where it happened; null for a network-scope stat, place or item first */
+  server: string | null;
+  /** English display text: the thing's name or its key, an advancement's title, a duration for playtime */
+  title: string;
+  detail?: Record<string, unknown> | null;
+  backfilled?: boolean;
+  imported?: boolean;
+  /** never sent by the API: the site adds the catalogue's picture of what the first is about (pictures.ts) */
+  icon?: string | null;
+  iconKind?: string | null;
+};
 export type FirstsFeed = { scope: Scope; total: number; firsts: First[] };
 
 /** GET /v2/milestones/criteria: who first earned each criterion of an advancement. */

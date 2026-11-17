@@ -10,9 +10,11 @@ import { history } from "#lib/server/history.ts";
 import { scopeParam } from "#lib/api/scope.ts";
 import { fail, ok, type Result } from "#lib/api/result.ts";
 import type { AdvancementRow } from "#lib/api/types.ts";
-import { hideFromFeed } from "#lib/milestones/prepare.server.ts";
+import { hideFromFeed, prepareAdvancements } from "#lib/milestones/prepare.server.ts";
 import { firstsByPlayer } from "#lib/milestones/helpers.ts";
 import { mostCompleted } from "#lib/milestones/advancements.ts";
+import { serverNameMap } from "#lib/servers.ts";
+import { offsetParam } from "#lib/url.ts";
 
 const PAGE = 50;
 // The side boards count the newest COUNT_PAGES × 100 rows: every page is one more API read, and each board
@@ -22,7 +24,7 @@ const COUNT_PAGES = 5;
 export const load: PageServerLoad = async ({ url }) => {
   const scope = scopeParam(url);
   const miniScope = scope.startsWith("mini:");
-  const offset = Math.max(0, Math.min(1_000_000, Number(url.searchParams.get("offset") ?? 0) || 0));
+  const offset = offsetParam(url);
   const c = api();
 
   const [network, rawFeed, firstPage, perDay] = await Promise.all([
@@ -33,7 +35,7 @@ export const load: PageServerLoad = async ({ url }) => {
   ]);
   if (miniScope ? !(await c.advancementsEnabled()) : !rawFeed.ok && rawFeed.kind === "off") error(404, "This proxy has no advancement milestones");
 
-  const feed = hideFromFeed(rawFeed);
+  const feed = await prepareAdvancements(rawFeed);
 
   // the boards: the first page already read, then the rest up to the cap, in parallel
   let counted: Result<{ milestones: AdvancementRow[]; total: number }> = firstPage;
@@ -47,8 +49,7 @@ export const load: PageServerLoad = async ({ url }) => {
   const rows = visible.ok ? visible.data.milestones : [];
   const total = counted.ok ? counted.data.total : 0;
 
-  const serverNames: Record<string, string> = {};
-  if (network.ok) for (const s of network.data.servers) serverNames[s.id] = s.display_name;
+  const serverNames = serverNameMap(network);
 
   return {
     title: "Advancements",

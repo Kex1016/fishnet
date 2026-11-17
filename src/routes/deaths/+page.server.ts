@@ -7,6 +7,8 @@ import { api, extras } from "#lib/server/cakeutils/client.ts";
 import { scopeParam } from "#lib/api/scope.ts";
 import type { Death } from "#lib/network/types.ts";
 import { causeOf } from "#lib/network/deaths.ts";
+import { serverNameMap } from "#lib/servers.ts";
+import { offsetParam } from "#lib/url.ts";
 
 const PAGE = 30;
 
@@ -15,7 +17,7 @@ export const load: PageServerLoad = async ({ url }) => {
   if (!(await x.enabled("deaths"))) error(404, "Not found");
   const scope = scopeParam(url);
   const mini = scope.startsWith("mini:");
-  const offset = Math.max(0, Math.min(1_000_000, Number(url.searchParams.get("offset")) || 0));
+  const offset = offsetParam(url);
   const [network, feed, recent] = await Promise.all([
     api().network(),
     mini ? Promise.resolve(null) : x.deaths({ scope, limit: PAGE, offset }),
@@ -35,8 +37,7 @@ export const load: PageServerLoad = async ({ url }) => {
     w.n += 1;
     who.set(d.uuid, w);
   }
-  const serverNames: Record<string, string> = {};
-  if (network.ok) for (const s of network.data.servers) serverNames[s.id] = s.display_name;
+  const serverNames = serverNameMap(network);
   return {
     title: "Deaths",
     crumbs: [{ label: "Deaths", href: "/deaths" }],

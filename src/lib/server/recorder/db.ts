@@ -68,6 +68,10 @@ export function setMeta(db: Db, key: string, value: string | number): void {
   db.prepare("INSERT INTO meta (key, value) VALUES (?, ?) ON CONFLICT (key) DO UPDATE SET value = excluded.value").run(key, String(value));
 }
 
+export function deleteMeta(db: Db, key: string): void {
+  db.prepare("DELETE FROM meta WHERE key = ?").run(key);
+}
+
 /** Marks a series as recorded from `t` on (the first write wins). Also sets the recorder's start. */
 export function registerSeries(db: Db, key: string, t: number): void {
   db.prepare("INSERT OR IGNORE INTO series (key, since) VALUES (?, ?)").run(key, t);

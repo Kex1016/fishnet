@@ -15,7 +15,9 @@ import { formatStat } from "#lib/format/stat-display.ts";
 import { isHiddenPlayer, withoutHidden } from "#lib/server/hidden.ts";
 import { compositeBoard } from "../composite.server.ts";
 import { loadBoard } from "../load.server.ts";
-import { distribution, median, scopeLabel, scopeMinis, sum } from "../board.ts";
+import { distribution, median, scopeMinis, sum } from "../board.ts";
+import { scopeLabel } from "#lib/servers.ts";
+import { offsetParam } from "#lib/url.ts";
 
 const PAGE = 50;
 
@@ -34,7 +36,7 @@ export const load: PageServerLoad = async ({ params, url }) => {
   if (metric && !combined && metricKey(metric) !== params.metric) redirect(308, `${boardHref(metric)}${url.search}`);
   const reader = combined ? readerFor(c, combined) : c;
 
-  const offset = Math.max(0, Math.floor(Number(url.searchParams.get("offset") ?? 0)) || 0);
+  const offset = offsetParam(url);
   const stat = metric?.kind === "stat" ? metric : null;
   // the leader per day (cakeutils history route); feature-detected, never for composite boards or mini
   // scopes. A combined board reads every part's daily top 10 and keeps the days whose leader is certain.

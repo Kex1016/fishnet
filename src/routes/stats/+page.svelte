@@ -54,9 +54,9 @@
         {#if data.kind}<input type="hidden" name="kind" value={data.kind} />{/if}
       </form>
       <nav class="fp-seg" aria-label="Kind">
-        <a href={withParams(page.url, { kind: null })} aria-current={data.kind === null ? "true" : undefined}>All</a>
+        <a href={withParams(page.url, { kind: null })} aria-current={data.kind === null ? "page" : undefined}>All</a>
         {#each KINDS as k (k)}
-          <a href={withParams(page.url, { kind: k })} aria-current={data.kind === k ? "true" : undefined}>{kindLabel(k)}</a>
+          <a href={withParams(page.url, { kind: k })} aria-current={data.kind === k ? "page" : undefined}>{kindLabel(k)}</a>
         {/each}
       </nav>
     </div>
@@ -80,7 +80,7 @@
         {#each data.subjects.data.subjects as s (s.key + s.kind)}
           <li>
             <a class="fp-row" style="grid-template-columns: 36px minmax(0, 1fr)" href="/stats/subject/{encodeURIComponent(s.key)}">
-              <Slot icon={s.icon} kind={s.kind as never} name={subjectName(s.name, s.key)} />
+              <Slot icon={s.icon} kind={s.kind} name={subjectName(s.name, s.key)} />
               <span class="fp-row__name">{subjectName(s.name, s.key)} <span class="fp-row__sub">{s.kind ?? "?"}</span></span>
             </a>
           </li>

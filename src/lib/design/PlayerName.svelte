@@ -1,12 +1,14 @@
 <script lang="ts">
   // Face + name as a link to the profile. Names are text: Svelte escapes them.
   import Face from "./Face.svelte";
+  import { playerHref, playerRowLabel } from "#lib/players/names.ts";
   let { uuid, name, size = "sm", online }: { uuid: string; name: string; size?: "sm" | "md"; online?: boolean } = $props();
+  const label = $derived(playerRowLabel({ uuid, name }));
 </script>
 
-<a class="fp-player" href="/players/{encodeURIComponent(name)}">
-  <Face {uuid} {name} {size} />
-  <span class="t-truncate">{name}</span>
+<a class="fp-player" href={playerHref({ uuid, name })}>
+  <Face {uuid} name={label} {size} />
+  <span class="t-truncate">{label}</span>
   {#if online}<span class="fp-dot fp-dot--on" title="Online"></span>{/if}
 </a>
 

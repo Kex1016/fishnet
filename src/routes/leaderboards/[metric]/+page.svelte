@@ -7,18 +7,18 @@
   import Pager from "#lib/design/Pager.svelte";
   import ScopeSwitch from "#lib/design/ScopeSwitch.svelte";
   import Slot from "#lib/design/Slot.svelte";
-  import { BarList, ColumnChart, LineChart, StatTile, ViewSwitch, viewParam } from "#lib/charts/index.ts";
+  import { BarList, ColumnChart, LineChart, StatTile } from "#lib/charts/index.ts";
   import { problemCode } from "#lib/api/result.ts";
   import { group } from "#lib/format/stat-display.ts";
-  import { barRows, playerHref, playerLabel } from "../board.ts";
+  import { barRows } from "#lib/boards.ts";
+  import { playerHref, playerRowLabel } from "#lib/players/names.ts";
   let { data } = $props();
-  const view = $derived(viewParam(page.url));
   const board = $derived(data.board);
 </script>
 
 <div class="fp-page">
   <header class="fp-hero" style="flex-direction: row; align-items: center; gap: var(--space-4)">
-    {#if data.subjectKey}<Slot icon={data.subjectIcon} kind={data.subjectKind as never} size="lg" name={data.title} />{/if}
+    {#if data.subjectKey}<Slot icon={data.subjectIcon} kind={data.subjectKind} size="lg" name={data.title} />{/if}
     <div style="display: flex; flex-direction: column; gap: var(--space-2); min-width: 0">
       <span class="t-kicker">{data.typeKey ? "Leaderboard · " : ""}{data.kicker}</span>
       <h1 class="t-display">{data.title}</h1>
@@ -38,7 +38,7 @@
     {:else if board.kind === "bad_request" && problemCode(board) === "mixed_units"}
       <EmptyState title="Custom stats have mixed units" line="Counts, distances and times cannot be added up. Pick one custom stat instead." />
     {:else if board.kind === "rate_limited"}
-      <Notice kind="warning"><b>The site is busy right now.</b> Try again in a moment.</Notice>
+      <Notice kind="info"><b>The site is busy.</b> This board will load again in a moment.</Notice>
     {:else if board.kind === "bad_request"}
       <EmptyState title="This board does not exist" line="It is not a scope or a stat the network knows." />
     {:else}
@@ -47,7 +47,6 @@
   {:else}
     <div class="fp-filters">
       {#if data.network.ok}<ScopeSwitch url={page.url} scope={data.scope} servers={data.network.data.servers} minis={data.minis} />{/if}
-      <span style="margin-left: auto"><ViewSwitch url={page.url} {view} /></span>
     </div>
 
     {#if board.stale}
@@ -62,7 +61,7 @@
     {:else}
       <div class="fp-tiles">
         <StatTile label="Players ranked" value={group(board.ranked)} note={data.scopeName} />
-        <StatTile label="Top score" value={board.topDisplay ?? "—"} note={board.top[0] ? playerLabel(board.top[0]) : undefined} />
+        <StatTile label="Top score" value={board.topDisplay ?? "—"} note={board.top[0] ? playerRowLabel(board.top[0]) : undefined} />
         {#if board.medianDisplay}<StatTile label="Median player" value={board.medianDisplay} note="half have more, half less" />{/if}
         {#if board.totalDisplay}<StatTile label="All players together" value={board.totalDisplay} note="players added up inside {data.scopeName}" />{/if}
       </div>
@@ -71,7 +70,6 @@
         <BarList
           title="Top 10"
           sub="{data.scopeName} · {data.title}"
-          {view}
           faces
           unit={board.unit}
           asOf={board.asOf}
@@ -81,7 +79,6 @@
         <ColumnChart
           title="How players spread out"
           sub="players by how much they have"
-          {view}
           points={board.histogram}
           unit="count"
           format={(v) => `${group(v)} ${v === 1 ? "player" : "players"}`}
@@ -96,7 +93,6 @@
         <LineChart
           title="Top of the board over time"
           sub="{data.scopeName} · the leader's total at the end of each day, UTC"
-          {view}
           points={data.history.points}
           unit={board.unit}
           zero={false}
@@ -111,7 +107,7 @@
         <header class="fp-card__head">
           <div>
             <h2 class="fp-card__title" id="all-players">All players</h2>
-            <div class="fp-card__sub">{data.scopeName} · {group(board.total)} ranked{#if board.capped} · the first 1 000 are loaded{/if}</div>
+            <div class="fp-card__sub">{data.scopeName} · {group(board.total)} ranked{#if board.capped}{" "}· the first 1 000 are loaded{/if}</div>
           </div>
         </header>
         <div class="fp-card__body">
@@ -126,7 +122,7 @@
                   {#each board.rows as e (e.uuid)}
                     <tr>
                       <td class="num">{e.rank}</td>
-                      <td><a class="board-player" href={playerHref(e)}><Face uuid={e.uuid} name={playerLabel(e)} size="sm" /><span>{playerLabel(e)}</span></a></td>
+                      <td><a class="board-player" href={playerHref(e)}><Face uuid={e.uuid} name={playerRowLabel(e)} size="sm" /><span>{playerRowLabel(e)}</span></a></td>
                       <td class="num">{e.display}</td>
                     </tr>
                   {/each}

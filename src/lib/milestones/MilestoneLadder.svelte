@@ -32,7 +32,7 @@
   {#if result.stale}<Notice kind="warning"><b>cakeutils could not be reached.</b> Showing the last good data, <AsOf at={result.asOf} stale />.</Notice>{/if}
   {#if statName || icon}
     <div class="fp-lad__head">
-      <Slot {icon} kind={kind as never} name={statName} />
+      <Slot {icon} kind={kind} name={statName} />
       <span class="t-title-4">{statName}</span>
     </div>
   {/if}

@@ -1,5 +1,6 @@
 import { expect, test } from "bun:test";
-import { activityGrid, boardSum, barRows, HOURS, isOutage, MAX_PAGES, meanPlayers } from "../src/routes/servers/boards.ts";
+import { activityGrid, boardSum, HOURS, isOutage, MAX_PAGES, meanPlayers } from "../src/routes/servers/boards.ts";
+import { barRows } from "#lib/boards.ts";
 import { fail, ok } from "#lib/api/result.ts";
 import type { Leaderboard } from "#lib/api/types.ts";
 import { PLAYTIME } from "#lib/api/metric.ts";
@@ -60,6 +61,10 @@ test("a 404 passes through, and a failing later page fails the total", async () 
 test("bar rows link to the player", () => {
   expect(barRows([entry(0, 3)], 5)[0]).toMatchObject({ rank: 1, label: "p0", href: "/players/p0" });
   expect(barRows(Array.from({ length: 9 }, (_, i) => entry(i, 1)), 5).length).toBe(5);
+  expect(barRows(Array.from({ length: 9 }, (_, i) => entry(i, 1))).length).toBe(9);
+  // a player known only by UUID: a short label, linked by the UUID
+  const uuid = "123e4567-e89b-12d3-a456-426614174000";
+  expect(barRows([{ ...entry(0, 3), uuid, name: uuid }])[0]).toMatchObject({ label: "Player 123e4567", href: `/players/${uuid}`, uuid });
 });
 
 test("the busiest-hours grid is Monday first with 24 UTC hours, and empty when nothing was recorded", () => {

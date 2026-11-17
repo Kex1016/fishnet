@@ -3,6 +3,8 @@
 // Each group is probed once and remembered 10 min: a 404 (or 401/403) hides its widgets (`off`), never
 // confused with "nothing yet". Hidden servers and One Soul servers leave every answer: rows naming them are
 // dropped, their scopes answer not_found, and network reads ask cakeutils without them (`exclude=`).
+// Opted-out players (hidden.ts, PLAN §3.4) leave every list as well: their firsts, criteria, playtime
+// milestones and deaths, and a death by their hand (its text names them).
 import { fail, type Result } from "#lib/api/result.ts";
 import type { Scope } from "#lib/api/scope.ts";
 import { shortType, type Metric } from "#lib/api/metric.ts";
@@ -41,7 +43,18 @@ export interface Extras {
   history(metric: Metric, q?: { scope?: Scope; since?: number; until?: number; limit?: number }): Promise<Result<BoardHistory>>;
 }
 
-export function createExtras(core: Core, o: { priority: () => Priority; hidden: () => ServerList; exclude: () => readonly string[]; now?: () => number }): Extras {
+type Who = { uuid?: string | null; name?: string | null };
+
+export type ExtrasOptions = {
+  priority: () => Priority;
+  hidden: () => ServerList;
+  exclude: () => readonly string[];
+  /** true for a player on the opt-out list; default nobody */
+  hiddenPlayer?: (p: { uuid: string; name: string }) => boolean;
+  now?: () => number;
+};
+
+export function createExtras(core: Core, o: ExtrasOptions): Extras {
   const now = o.now ?? Date.now;
   const get = <T>(path: string) => core.get<T>({ path }, o.priority());
   const enc = encodeURIComponent;
@@ -74,13 +87,18 @@ export function createExtras(core: Core, o: { priority: () => Priority; hidden: 
   }
 
   const hiddenScope = (scope: Scope | undefined) => !!scope && o.hidden().hidesScope(scope);
-  /** rows that name a hidden or One Soul server leave the list; `total` drops by as many */
+  const optedOut = (p: Who | null | undefined) => !!p && !!(p.uuid || p.name) && !!o.hiddenPlayer?.({ uuid: p.uuid ?? "", name: p.name ?? "" });
+  /**
+   * Rows that name a hidden or One Soul server leave the list, and so do rows of opted-out players (a
+   * death also when the killer is one); `total` drops by as many as left this page.
+   */
   function dropRows<T extends { total: number }, K extends keyof T>(r: Result<T>, key: K): Result<T> {
+    if (!r.ok) return r;
     const l = o.hidden();
-    if (!r.ok || l.size === 0) return r;
-    const rows = r.data[key] as unknown as { server?: string | null }[];
+    const rows = r.data[key] as unknown as (Who & { server?: string | null; killer_player?: Who | null })[];
     if (!Array.isArray(rows)) return r;
-    const kept = rows.filter((x) => !l.has(x.server ?? null));
+    const kept = rows.filter((x) => !(l.size > 0 && l.has(x.server ?? null)) && !optedOut(x) && !optedOut(x.killer_player));
+    if (kept.length === rows.length) return r;
     return { ...r, data: { ...r.data, [key]: kept, total: Math.max(0, r.data.total - (rows.length - kept.length)) } };
   }
   const gated = async <T>(f: Feature, scope: Scope | undefined, run: () => Promise<Result<T>>): Promise<Result<T>> => {
@@ -104,7 +122,7 @@ export function createExtras(core: Core, o: { priority: () => Priority; hidden: 
         // the longest session on a hidden server keeps its length but not the server's name
         return r.ok && r.data.longest_session && o.hidden().has(r.data.longest_session.server) ? { ...r, data: { ...r.data, longest_session: { ...r.data.longest_session, server: null } } } : r;
       }),
-    playtimeMilestones: (p = {}) => gated("playtimeMilestones", p.scope, () => get<PlaytimeMilestones>(`/v2/milestones/playtime${qx(p)}`)),
+    playtimeMilestones: (p = {}) => gated("playtimeMilestones", p.scope, async () => dropRows(await get<PlaytimeMilestones>(`/v2/milestones/playtime${qx(p)}`), "milestones")),
     history: (m, p = {}) =>
       gated("history", p.scope, () =>
         get<BoardHistory>(m.kind === "playtime" ? `/v2/leaderboards/history/playtime${qx(p)}` : `/v2/leaderboards/history/${enc(shortType(m.type))}/${enc(m.subject)}${qx(p)}`)

@@ -1,4 +1,6 @@
 import { expect, test } from "bun:test";
+import { arrange, holdersHref, playerFeedHref, ranked, sortParam } from "../src/routes/milestones/holders.ts";
+import { MAX_OFFSET, offsetParam } from "#lib/url.ts";
 import { dayGrid, dayStart, firstsByPlayer, nextRung, rowKey, statHref, statLabel, whenOf, whoOf } from "#lib/milestones/helpers.ts";
 
 const row = (o: Record<string, unknown> = {}) => ({ threshold: 100, display: "100", uuid: null, name: null, reached_at: null, backfilled: false, ...o }) as never;
@@ -66,4 +68,46 @@ test("day grid: data older than the cap is clipped to the last 13 weeks", () => 
   expect(g.weeks).toBe(13);
   expect(g.columns).toHaveLength(13);
   expect(dayStart(NOW) - dayStart(old)).toBeGreaterThan(13 * 7 * D);
+});
+
+const holder = (name: string, count: number, latest: number | null = null) => ({ uuid: `u-${name}`, name, count, latest });
+
+test("milestones per player: equal counts share a place and the next one skips", () => {
+  expect(ranked([holder("Ann", 9), holder("Bo", 4), holder("Cy", 4), holder("Di", 1)]).map((h) => [h.name, h.rank])).toEqual([["Ann", 1], ["Bo", 2], ["Cy", 2], ["Di", 4]]);
+  expect(ranked([])).toEqual([]);
+});
+
+test("milestones per player: the name filter and the order keep the places by count", () => {
+  const rows = ranked([holder("Ann", 9, 100), holder("Bo", 4, 300), holder("Cy", 4, null), holder("anna", 1, 200)]);
+  expect(arrange(rows, "", "most").map((h) => h.name)).toEqual(["Ann", "Bo", "Cy", "anna"]);
+  expect(arrange(rows, " AN ", "most").map((h) => [h.name, h.rank])).toEqual([["Ann", 1], ["anna", 4]]);
+  expect(arrange(rows, "", "name").map((h) => h.name)).toEqual(["Ann", "anna", "Bo", "Cy"]);
+  // newest first; a player whose milestones were all reached before tracking began has no date and comes last
+  expect(arrange(rows, "", "latest").map((h) => h.name)).toEqual(["Bo", "anna", "Ann", "Cy"]);
+  expect(arrange(rows, "zz", "most")).toEqual([]);
+  expect(rows.map((h) => h.name)).toEqual(["Ann", "Bo", "Cy", "anna"]); // the input is not reordered
+  expect(sortParam("latest")).toBe("latest");
+  expect(sortParam("name")).toBe("name");
+  expect(sortParam("junk")).toBe("most");
+  expect(sortParam(null)).toBe("most");
+});
+
+test("milestones per player: links keep the scope and stat type; a UUID name links by UUID", () => {
+  const uuid = "123e4567-e89b-12d3-a456-426614174000";
+  expect(playerFeedHref({ uuid, name: "Ann" }, "network", "")).toBe("/milestones?player=Ann");
+  expect(playerFeedHref({ uuid, name: "Ann" }, "server:survival", "minecraft:mined")).toBe("/milestones?scope=server%3Asurvival&type=minecraft%3Amined&player=Ann");
+  expect(playerFeedHref({ uuid, name: uuid }, "network", "")).toBe(`/milestones?player=${uuid}`);
+  expect(holdersHref("network", "")).toBe("/milestones/players");
+  expect(holdersHref("server:survival", "minecraft:mined")).toBe("/milestones/players?scope=server%3Asurvival&type=minecraft%3Amined");
+});
+
+test("offset: a whole number the API takes, anything else is the first page", () => {
+  const at = (q: string) => offsetParam(new URL(`http://x/?${q}`));
+  expect(at("")).toBe(0);
+  expect(at("offset=50")).toBe(50);
+  expect(at("offset=50.9")).toBe(50);
+  expect(at("offset=-5")).toBe(0);
+  expect(at("offset=abc")).toBe(0);
+  expect(at("offset=Infinity")).toBe(0);
+  expect(at("offset=99999999")).toBe(MAX_OFFSET);
 });

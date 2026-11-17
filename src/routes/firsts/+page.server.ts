@@ -5,6 +5,9 @@ import type { PageServerLoad } from "./$types";
 import { api, extras } from "#lib/server/cakeutils/client.ts";
 import { scopeParam } from "#lib/api/scope.ts";
 import { FIRST_KINDS } from "#lib/network/words.ts";
+import { withFirstPictures } from "#lib/milestones/pictures.server.ts";
+import { serverNameMap } from "#lib/servers.ts";
+import { offsetParam } from "#lib/url.ts";
 
 const PAGE = 40;
 
@@ -14,11 +17,10 @@ export const load: PageServerLoad = async ({ url }) => {
   const scope = scopeParam(url);
   const k = url.searchParams.get("kind");
   const kind = k && FIRST_KINDS.some((f) => f.id === k) ? k : null;
-  const offset = Math.max(0, Math.min(1_000_000, Number(url.searchParams.get("offset")) || 0));
+  const offset = offsetParam(url);
   const mini = scope.startsWith("mini:");
-  const [network, feed] = await Promise.all([api().network(), mini ? Promise.resolve(null) : x.firsts({ scope, kinds: kind ? [kind] : undefined, limit: PAGE, offset })]);
+  const [network, feed] = await Promise.all([api().network(), mini ? Promise.resolve(null) : x.firsts({ scope, kinds: kind ? [kind] : undefined, limit: PAGE, offset }).then((r) => withFirstPictures(r))]);
   if (feed && !feed.ok && feed.kind === "not_found") error(404, "Not found");
-  const serverNames: Record<string, string> = {};
-  if (network.ok) for (const s of network.data.servers) serverNames[s.id] = s.display_name;
+  const serverNames = serverNameMap(network);
   return { title: "Firsts", crumbs: [{ label: "Firsts", href: "/firsts" }], network, serverNames, scope, mini, kind, feed, limit: PAGE, offset };
 };

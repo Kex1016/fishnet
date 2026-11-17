@@ -1,11 +1,24 @@
 <script lang="ts">
   // An item slot: cakeutils' rendered icon in a frame, or a per-kind glyph when there is none (PLAN §2.2).
-  import type { Kind } from "#lib/api/types.ts";
   import { Box, Package, Rabbit, Sigma, Shapes } from "@lucide/svelte";
   import { iconHref } from "#lib/images.ts";
-  let { icon, kind, name, size = "md" }: { icon: string | null | undefined; kind: Kind | null | undefined; name?: string | null; size?: "md" | "lg" } = $props();
-  const glyphs = { block: Box, item: Package, entity: Rabbit, custom: Sigma, other: Shapes };
-  const Glyph = $derived(glyphs[kind ?? "other"] ?? Shapes);
+  let {
+    icon,
+    kind,
+    name,
+    size = "md",
+    glyph
+  }: {
+    icon: string | null | undefined;
+    /** the catalogue's kind as the API gives it; an unknown one gets the generic glyph */
+    kind?: string | null;
+    name?: string | null;
+    size?: "md" | "lg";
+    /** the glyph to show without an icon, for rows that are not a stat subject (an advancement, a biome) */
+    glyph?: typeof Box;
+  } = $props();
+  const glyphs: Record<string, typeof Box> = { block: Box, item: Package, entity: Rabbit, custom: Sigma, other: Shapes };
+  const Glyph = $derived(glyph ?? glyphs[kind ?? "other"] ?? Shapes);
   const href = $derived(iconHref(icon));
 </script>
 

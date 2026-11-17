@@ -10,7 +10,7 @@
   import { boardHref } from "#lib/api/metric.ts";
   import { group } from "#lib/format/stat-display.ts";
   import { withParams } from "#lib/url.ts";
-  import { playerHref, playerLabel } from "../../../leaderboards/board.ts";
+  import { playerHref, playerRowLabel } from "#lib/players/names.ts";
   let { data } = $props();
   const showLadder = $derived(data.ladder !== null && !(!data.ladder.ok && data.ladder.kind === "off"));
 </script>
@@ -21,7 +21,7 @@
   {:else}
     {@const s = data.subject.data}
     <header class="fp-hero" style="flex-direction: row; align-items: center; gap: var(--space-4)">
-      <Slot icon={s.names[0]?.icon} kind={s.names[0]?.kind as never} size="lg" name={data.label} />
+      <Slot icon={s.names[0]?.icon} kind={s.names[0]?.kind} size="lg" name={data.label} />
       <div style="display: flex; flex-direction: column; gap: var(--space-2); min-width: 0">
         <span class="t-kicker">{data.key}</span>
         <h1 class="t-display">{data.label}</h1>
@@ -50,7 +50,7 @@
                 <tr>
                   <td><a href={boardHref({ kind: "stat", type: b.type, subject: data.key }, data.scope)}>{b.typeName}</a></td>
                   {#if b.result.ok && b.result.leader}
-                    <td><a class="lead" href={playerHref(b.result.leader)}><Face uuid={b.result.leader.uuid} name={playerLabel(b.result.leader)} size="sm" /><span>{playerLabel(b.result.leader)}</span></a></td>
+                    <td><a class="lead" href={playerHref(b.result.leader)}><Face uuid={b.result.leader.uuid} name={playerRowLabel(b.result.leader)} size="sm" /><span>{playerRowLabel(b.result.leader)}</span></a></td>
                     <td class="num">{b.result.leader.display}</td>
                     <td class="num">{group(b.result.total)}</td>
                   {:else if b.result.ok}
@@ -71,7 +71,7 @@
           {#if s.types.length > 1}
             <nav class="fp-chips" aria-label="Milestones for which type">
               {#each data.boards as b (b.type)}
-                <a class="fp-chip" href={withParams(page.url, { type: b.type })} aria-current={b.type === data.firstType ? "true" : undefined}>{b.typeName}</a>
+                <a class="fp-chip" href={withParams(page.url, { type: b.type })} aria-current={b.type === data.firstType ? "page" : undefined}>{b.typeName}</a>
               {/each}
             </nav>
           {/if}

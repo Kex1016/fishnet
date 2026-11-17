@@ -5,11 +5,12 @@ import { fail, ok, type Result } from "#lib/api/result.ts";
 import { metricKey, type Metric } from "#lib/api/metric.ts";
 import type { FeaturedBoard } from "#lib/boards.ts";
 import type { AdvancementRow, LeaderboardEntry, MilestoneFeedRow, Network } from "#lib/api/types.ts";
+import { DatabaseSync } from "node:sqlite";
 import { getMetaNumber, migrate, openDb, schemaVersion, seriesSince } from "#lib/server/recorder/db.ts";
 import { MIGRATIONS } from "#lib/server/recorder/schema.ts";
 import {
-  applyRetention, purgeHidden, recordAdvancements, recordBoards, recordMilestones, recordMinis, recordNetwork, recordPlayers, recordServerAdvancements,
-  recordTotals, rollUp, type RecorderDeps
+  CAPS, applyRetention, purgeHidden, recordAdvancements, recordBoards, recordMilestones, recordMinis, recordNetwork, recordPlayers, recordServerAdvancements,
+  recordTotals, rollUp, sweepMilestones, type RecorderDeps
 } from "#lib/server/recorder/jobs.ts";
 import { createSqliteHistory } from "#lib/server/recorder/queries.ts";
 import { JOBS, firstRun, nextRun, startScheduler } from "#lib/server/recorder/scheduler.ts";
@@ -148,6 +149,17 @@ describe("schema", () => {
     migrate(db); // idempotent
     db.exec(`PRAGMA user_version = ${MIGRATIONS.length + 1}`);
     expect(() => migrate(db)).toThrow(/newer than this build/);
+  });
+
+  test("3: a version 2 file keeps its milestone rows and gains the stat type column", () => {
+    const db = new DatabaseSync(":memory:");
+    db.exec(MIGRATIONS[0]);
+    db.exec(MIGRATIONS[1]);
+    db.exec("PRAGMA user_version = 2");
+    db.prepare("INSERT INTO milestone (scope, metric, threshold, uuid, name, reached_at, backfilled, seen_at) VALUES ('network', 'mined:minecraft:stone', 10, 'u-a', 'Ann', 5, 0, 6)").run();
+    migrate(db);
+    expect(schemaVersion(db)).toBe(MIGRATIONS.length);
+    expect(db.prepare("SELECT metric, name, type FROM milestone").all()).toEqual([{ metric: "mined:minecraft:stone", name: "Ann", type: null }]);
   });
 });
 
@@ -361,7 +373,7 @@ describe("totals", () => {
   });
 });
 
-const ms = (metric: string, threshold: number, reached_at: number | null, extra: Partial<MilestoneFeedRow> = {}): MilestoneFeedRow & { scope: string } => ({
+const ms = (metric: string, threshold: number, reached_at: number | null, extra: Partial<MilestoneFeedRow & { scope: string }> = {}): MilestoneFeedRow & { scope: string } => ({
   metric,
   type: "minecraft:mined",
   subject: "minecraft:stone",
@@ -405,6 +417,96 @@ describe("milestones", () => {
     const s = setup();
     await recordMilestones(s.d, "network");
     expect(await s.h.milestonesPerDay("network", "month")).toEqual({ since: T0, days: [{ day: Date.UTC(2026, 10, 4), v: 0 }] });
+  });
+});
+
+describe("milestones per player", () => {
+  const holders = (h: { holders: { name: string; count: number }[] }) => h.holders.map((x) => [x.name, x.count]);
+
+  test("not complete until the whole feed has been read once; then every player's total, with the rows from before tracking", async () => {
+    const s = setup({ hidden: ["Hid"] });
+    await recordNetwork(s.d);
+    // newest first, the rows from before tracking last (the API's order)
+    s.f.feed = [
+      ...Array.from({ length: 130 }, (_, i) => ms(`mined:minecraft:b${i}`, 10, T0 - (i + 1) * MINUTE, i % 2 ? { uuid: "u-b", name: "Bo", type: "minecraft:used" } : {})),
+      ms("mined:minecraft:sand", 1, T0 - DAY, { uuid: "u-h", name: "Hid" }),
+      ms("mined:minecraft:dirt", 1, T0 - 2 * DAY, { uuid: null, name: null }),
+      ...Array.from({ length: 20 }, (_, i) => ms(`mined:minecraft:old${i}`, 1, null, { uuid: "u-c", name: "Cy" })),
+      ms("mined:minecraft:stone", 5, T0 - HOUR, { scope: "server:survival", uuid: "u-b", name: "Bo" })
+    ];
+    expect((await s.h.milestoneHolders("network")).complete).toBeNull();
+
+    const before = CAPS.sweepPages;
+    CAPS.sweepPages = 1;
+    try {
+      expect(await sweepMilestones(s.d)).toBe("more"); // one page of the network feed
+      expect((await s.h.milestoneHolders("network")).complete).toBeNull();
+      expect(getMetaNumber(s.db, "ms_sweep_offset:network")).toBe(100);
+      expect(await sweepMilestones(s.d)).toBe("more"); // the rest of the network; the servers wait
+      expect((await s.h.milestoneHolders("network")).complete).toBe(T0);
+      expect((await s.h.milestoneHolders("server:survival")).complete).toBeNull();
+      CAPS.sweepPages = 40;
+      expect(await sweepMilestones(s.d)).toBe("ok");
+    } finally {
+      CAPS.sweepPages = before;
+    }
+
+    const net = await s.h.milestoneHolders("network");
+    expect(holders(net)).toEqual([["Ann", 65], ["Bo", 65], ["Cy", 20]]); // equal counts by name; the opted-out player and the unknown first are not players
+    expect(net.counted).toBe(151); // every stored row, the one without a known player too
+    expect(net.holders[0].latest).toBe(T0 - MINUTE);
+    expect(net.holders[2].latest).toBeNull(); // all reached before tracking began
+    expect(holders(await s.h.milestoneHolders("network", "minecraft:used"))).toEqual([["Bo", 65]]);
+    expect(holders(await s.h.milestoneHolders("network", "used"))).toEqual([["Bo", 65]]); // the API takes the short form too
+    expect(holders(await s.h.milestoneHolders("server:survival"))).toEqual([["Bo", 1]]);
+    expect((await s.h.milestoneHolders("server:lobby")).complete).toBe(T0); // read, and empty
+    expect(await s.h.milestoneHolders("mini:survival/sky-1")).toEqual({ complete: null, asOf: null, counted: 0, holders: [] });
+    // the heatmap (a series the head job registers) still counts dated rows only
+    await recordMilestones(s.d, "network");
+    expect((await s.h.milestonesPerDay("network", "week")).days.reduce((a, d) => a + d.v, 0)).toBe(131);
+  });
+
+  test("read again a day later: a row that left the feed leaves the copy; a down answer keeps the place", async () => {
+    const s = setup();
+    await recordNetwork(s.d);
+    s.f.feed = [ms("mined:minecraft:stone", 100, T0 - HOUR), ms("mined:minecraft:stone", 10, T0 - DAY, { uuid: "u-b", name: "Bo" })];
+    expect(await sweepMilestones(s.d)).toBe("ok");
+    s.f.calls = [];
+    s.at(T0 + HOUR);
+    expect(await sweepMilestones(s.d)).toBe("skipped"); // read in full an hour ago
+    expect(s.f.calls).toEqual([]);
+
+    s.at(T0 + DAY + MINUTE);
+    s.f.feed.pop();
+    s.f.down = true;
+    expect(await sweepMilestones(s.d)).toBe("down");
+    expect((await s.h.milestoneHolders("network")).holders.length).toBe(2); // nothing removed on a failed read
+    s.f.down = false;
+    expect(await sweepMilestones(s.d)).toBe("ok");
+    const net = await s.h.milestoneHolders("network");
+    expect(holders(net)).toEqual([["Ann", 1]]);
+    expect(net.complete).toBe(T0 + DAY + MINUTE);
+  });
+
+  test("a renamed player is counted once, under the current name; a player who opts out leaves the totals", async () => {
+    const s = setup();
+    await recordNetwork(s.d);
+    s.f.players.push({ uuid: "u-a", name: "Anna", first_seen: T0 - 10 * DAY });
+    await recordPlayers(s.d);
+    s.f.feed = [ms("mined:minecraft:stone", 100, T0 - HOUR, { name: "Anna" }), ms("mined:minecraft:stone", 10, T0 - DAY)];
+    await sweepMilestones(s.d);
+    expect(holders(await s.h.milestoneHolders("network"))).toEqual([["Anna", 2]]);
+    const hiddenNow = createSqliteHistory(s.db, { now: () => s.now, hidden: (p) => p.uuid === "u-a", featured: s.d.featured });
+    expect(holders(await hiddenNow.milestoneHolders("network"))).toEqual([]);
+  });
+
+  test("off: skipped without a request", async () => {
+    const s = setup();
+    s.f.milestonesOn = false;
+    await recordNetwork(s.d);
+    s.f.calls = [];
+    expect(await sweepMilestones(s.d)).toBe("skipped");
+    expect(s.f.calls).toEqual([]);
   });
 });
 
@@ -506,6 +608,19 @@ describe("scheduler", () => {
     const minute = JOBS.find((j) => j.name === "network")!;
     expect(firstRun(minute, null, T0 + 12_345, 0)).toBe(T0 + 13_345);
     expect(nextRun(minute, T0 + 13_345, "ok", T0 + 14_000)).toBe(T0 + MINUTE + 2_000);
+    // a run that stopped at its page cap goes on a minute later
+    expect(nextRun(hourly, T0, "more", T0 + 20_000)).toBe(T0 + 20_000 + MINUTE);
+  });
+
+  test("a run that answers more is not a finished run: its last run is not kept", async () => {
+    const s = setup();
+    let left = 1;
+    const sched = startScheduler(s.d, [{ name: "long", every: HOUR, run: async () => (left-- > 0 ? "more" : "ok") }]);
+    expect(await sched.runOnce("long")).toBe("more");
+    expect(getMetaNumber(s.db, "last_run:long")).toBeNull();
+    expect(await sched.runOnce("long")).toBe("ok");
+    sched.stop();
+    expect(getMetaNumber(s.db, "last_run:long")).toBe(T0);
   });
 
   test("runs jobs inside the recorder context and keeps their last run", async () => {
@@ -576,5 +691,9 @@ describe("mock seeding", () => {
     expect(Object.keys(await b.h.miniPresence("survival", "week"))).toEqual(["sky-1"]);
     expect((await b.h.activityByHour("network", "week")).cells.flat().every((c) => c !== null)).toBe(true);
     expect((await b.h.joinsPerWeek("month")).points.reduce((a, p) => a + p.v, 0)).toBe(1);
+    // the milestone copy is read in full while seeding, so the mock shows every player's total
+    const held = await b.h.milestoneHolders("network");
+    expect(held.complete).not.toBeNull();
+    expect(held.holders.map((x) => [x.name, x.count])).toEqual([["Ann", 1]]);
   });
 });

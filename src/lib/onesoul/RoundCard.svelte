@@ -13,7 +13,7 @@
     <span class="fp-tag {current ? 'fp-tag--acc' : ''}">{current ? (r.state ? stateLabel(r.state) : "Now") : "Over"}</span>
   </div>
   <div class="t-small t-muted">
-    {#if r.started_at}{day(r.started_at)}{#if r.ended_at} to {day(r.ended_at)}{/if}{:else}World not opened yet{/if}
+    {#if r.started_at}{day(r.started_at)}{#if r.ended_at}{" "}to {day(r.ended_at)}{/if}{:else}World not opened yet{/if}
   </div>
   <dl class="os-round__facts">
     <div><dt>Souls</dt><dd class="t-num">{r.souls}</dd></div>

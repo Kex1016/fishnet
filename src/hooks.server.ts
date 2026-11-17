@@ -1,9 +1,8 @@
 // Shared file (PLAN §7): minimal additive edits only, named in the unit's report.
-// W0: theme cookie → <html data-theme>, mock-mode guard, security headers beyond the CSP in
-// svelte.config.js. W2 adds the recorder's start in `init`.
+// W0: theme cookie → <html data-theme>, mock-mode guard, security headers beyond the CSP set in
+// vite.config.ts. W2 adds the recorder's start in `init`.
 import type { Handle, ServerInit } from "@sveltejs/kit/hooks";
-import { config, displayUrl, tokenId } from "#lib/server/env.ts";
-import { apiToken } from "#lib/server/env.ts";
+import { apiToken, config, displayUrl, tokenId } from "#lib/server/env.ts";
 import { startRecorder } from "#lib/server/recorder/index.ts";
 import { labelOverrides } from "#lib/server/admin/index.ts";
 import { setLabelOverrides } from "#lib/format/labels.ts";

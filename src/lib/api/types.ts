@@ -84,11 +84,14 @@ export type AdvancementHolder = NonNullable<S["AdvancementMilestone"]["network"]
  * A feed row: the advancement (namespaced id and the English title the backend last reported) plus its first
  * earner. The feed has `uuid` and `name`; the player endpoint's rows have neither (the player is on the
  * envelope), so both are optional here. `title` may be empty for an advancement the backend never titled.
+ * `icon` is never sent by the API: the site adds the catalogue's icon of the item the game shows for the
+ * advancement (src/lib/milestones/pictures.ts).
  */
 export type AdvancementRow = Omit<ApiAdvancementRow, "uuid" | "name" | "title"> & {
   uuid?: string | null;
   name?: string | null;
   title?: string | null;
+  icon?: string | null;
 };
 
 /** GET /v2/milestones/advancements: newest first. */

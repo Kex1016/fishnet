@@ -5,6 +5,7 @@ import { api } from "#lib/server/cakeutils/client.ts";
 import { fullType } from "#lib/api/metric.ts";
 import { typeLabel } from "#lib/format/labels.ts";
 import { withoutHidden } from "#lib/server/hidden.ts";
+import { offsetParam } from "#lib/url.ts";
 
 const LIMIT = 48;
 
@@ -12,7 +13,7 @@ export const load: PageServerLoad = async ({ params, url }) => {
   if (!/^[A-Za-z0-9_.-]+(:[A-Za-z0-9_.-]+)?$/.test(params.type)) error(404, "No such stat type");
   const key = fullType(params.type);
   const q = (url.searchParams.get("q") ?? "").trim().slice(0, 64);
-  const offset = Math.max(0, Math.floor(Number(url.searchParams.get("offset") ?? 0)) || 0);
+  const offset = offsetParam(url);
   const c = api();
   const types = await c.statTypes();
   const type = types.ok ? types.data.types.find((t) => t.key === key) : undefined;

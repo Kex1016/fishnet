@@ -6,18 +6,19 @@ import { error } from "@sveltejs/kit";
 import type { PageServerLoad } from "./$types";
 import { api, extras } from "#lib/server/cakeutils/client.ts";
 import { hideFromAdvancement } from "#lib/milestones/prepare.server.ts";
+import { advancementIcon } from "#lib/milestones/pictures.server.ts";
 import { advCategory, advTitle, fullAdvId, isAdvId } from "#lib/milestones/advancements.ts";
+import { serverNameMap } from "#lib/servers.ts";
 
 export const load: PageServerLoad = async ({ params }) => {
   const raw = params.id;
   if (!raw || !isAdvId(raw)) error(404, "No such advancement");
   const id = fullAdvId(raw);
   const c = api();
-  const [network, detail, criteria] = await Promise.all([c.network(), c.advancement(id), extras().criteria({ advancement: id, limit: 100 })]);
+  const [network, detail, criteria, icon] = await Promise.all([c.network(), c.advancement(id), extras().criteria({ advancement: id, limit: 100 }), advancementIcon(id)]);
   if (!detail.ok && detail.kind === "off") error(404, "This proxy has no advancement milestones");
 
-  const serverNames: Record<string, string> = {};
-  if (network.ok) for (const s of network.data.servers) serverNames[s.id] = s.display_name;
+  const serverNames = serverNameMap(network);
 
   const title = advTitle({ advancement: id, title: detail.ok ? detail.data.title : null });
   return {
@@ -25,6 +26,8 @@ export const load: PageServerLoad = async ({ params }) => {
     crumbs: [{ label: "Advancements", href: "/advancements" }, { label: title }],
     id,
     category: advCategory(id),
+    /** the catalogue's icon of the item the game shows for it, or null */
+    icon,
     detail: hideFromAdvancement(detail),
     /** who first earned each part of it, network-wide (cakeutils B1); null when the proxy has no such route */
     criteria: criteria.ok ? [...criteria.data.criteria].sort((a, b) => a.criterion.localeCompare(b.criterion)) : null,

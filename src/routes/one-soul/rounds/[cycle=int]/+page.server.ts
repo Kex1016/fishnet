@@ -8,7 +8,7 @@ import type { Result } from "#lib/api/result.ts";
 import type { Scope } from "#lib/api/scope.ts";
 import { oneSoul, sectionApi } from "#lib/server/onesoul/index.ts";
 import { allGraves, allSouls, roundSummaries } from "#lib/server/onesoul/section.ts";
-import { prepareFeed, hideFromFeed } from "#lib/milestones/prepare.server.ts";
+import { prepareAdvancements, prepareFeed } from "#lib/milestones/prepare.server.ts";
 import { PLAYTIME } from "#lib/api/metric.ts";
 import { roundShapes, roundTiles } from "#lib/map/layers/round.server.ts";
 
@@ -28,7 +28,7 @@ export const load: PageServerLoad = async ({ parent, params, url }) => {
         s.leaderboard({ kind: "stat", type: "minecraft:mined", subject: "*" }, scope, { limit: 5 }).then(board),
         s.leaderboard({ kind: "stat", type: "minecraft:killed", subject: "*" }, scope, { limit: 5 }).then(board),
         s.milestones({ scope, limit: 8 }).then(prepareFeed),
-        s.advancements({ scope, limit: 8 }).then(hideFromFeed),
+        s.advancements({ scope, limit: 8 }).then(prepareAdvancements),
         summary.ended_at ? oneSoul().pranks({ server: os.server, cycle }) : Promise.resolve(null)
       ])
     : [null, null, null, null, null, summary.ended_at ? await oneSoul().pranks({ server: os.server, cycle }) : null];

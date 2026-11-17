@@ -6,9 +6,10 @@
 // What callers can rely on:
 // - `stale: true` = cakeutils could not be reached (or throttled us) and this is the last good answer,
 //   at most 24 h old, from `asOf`. Pages show "as of"; the recorder ignores it.
-// - A fresh answer is at most its TTL old: 5 s live data, 15 s boards, 10 min catalogue, icons forever;
-//   a little older (up to one more TTL, ≥ 10 s) while a refresh runs behind it.
-// - 404 and 400 answers are remembered briefly too (5 s, boards 15 s, catalogue 1 min).
+// - A fresh answer is at most its tier's TTL old (policy.ts: live data 15 s, players 30 s, boards and
+//   feeds 60 s, the catalogue 30 min, icons forever), then served a while longer while one refresh runs
+//   behind it (the tier's stale-while-revalidate window).
+// - 404 and 400 answers are remembered for the tier's negative TTL (15 s to 5 min).
 // - `rate_limited` comes only when nothing stale can be served; `retryAfter` is in seconds.
 //
 // Routes the site must never call: /v2/players/{ref}/relations, /v2/admin/*. They are not here.
@@ -145,7 +146,12 @@ let extrasInstance: Extras | null = null;
 /** The planned network routes (firsts, deaths, activity, ...), feature-detected, with the regular hide list. */
 export function extras(): Extras {
   if (extrasInstance) return extrasInstance;
-  extrasInstance = createExtras(shared(), { priority: () => priorityOf(), hidden: regularList, exclude: () => [...new Set([...hiddenServers().ids, ...standaloneExclude()])] });
+  extrasInstance = createExtras(shared(), {
+    priority: () => priorityOf(),
+    hidden: regularList,
+    exclude: () => [...new Set([...hiddenServers().ids, ...standaloneExclude()])],
+    hiddenPlayer: (p) => hiddenPlayers().hasPlayer(p)
+  });
   return extrasInstance;
 }
 

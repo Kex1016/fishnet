@@ -317,15 +317,56 @@ export const CHECKS: Check[] = [
     }
   },
   {
-    name: "the tables view renders every chart's table twin",
+    name: "pages draw their charts and carry no charts or tables switch",
     on: ["busy"],
     run: async (ctx) => {
-      for (const p of ["/?view=tables", "/servers/survival?view=tables", "/milestones?view=tables", "/advancements?view=tables"]) {
+      // the switch left the pages on 17 Nov 2026 (the charts read better); an old ?view=tables link shows the charts too
+      for (const p of ["/", "/servers/survival", "/milestones", "/advancements", "/?view=tables", "/servers/survival?view=tables"]) {
         const html = await ctx.html(p);
-        const tables = (html.match(/<table class="fp-table"/g) ?? []).length;
-        expect(tables >= 2, `${p} renders ${tables} tables`);
-        expect(/aria-current="true"[^>]*>[^<]*Tables|Tables<\/a>/.test(html) || /aria-current/.test(html), `${p}: the view switch does not mark Tables`);
-        expect(!/<svg[^>]*class="fp-plot\b/.test(html), `${p} still draws charts in the tables view`);
+        expect(!html.includes('aria-label="Charts or tables"'), `${p} still carries the charts or tables switch`);
+        expect(/<svg[^>]*class="fp-plot\b/.test(html) || html.includes("fp-plot__cell--") || html.includes('class="fp-bar"'), `${p} draws no chart`);
+      }
+    }
+  },
+  {
+    name: "milestones per player: every total, the table, and the feed of one player",
+    on: ["busy"],
+    run: async (ctx) => {
+      const digits = (t: string) => t.replace(/\D/g, "");
+      const ms = await ctx.html("/milestones");
+      expect(ms.includes("Most milestones") && ms.includes('href="/milestones/players"'), "/milestones has no board of totals linking to the table");
+      expect(!ms.includes("Counted over the newest"), "the totals are a sample although the recorder has read the whole feed");
+      expect(ms.includes('name="player"'), "/milestones has no player filter");
+
+      const table = await ctx.html("/milestones/players");
+      const rows = [...table.matchAll(/<a href="(\/milestones\?player=[^"&]+)"[^>]*>([^<]+)<\/a>/g)].map((m) => ({ href: m[1], count: Number(digits(m[2])) }));
+      expect(rows.length >= 5, `the players table has ${rows.length} rows`);
+      expect(rows.every((r, i) => i === 0 || rows[i - 1].count >= r.count), "the players table is not ordered by milestones");
+      expect(/src="\/img\/face\/[0-9a-f-]+\.png"/.test(table), "the players table has no faces");
+
+      // the feed of the top player lists exactly as many milestones as the table says
+      const one = await ctx.html(rows[0].href);
+      expect(one.includes("Milestones first reached by"), `${rows[0].href} does not say whose milestones it shows`);
+      const heading = (one.match(/<h2 class="t-title-3">(?:<!--[^>]*-->)*([^<]+) milestones?/) ?? [])[1];
+      expect(!!heading && Number(digits(heading)) === rows[0].count, `${rows[0].href} lists ${heading} milestones, the table says ${rows[0].count}`);
+
+      const byName = await ctx.html("/milestones/players?sort=name");
+      expect(/aria-current="page"[^>]*>Name</.test(byName), "?sort=name does not mark the order");
+      expect((await ctx.html("/milestones/players?q=zzzzqq")).includes("No player by that name"), "a name nobody has shows no empty state");
+      expect((await ctx.html("/milestones?player=nobody_such_player_zz")).includes("No player called"), "an unknown player filter is not answered as one");
+      return `${rows.length} players, top ${rows[0].count}`;
+    }
+  },
+  {
+    name: "firsts and advancements show pictures, a glyph where the catalogue has none",
+    on: ["busy"],
+    run: async (ctx) => {
+      for (const p of ["/firsts", "/advancements"]) {
+        const html = await ctx.html(p);
+        const slots = (html.match(/class="fp-slot"/g) ?? []).length;
+        const pictures = (html.match(/class="fp-slot"[^>]*>(?:<!--[^>]*-->)*<img src="\/img\/icon\/[0-9a-f]+\.png"/g) ?? []).length;
+        expect(slots >= 5, `${p} has ${slots} picture slots`);
+        expect(pictures >= 5, `${p} shows ${pictures} pictures in ${slots} slots`);
       }
     }
   },
@@ -347,7 +388,15 @@ export const CHECKS: Check[] = [
         ["/img/face/not-a-uuid.png", [404]],
         ["/img/icon/nothex.png", [404]]
       ];
-      if (ctx.scenario !== "fresh") cases.push(["/milestones?scope=mini%3Asurvival%2Fskyblock-1", [200, 404]], ["/milestones?type=no_such_type_zz", [200, 404]]);
+      if (ctx.scenario !== "fresh")
+        cases.push(
+          ["/milestones?scope=mini%3Asurvival%2Fskyblock-1", [200, 404]],
+          ["/milestones?type=no_such_type_zz", [200, 404]],
+          ["/milestones?player=%3Cx%3E", [200], "No player called"],
+          ["/milestones/players?scope=mini%3Asurvival%2Fskyblock-1", [200]],
+          ["/milestones/players?type=no_such_type_zz&offset=99999", [200]]
+        );
+      else cases.push(["/milestones/players", [404]]);
       cases.push(
         ["/advancements?scope=mini%3Asurvival%2Fskyblock-1", [200, 404]],
         ["/advancements?scope=server%3Ano-such-server", [200, 404]],

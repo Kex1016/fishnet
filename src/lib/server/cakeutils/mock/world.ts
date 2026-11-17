@@ -208,7 +208,22 @@ const ITEMS: Def[] = [
   { key: "minecraft:diamond_sword", kind: "item", name: "Diamond Sword", base: 15 },
   { key: "minecraft:shield", kind: "item", name: "Shield", base: 12 },
   { key: "minecraft:iron_ingot", kind: "item", name: "Iron Ingot", base: 2_500 },
-  { key: "minecraft:ender_pearl", kind: "item", name: "Ender Pearl", base: 150 }
+  { key: "minecraft:ender_pearl", kind: "item", name: "Ender Pearl", base: 150 },
+  // the items the firsts feed and the vanilla advancements show (rare items, advancement icons, the clock of
+  // the playtime firsts), so their rows have a picture in the mock as they do on a network that has used them
+  { key: "minecraft:diamond", kind: "item", name: "Diamond", base: 90 },
+  { key: "minecraft:emerald", kind: "item", name: "Emerald", base: 60 },
+  { key: "minecraft:wheat", kind: "item", name: "Wheat", base: 400 },
+  { key: "minecraft:golden_carrot", kind: "item", name: "Golden Carrot", base: 120 },
+  { key: "minecraft:wooden_pickaxe", kind: "item", name: "Wooden Pickaxe", base: 8 },
+  { key: "minecraft:stone_pickaxe", kind: "item", name: "Stone Pickaxe", base: 20 },
+  { key: "minecraft:iron_sword", kind: "item", name: "Iron Sword", base: 18 },
+  { key: "minecraft:flint_and_steel", kind: "item", name: "Flint and Steel", base: 10 },
+  { key: "minecraft:clock", kind: "item", name: "Clock", base: 4 },
+  { key: "minecraft:elytra", kind: "item", name: "Elytra", base: 2 },
+  { key: "minecraft:totem_of_undying", kind: "item", name: "Totem of Undying", base: 3 },
+  { key: "minecraft:netherite_ingot", kind: "item", name: "Netherite Ingot", base: 5 },
+  { key: "minecraft:beacon", kind: "item", name: "Beacon", base: 2 }
 ];
 
 const ENTITIES: Def[] = [

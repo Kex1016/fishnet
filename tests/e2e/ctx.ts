@@ -158,7 +158,8 @@ export class Ctx {
       const picked = links.length <= PER_HUB ? links : Array.from({ length: PER_HUB }, (_, i) => links[Math.floor((i * (links.length - 1)) / (PER_HUB - 1))]);
       for (const h of picked) out.add(h);
     }
-    out.add("/?view=tables");
+    // the table of milestone totals (only linked from the board's heading, which the spread above can miss)
+    if ((await this.get("/milestones/players")).status === 200) out.add("/milestones/players");
     // the map (line FM): every server's map (the nav links crowd them out of the spread above), a second world,
     // and the One Soul round map, which draws a finished round on tiles
     const maps = await this.get("/map");

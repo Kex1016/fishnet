@@ -2,7 +2,9 @@
 // visitor's own time zone and says which ("17:44 CET"), David 12 Nov 2026. The zone comes from a `tz` cookie the
 // browser sets (hooks.server.ts, +layout.svelte); until it does, the zone is UTC. Charts bucketed by UTC day or
 // hour keep UTC labels (`utcDay`, `utcHm`) and say so, because their buckets are UTC.
-const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+export const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+/** Weekday labels, Monday first (the rows of every weekday grid). */
+export const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
 let source: () => string = () => "UTC";
 /** Where the current time zone comes from: per request on the server, the browser's zone in the browser. */

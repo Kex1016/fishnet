@@ -2,6 +2,7 @@
 // the server side, so the components can use them in the browser too.
 import type { MilestoneRow, MilestoneFeedRow } from "#lib/api/types.ts";
 import { parseMetric, boardHref } from "#lib/api/metric.ts";
+import { MONTHS, WEEKDAYS } from "#lib/format/dates.ts";
 import { milestonePhrase, statTitle, type Phrase } from "#lib/format/labels.ts";
 
 /** What a rung says about its time: exact, before tracking, or not reached. */
@@ -67,8 +68,6 @@ export function nextRung(milestones: MilestoneRow[]): number {
 // ---- the per-day heatmap grid
 
 const DAY = 86_400_000;
-const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
 export function dayStart(ms: number): number {
   return Math.floor(ms / DAY) * DAY;

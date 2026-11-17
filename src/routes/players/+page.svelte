@@ -6,10 +6,9 @@
   import Face from "#lib/design/Face.svelte";
   import Notice from "#lib/design/Notice.svelte";
   import Pager from "#lib/design/Pager.svelte";
-  import { durationMs } from "#lib/format/stat-display.ts";
-  import { group } from "#lib/format/stat-display.ts";
+  import { durationMs, group } from "#lib/format/stat-display.ts";
   import { withParams } from "#lib/url.ts";
-  import { playerLabel, shortUuid, isUuidName } from "#lib/players/names.ts";
+  import { playerHref, playerLabel, shortUuid, isUuidName } from "#lib/players/names.ts";
   let { data } = $props();
   const list = $derived(data.players);
   const total = $derived(list.ok ? list.data.total : null);
@@ -40,15 +39,15 @@
     </label>
     <button class="fp-btn" type="submit">Search</button>
     <nav class="fp-seg" aria-label="Who">
-      <a href={everyone} aria-current={!data.online ? "true" : undefined}>Everyone</a>
-      <a href={onlineOnly} aria-current={data.online ? "true" : undefined}>Online</a>
+      <a href={everyone} aria-current={!data.online ? "page" : undefined}>Everyone</a>
+      <a href={onlineOnly} aria-current={data.online ? "page" : undefined}>Online</a>
     </nav>
     {#if list.ok && list.stale}<AsOf at={list.asOf} stale />{/if}
   </form>
 
   {#if !list.ok}
     {#if list.kind === "rate_limited"}
-      <Notice kind="warning"><b>Too many requests to cakeutils.</b> The player list will be back in a moment.</Notice>
+      <Notice kind="info"><b>The site is busy.</b> The player list will load again in a moment.</Notice>
     {:else}
       <Notice kind="warning"><b>cakeutils could not be reached.</b> The player list will be back when it is.</Notice>
     {/if}
@@ -66,7 +65,7 @@
       {#each list.data.players as p (p.uuid)}
         {@const pt = data.playtime[p.uuid]}
         <li>
-          <a class="fp-dir__card" href="/players/{encodeURIComponent(p.name)}">
+          <a class="fp-dir__card" href={playerHref(p)}>
             <Face uuid={p.uuid} name={playerLabel(p.name)} size="md" />
             <span class="fp-dir__who">
               <span class="fp-dir__name t-truncate" class:t-muted={isUuidName(p.name)}>{playerLabel(p.name)}</span>

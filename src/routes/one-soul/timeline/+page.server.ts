@@ -3,6 +3,7 @@
 import type { PageServerLoad } from "./$types";
 import { oneSoul } from "#lib/server/onesoul/index.ts";
 import { roundParam } from "#lib/onesoul/links.ts";
+import { offsetParam } from "#lib/url.ts";
 
 const LIMIT = 50;
 const KINDS: Record<string, string> = {
@@ -20,7 +21,7 @@ export const load: PageServerLoad = async ({ parent, url }) => {
   const round = roundParam(url) ?? os.cycle;
   const s = url.searchParams.get("show");
   const show = osFeatures.tracking && s && s in KINDS ? s : null;
-  const offset = Math.max(0, Math.min(1_000_000, Number(url.searchParams.get("offset")) || 0));
+  const offset = offsetParam(url);
   const events = await oneSoul().events({ server: os.server, cycle: round, kind: show ? KINDS[show] : undefined, limit: LIMIT, offset });
   return { title: `Timeline, round ${round}`, crumbs, events, round, rounds: Array.from({ length: os.cycle }, (_, i) => os.cycle - i), show, limit: LIMIT, offset };
 };

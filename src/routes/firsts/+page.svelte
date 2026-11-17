@@ -1,17 +1,22 @@
 <script lang="ts">
+  // World firsts: every row has a picture (the catalogue's icon of what it is about, added by the load in
+  // pictures.server.ts, or the kind's glyph in the same slot), what it was, who and when, like the milestone
+  // and advancement feeds.
   import { page } from "$app/state";
-  import { Award, Clock, Compass, Gem, ListChecks, Mountain, Sparkles, Landmark, ChartColumn } from "@lucide/svelte";
+  import { Award, Clock, Compass, Gem, ListChecks, Mountain, Sparkles, Landmark, Sigma } from "@lucide/svelte";
   import AsOf from "#lib/design/AsOf.svelte";
   import EmptyState from "#lib/design/EmptyState.svelte";
-  import Face from "#lib/design/Face.svelte";
   import Notice from "#lib/design/Notice.svelte";
   import Pager from "#lib/design/Pager.svelte";
+  import PlayerName from "#lib/design/PlayerName.svelte";
   import ScopeSwitch from "#lib/design/ScopeSwitch.svelte";
+  import Slot from "#lib/design/Slot.svelte";
   import { FIRST_KINDS, firstKind, firstLine } from "#lib/network/words.ts";
-  import { dateTime } from "#lib/format/dates.ts";
+  import { ago, dateTime, iso } from "#lib/format/dates.ts";
+  import { group } from "#lib/format/stat-display.ts";
   import { withParams } from "#lib/url.ts";
   let { data } = $props();
-  const ICONS: Record<string, typeof Sparkles> = { advancement: Award, criterion: ListChecks, dimension: Compass, biome: Mountain, structure: Landmark, item: Gem, playtime: Clock, stat: ChartColumn };
+  const GLYPHS: Record<string, typeof Sparkles> = { advancement: Award, criterion: ListChecks, dimension: Compass, biome: Mountain, structure: Landmark, item: Gem, playtime: Clock, stat: Sigma };
 </script>
 
 <div class="fp-page">
@@ -35,21 +40,26 @@
     <EmptyState icon={Sparkles} title="No firsts yet" line="Someone shows up here the moment they do something nobody on the network has done before." />
   {:else}
     <section class="fp-card fx-feed">
-      <div class="fp-section__head fx-head"><h2 class="t-title-4">{data.feed.data.total} first{data.feed.data.total === 1 ? "" : "s"}</h2><AsOf at={data.feed.asOf} stale={data.feed.stale} /></div>
+      <div class="fp-section__head fx-head"><h2 class="t-title-4">{group(data.feed.data.total)} first{data.feed.data.total === 1 ? "" : "s"}</h2><AsOf at={data.feed.asOf} stale={data.feed.stale} /></div>
       <ol class="fx-list">
         {#each data.feed.data.firsts as f, i (`${f.kind}-${f.uuid}-${f.title}-${i}`)}
-          {@const Icon = ICONS[f.kind] ?? Sparkles}
           {@const line = firstLine(f)}
           <li class="fx-row">
-            <span class="fx-ico" title={firstKind(f.kind)}><Icon class="fp-ico" strokeWidth={1.4} aria-hidden="true" /></span>
+            <Slot icon={f.icon} kind={f.iconKind} glyph={GLYPHS[f.kind] ?? Sparkles} name={line.text} />
             <div class="fx-body">
-              <div class="fx-title">{#if line.href}<a href={line.href}>{line.text}</a>{:else}{line.text}{/if}</div>
-              <div class="t-small t-muted">
-                <span class="visually-hidden">{firstKind(f.kind)}: </span><a href="/players/{encodeURIComponent(f.name)}">{f.name}</a>{#if data.scope === "network" && f.server}{" "}on {data.serverNames[f.server] ?? f.server}{/if}
+              <div class="fx-what">
+                {#if line.href}<a class="fx-title" href={line.href}>{line.text}</a>{:else}<span class="fx-title">{line.text}</span>{/if}
+                <span class="fx-kind">{firstKind(f.kind)}</span>
+              </div>
+              <div class="fx-who">
+                {#if f.uuid && f.name}<PlayerName uuid={f.uuid} name={f.name} />{:else}<span class="t-muted">First player unknown</span>{/if}
+                {#if data.scope === "network" && f.server}<span class="t-muted">on <a href="/servers/{encodeURIComponent(f.server)}">{data.serverNames[f.server] ?? f.server}</a></span>{/if}
               </div>
             </div>
-            <Face uuid={f.uuid} name={f.name} size="sm" />
-            <span class="t-caption fx-when">{f.at === null ? "before tracking began" : dateTime(f.at)}{#if f.imported} · imported{/if}</span>
+            <div class="fx-when">
+              {#if f.at === null}<span class="fp-tag">Reached before tracking began</span>{:else}<time datetime={iso(f.at)} title={dateTime(f.at)}>{ago(f.at)}</time>{/if}
+              {#if f.imported}<span class="fp-tag" title="The time comes from the server's world files: this was done before live tracking began.">Imported</span>{/if}
+            </div>
           </li>
         {/each}
       </ol>
@@ -77,39 +87,87 @@
   }
   .fx-list {
     list-style: none;
-    margin: 0;
+    margin: 0 calc(-1 * var(--space-3));
     padding: 0;
   }
+  /* the same row as the milestone and advancement feeds (MilestoneItem, AdvancementItem) */
   .fx-row {
     display: grid;
-    grid-template-columns: 24px minmax(0, 1fr) 24px auto;
+    grid-template-columns: auto minmax(0, 1fr) auto;
     gap: var(--space-3);
     align-items: center;
-    padding: var(--space-2) 0;
-    border-bottom: 1px solid var(--line-soft);
+    min-height: 52px;
+    padding: var(--space-2) var(--space-3);
+    border-radius: var(--radius-lg);
   }
-  .fx-row:last-child {
-    border-bottom: 0;
+  .fx-row:hover {
+    background: var(--raised);
   }
-  .fx-ico {
-    color: var(--acc-ink);
-    display: inline-flex;
+  .fx-body {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .fx-what {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: var(--space-2);
+    min-width: 0;
   }
   .fx-title {
-    font: 500 14px/20px var(--font-text);
+    font: 600 15px/20px var(--font-text);
+    color: var(--text);
     overflow-wrap: anywhere;
   }
+  a.fx-title:hover {
+    color: var(--acc-ink);
+    text-decoration: none;
+  }
+  .fx-kind {
+    font: 500 11px/16px var(--font-mono);
+    color: var(--faint);
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+  }
+  .fx-who {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-1) var(--space-2);
+    font: 400 13px/20px var(--font-text);
+    min-width: 0;
+  }
+  .fx-who a:not(:global(.fp-player)) {
+    color: inherit;
+  }
+  .fx-who a:not(:global(.fp-player)):hover {
+    color: var(--acc-ink);
+    text-decoration: none;
+  }
   .fx-when {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 2px;
+    font: 400 12px/16px var(--font-mono);
     color: var(--faint);
     text-align: right;
+    max-width: 150px;
   }
-  @media (max-width: 520px) {
-    .fx-row {
-      grid-template-columns: 24px minmax(0, 1fr) 24px;
-    }
+  .fx-when :global(.fp-tag) {
+    height: auto;
+    min-height: 20px;
+    padding-top: 2px;
+    padding-bottom: 2px;
+    white-space: normal;
+    text-align: left;
+    line-height: 14px;
+  }
+  @media (max-width: 640px) {
     .fx-when {
-      grid-column: 2 / -1;
-      text-align: left;
+      max-width: 110px;
     }
   }
 </style>

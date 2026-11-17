@@ -3,7 +3,7 @@
   import { BookOpen } from "@lucide/svelte";
   import EmptyState from "#lib/design/EmptyState.svelte";
   import Notice from "#lib/design/Notice.svelte";
-  import { BarList, StatTile, viewParam } from "#lib/charts/index.ts";
+  import { BarList, StatTile } from "#lib/charts/index.ts";
   import { AdvancementFeed, MilestoneFeed } from "#lib/milestones/index.ts";
   import Outcome from "#lib/onesoul/Outcome.svelte";
   import { life, titleId } from "#lib/onesoul/format.ts";
@@ -13,7 +13,6 @@
   import RoundMap from "#lib/map/layers/RoundMap.svelte";
   import { withParams } from "#lib/url.ts";
   let { data } = $props();
-  const view = $derived(viewParam(page.url));
   const s = $derived(data.summary);
   const souls = $derived(data.souls.rows);
   const graves = $derived(data.graves.rows);
@@ -25,7 +24,7 @@
     <div class="fp-section__head">
       <h1 class="t-display">Round {data.cycle}</h1>
       <span class="t-small t-muted">
-        {#if s.started_at}{day(s.started_at)}{#if s.ended_at} to {day(s.ended_at)}{:else}, still running{/if}{:else}Sign-ups, world not opened yet{/if}
+        {#if s.started_at}{day(s.started_at)}{#if s.ended_at}{" "}to {day(s.ended_at)}{:else}, still running{/if}{:else}Sign-ups, world not opened yet{/if}
       </span>
     </div>
     <div class="fp-tiles os-tiles">
@@ -87,9 +86,9 @@
 
   {#if data.scoped}
     <div class="os-boards">
-      {#if data.boards.playtime}<BarList title="Most time in this world" sub="spectating counts" rows={barRows(data.boards.playtime.data)} faces {view} emptyTitle="Nobody has played yet" />{/if}
-      {#if data.boards.mined}<BarList title="Blocks mined" sub="this round" rows={barRows(data.boards.mined.data)} faces {view} emptyTitle="Nobody has mined yet" />{/if}
-      {#if data.boards.killed}<BarList title="Mobs killed" sub="this round" rows={barRows(data.boards.killed.data)} faces {view} emptyTitle="Nobody has killed a mob yet" />{/if}
+      {#if data.boards.playtime}<BarList title="Most time in this world" sub="spectating counts" rows={barRows(data.boards.playtime.data)} faces emptyTitle="Nobody has played yet" />{/if}
+      {#if data.boards.mined}<BarList title="Blocks mined" sub="this round" rows={barRows(data.boards.mined.data)} faces emptyTitle="Nobody has mined yet" />{/if}
+      {#if data.boards.killed}<BarList title="Mobs killed" sub="this round" rows={barRows(data.boards.killed.data)} faces emptyTitle="Nobody has killed a mob yet" />{/if}
     </div>
   {/if}
   {#if data.firsts}<MilestoneFeed result={data.firsts} title="Firsts in this round" limit={8} />{/if}

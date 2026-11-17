@@ -5,13 +5,13 @@
 // Point values: online series give the bucket's PEAK (max of the minute samples), so a point reads
 // "3 online" and never "2.4"; the activity heatmap gives the MEAN per weekday-hour. Scopes are read
 // side by side, never added together.
-import type { DayGrid, History, Point, Range, RankMove, RankMoves, Series, ServerSample, ServerSeries } from "../history.ts";
+import type { DayGrid, History, MilestoneHolder, MilestoneHolders, Point, Range, RankMove, RankMoves, Series, ServerSample, ServerSeries } from "../history.ts";
 import { parseScope, type Scope } from "#lib/api/scope.ts";
 import { metricKey, parseMetric } from "#lib/api/metric.ts";
 import { FEATURED, featuredKey, type FeaturedBoard } from "#lib/boards.ts";
 import { type Db, getMetaNumber, seriesSince } from "./db.ts";
 import { DAY, HOUR, MINUTE, RANGE_BUCKET, RANGE_MS, WEEK, floorTo, isRange, weekStart, weekday } from "./time.ts";
-import type { Hidden } from "./jobs.ts";
+import { sweepKeys, type Hidden } from "./jobs.ts";
 
 export type HistoryOptions = {
   now?: () => number;
@@ -23,6 +23,7 @@ export type HistoryOptions = {
 };
 
 const EMPTY: Series = { since: null, points: [] };
+const NO_HOLDERS: MilestoneHolders = { complete: null, asOf: null, counted: 0, holders: [] };
 const ID = /^[A-Za-z0-9._-]{1,64}$/;
 
 type Bucket = { t: number; max: number; sum: number; n: number; waitingMax: number | null; linkedN: number };
@@ -302,6 +303,31 @@ export function createSqliteHistory(db: Db, o: HistoryOptions = {}): History {
         const days: DayGrid["days"] = [];
         for (let d = start; d <= today; d += DAY) days.push({ day: d, v: counts.get(d) ?? 0 });
         return { since, days };
+      }
+    ),
+
+    milestoneHolders: guard(
+      () => NO_HOLDERS,
+      (scope: Scope, type?: string): MilestoneHolders => {
+        const p = parseScope(scope);
+        if (!p || p.kind === "mini") return NO_HOLDERS;
+        // the feed's rows carry the full type key; the API (and so the page's filter) also takes it without "minecraft:"
+        const t = type ? (type.includes(":") ? type : `minecraft:${type}`) : null;
+        const where = t === null ? "scope = ?" : "scope = ? AND type = ?";
+        const args = t === null ? [scope] : [scope, t];
+        const counted = Number((db.prepare(`SELECT count(*) AS n FROM milestone WHERE ${where}`).get(...args) as { n: number }).n);
+        const rows = db
+          .prepare(`SELECT uuid, max(name) AS name, count(*) AS n, max(reached_at) AS latest FROM milestone WHERE ${where} AND uuid IS NOT NULL AND name IS NOT NULL GROUP BY uuid`)
+          .all(...args) as { uuid: string; name: string; n: number; latest: number | null }[];
+        // a renamed player has rows under both names: the player table has the current one
+        const current = new Map((db.prepare("SELECT uuid, name FROM player").all() as { uuid: string; name: string }[]).map((r) => [r.uuid, r.name]));
+        const holders: MilestoneHolder[] = rows
+          .map((r) => ({ uuid: r.uuid, name: current.get(r.uuid) ?? r.name, count: Number(r.n), latest: r.latest === null ? null : Number(r.latest) }))
+          .filter((r) => !hidden(r))
+          .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
+        const complete = getMetaNumber(db, sweepKeys(scope).done);
+        const head = getMetaNumber(db, p.kind === "network" ? "last_run:milestones" : "last_run:milestones-servers");
+        return { complete, asOf: Math.max(head ?? 0, complete ?? 0) || null, counted, holders };
       }
     ),
 

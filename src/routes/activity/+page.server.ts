@@ -4,6 +4,7 @@ import { error } from "@sveltejs/kit";
 import type { PageServerLoad } from "./$types";
 import { api, extras } from "#lib/server/cakeutils/client.ts";
 import { scopeParam } from "#lib/api/scope.ts";
+import { serverNameMap } from "#lib/servers.ts";
 
 const DAY = 86_400_000;
 
@@ -31,8 +32,7 @@ export const load: PageServerLoad = async ({ url }) => {
       const f = first.get(m.threshold_ms);
       if (!f || (m.reached_at !== null && (f.reached_at === null || m.reached_at < f.reached_at))) first.set(m.threshold_ms, m);
     }
-  const serverNames: Record<string, string> = {};
-  if (network.ok) for (const s of network.data.servers) serverNames[s.id] = s.display_name;
+  const serverNames = serverNameMap(network);
   return {
     title: "Activity",
     crumbs: [{ label: "Activity", href: "/activity" }],

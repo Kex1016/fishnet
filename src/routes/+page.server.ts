@@ -12,8 +12,10 @@ import type { Result } from "#lib/api/result.ts";
 import { formatStat, group } from "#lib/format/stat-display.ts";
 import { day } from "#lib/format/dates.ts";
 import type { TimePoint } from "#lib/charts/index.ts";
-import { hideFromFeed, prepareFeed } from "#lib/milestones/prepare.server.ts";
-import { activityGrid, barRows, boardSum, isOutage, type BoardSum } from "./servers/boards.ts";
+import { prepareAdvancements, prepareFeed } from "#lib/milestones/prepare.server.ts";
+import { activityGrid, boardSum, isOutage, type BoardSum } from "./servers/boards.ts";
+import { barRows } from "#lib/boards.ts";
+import { serverNameMap } from "#lib/servers.ts";
 
 type Tile = { key: string; label: string; value: string; note?: string; href?: string; spark?: TimePoint[] };
 
@@ -37,7 +39,7 @@ export const load: PageServerLoad = async () => {
     c.players({ limit: 1 }),
     Promise.all(boards.map((b) => boardSum(readerFor(c, b), b.metric, "network", withoutHidden))),
     c.milestones({ limit: 5 }).then(prepareFeed),
-    c.advancements({ limit: 5 }).then(hideFromFeed),
+    c.advancements({ limit: 5 }).then(prepareAdvancements),
     h.online("network", "week"),
     h.onlineRecent("network"),
     h.joinsPerWeek("month"),
@@ -79,8 +81,7 @@ export const load: PageServerLoad = async () => {
     };
   }
 
-  const top = playtime.ok ? { ok: true as const, rows: barRows(playtime.data.top), asOf: playtime.asOf, stale: playtime.stale } : { ok: false as const, rows: [], asOf: undefined, stale: false };
-  const serverNames: Record<string, string> = {};
-  if (network.ok) for (const s of network.data.servers) serverNames[s.id] = s.display_name;
+  const top = playtime.ok ? { ok: true as const, rows: barRows(playtime.data.top, 5), asOf: playtime.asOf, stale: playtime.stale } : { ok: false as const, rows: [], asOf: undefined, stale: false };
+  const serverNames = serverNameMap(network);
   return { title: undefined, crumbs: [], network, online, onlineRecent, totals, top, milestones, advancements, serverNames, onlineWeek, joins, since, busiestHours: { since: hours.since, rows: activityGrid(hours.cells) } };
 };

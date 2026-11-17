@@ -7,12 +7,12 @@
   import Notice from "#lib/design/Notice.svelte";
   import Pager from "#lib/design/Pager.svelte";
   import ScopeSwitch from "#lib/design/ScopeSwitch.svelte";
-  import { BarList, ViewSwitch, viewParam } from "#lib/charts/index.ts";
+  import { BarList } from "#lib/charts/index.ts";
   import { dimLabel } from "#lib/onesoul/format.ts";
   import { posText } from "#lib/network/words.ts";
-  import { dateTime } from "#lib/format/dates.ts";
+  import { ago, dateTime, iso } from "#lib/format/dates.ts";
+  import { playerHref, playerRowLabel } from "#lib/players/names.ts";
   let { data } = $props();
-  const view = $derived(viewParam(page.url));
   const sub = $derived(data.counted < data.total ? `the newest ${data.counted} of ${data.total} deaths` : "every death so far");
 </script>
 
@@ -23,7 +23,6 @@
   </header>
   <div class="dx-bar">
     {#if data.network.ok}<ScopeSwitch url={page.url} scope={data.scope} servers={data.network.data.servers} />{/if}
-    <ViewSwitch url={page.url} {view} />
   </div>
 
   {#if data.mini}
@@ -40,17 +39,17 @@
           <ol class="dx-list">
             {#each data.feed.data.deaths as d, i (`${d.uuid}-${d.at}-${i}`)}
               <li class="dx-row">
-                <Face uuid={d.uuid} name={d.name} size="sm" />
+                <Face uuid={d.uuid} name={playerRowLabel(d)} size="sm" />
                 <div class="dx-body">
-                  <q class="dx-cause">{d.cause ?? `${d.name} died`}</q>
+                  <q class="dx-cause">{d.cause ?? `${playerRowLabel(d)} died`}</q>
                   <div class="t-caption dx-meta">
-                    <a href="/players/{encodeURIComponent(d.name)}">{d.name}</a>{#if d.killer_player}, by <a href="/players/{encodeURIComponent(d.killer_player.name)}">{d.killer_player.name}</a>{/if}
+                    <a href={playerHref(d)}>{playerRowLabel(d)}</a>{#if d.killer_player}, by <a href={playerHref(d.killer_player)}>{playerRowLabel(d.killer_player)}</a>{/if}
                     {#if data.scope === "network"} · {data.serverNames[d.server] ?? d.server}{/if}
                     {#if d.dim} · {dimLabel(d.dim)}{/if}
                     {#if d.pos} · {posText(d.pos)}{/if}
                   </div>
                 </div>
-                <span class="t-caption dx-when">{dateTime(d.at)}</span>
+                <time class="t-caption dx-when" datetime={iso(d.at)} title={dateTime(d.at)}>{ago(d.at)}</time>
               </li>
             {/each}
           </ol>
@@ -58,8 +57,8 @@
         <Pager url={page.url} total={data.feed.data.total} limit={data.limit} offset={data.offset} what="deaths" />
       </div>
       <div class="dx-side">
-        <BarList title="How they died" {sub} {view} rows={data.causes.map(([k, v], i) => ({ rank: i + 1, key: k, label: k, v, display: String(v) }))} emptyTitle="Nobody has died yet" />
-        <BarList title="Died most" {sub} {view} faces rows={data.who.map((w, i) => ({ rank: i + 1, key: w.uuid, label: w.name, v: w.n, display: String(w.n), href: `/players/${encodeURIComponent(w.name)}`, uuid: w.uuid }))} emptyTitle="Nobody has died yet" />
+        <BarList title="How they died" {sub} rows={data.causes.map(([k, v], i) => ({ rank: i + 1, key: k, label: k, v, display: String(v) }))} emptyTitle="Nobody has died yet" />
+        <BarList title="Died most" {sub} faces rows={data.who.map((w, i) => ({ rank: i + 1, key: w.uuid, label: playerRowLabel(w), v: w.n, display: String(w.n), href: playerHref(w), uuid: w.uuid }))} emptyTitle="Nobody has died yet" />
       </div>
     </div>
   {/if}

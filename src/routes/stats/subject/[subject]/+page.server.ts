@@ -9,7 +9,8 @@ import { subjectName } from "#lib/players/names.ts";
 import { statTitle, typeLabel } from "#lib/format/labels.ts";
 import { withoutHidden } from "#lib/server/hidden.ts";
 import { hideFromLadder } from "#lib/milestones/prepare.server.ts";
-import { scopeLabel, scopeMinis } from "../../../leaderboards/board.ts";
+import { scopeMinis } from "../../../leaderboards/board.ts";
+import { scopeLabel } from "#lib/servers.ts";
 
 export const load: PageServerLoad = async ({ params, url }) => {
   const c = api();

@@ -24,6 +24,6 @@
 
 <nav class="fp-seg" aria-label="Scope">
   {#each options as o (o.scope)}
-    <a href={at(o.scope)} aria-current={o.scope === scope ? "true" : undefined}>{o.label}</a>
+    <a href={at(o.scope)} aria-current={o.scope === scope ? "page" : undefined}>{o.label}</a>
   {/each}
 </nav>

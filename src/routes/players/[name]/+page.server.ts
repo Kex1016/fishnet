@@ -16,6 +16,9 @@ import { batchIncludes, compositeValue, standing, type BoardStanding } from "#li
 import { playerLabel, splitMini, titleCase } from "#lib/players/names.ts";
 import { showOnMap } from "#lib/map/showOnMap.ts";
 import { prepareFeed } from "#lib/milestones/prepare.server.ts";
+import { withAdvancementIcons } from "#lib/milestones/pictures.server.ts";
+import { serverNameMap } from "#lib/servers.ts";
+import { offsetParam } from "#lib/url.ts";
 
 /** rows of a stat type shown per page in the explorer's type view */
 const PAGE = 60;
@@ -60,7 +63,7 @@ export const load: PageServerLoad = async ({ params, url }) => {
   const rawType = url.searchParams.get("type");
   const type = rawType && TYPE_KEY.test(rawType) ? rawType : null;
   const q = (url.searchParams.get("q") ?? "").trim().slice(0, 64);
-  const offset = Math.max(0, Math.floor(Number(url.searchParams.get("offset") ?? 0) || 0));
+  const offset = offsetParam(url);
   const miniScope = parsed?.kind === "mini";
 
   const activity = player.ok ? extras().playerActivity(ref) : Promise.resolve(null);
@@ -75,7 +78,7 @@ export const load: PageServerLoad = async ({ params, url }) => {
     // W7's prepareFeed drops opted-out players and adds icons from the catalogue
     miniScope ? Promise.resolve(null) : c.playerMilestones(ref, { scope, limit: 10 }).then(prepareFeed),
     // advancement milestones (D-111) have no mini scope either; their rows name no player, so nothing to hide
-    miniScope ? Promise.resolve(null) : c.playerAdvancements(ref, { scope, limit: 10 }),
+    miniScope ? Promise.resolve(null) : c.playerAdvancements(ref, { scope, limit: 10 }).then((r) => withAdvancementIcons(r)),
     player.ok ? c.batch([ref], batchIncludes(FEATURED, COMPOSITES), scope) : Promise.resolve(null),
     ...(player.ok ? FEATURED.map((b) => featuredLeaderboard(c, b, scope, { limit: BOARD_PAGE })) : [])
   ] as const);
@@ -95,8 +98,7 @@ export const load: PageServerLoad = async ({ params, url }) => {
   const composites = COMPOSITES.map((cb) => ({ id: cb.id, label: cb.label, value: compositeValue(cb, meRow) })).filter((x) => x.value !== null);
 
   // names for the playtime breakdown and the scope switch
-  const serverNames: Record<string, string> = {};
-  if (network.ok) for (const s of network.data.servers) serverNames[s.id] = s.display_name;
+  const serverNames = serverNameMap(network);
   const miniNames: Record<string, string> = {};
   let currentMini: string | null = null;
   if (minis.ok) {

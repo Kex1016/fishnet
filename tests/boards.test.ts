@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, mock, test } from "bun:test";
-import { distribution, median, playerHref, playerLabel, scopeLabel, scopeMinis, sum } from "../src/routes/leaderboards/board.ts";
+import { distribution, median, scopeMinis, sum } from "../src/routes/leaderboards/board.ts";
+import { playerHref, playerRowLabel } from "#lib/players/names.ts";
+import { scopeLabel, serverNameMap } from "#lib/servers.ts";
 import { COMPOSITES, compositeHref, featuredFor, featuredHref, featuredKey, findComposite, findFeatured, FEATURED } from "#lib/boards.ts";
 import { boardHref, metricKey } from "#lib/api/metric.ts";
 import { ok, fail } from "#lib/api/result.ts";
@@ -43,6 +45,12 @@ describe("board helpers", () => {
     expect(scopeLabel("junk", servers)).toBe("Network");
   });
 
+  test("server names come from the network answer, and are empty when it could not be read", () => {
+    const network = ok({ total_online: 0, servers: [{ id: "survival", display_name: "Survival" }, { id: "lobby", display_name: "Lobby" }] } as never);
+    expect(serverNameMap(network)).toEqual({ survival: "Survival", lobby: "Lobby" });
+    expect(serverNameMap(fail("down"))).toEqual({});
+  });
+
   test("the viewed mini stays in the switch even when it is empty right now", () => {
     expect(scopeMinis("mini:survival/sky-2", [{ server: "survival", id: "sky-1", display_name: "Skyblock 1" }]).map((m) => m.id)).toEqual(["sky-1", "sky-2"]);
     expect(scopeMinis("server:survival", [])).toEqual([]);
@@ -50,9 +58,9 @@ describe("board helpers", () => {
 
   test("a UUID name is shown as a short player id and linked by uuid", () => {
     const uuid = "123e4567-e89b-12d3-a456-426614174000";
-    expect(playerLabel({ uuid, name: uuid })).toBe("Player 123e4567");
+    expect(playerRowLabel({ uuid, name: uuid })).toBe("Player 123e4567");
     expect(playerHref({ uuid, name: uuid })).toBe(`/players/${uuid}`);
-    expect(playerLabel({ uuid, name: "Roach" })).toBe("Roach");
+    expect(playerRowLabel({ uuid, name: "Roach" })).toBe("Roach");
     expect(playerHref({ uuid, name: "a b" })).toBe("/players/a%20b");
   });
 

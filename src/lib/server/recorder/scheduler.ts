@@ -6,7 +6,7 @@ import { asRecorder } from "./context.ts";
 import { getMetaNumber, setMeta } from "./db.ts";
 import {
   maintain, recordAdvancements, recordBoards, recordMilestones, recordMinis, recordNetwork, recordPlayers, recordServerAdvancements,
-  recordServerMilestones, recordTotals, type Outcome, type RecorderDeps
+  recordServerMilestones, recordTotals, sweepMilestones, type Outcome, type RecorderDeps
 } from "./jobs.ts";
 import { HOUR, MINUTE } from "./time.ts";
 
@@ -21,12 +21,15 @@ export const JOBS: readonly Job[] = [
   { name: "boards", every: HOUR, run: recordBoards },
   { name: "milestones-servers", every: HOUR, run: recordServerMilestones },
   { name: "advancements-servers", every: HOUR, run: recordServerAdvancements },
+  { name: "milestone-holders", every: HOUR, run: sweepMilestones },
   { name: "maintenance", every: HOUR, run: maintain },
   { name: "totals", every: 6 * HOUR, run: recordTotals }
 ];
 
 /** After a failed run: retry after this long (or the job's own interval, if shorter). */
 export const RETRY = 5 * MINUTE;
+/** After a run that stopped at its page cap ("more"): go on after this long. */
+export const CONTINUE = MINUTE;
 
 /** When a job should first run after a start: when it is due, but not before its stagger slot. */
 export function firstRun(job: Job, lastRun: number | null, now: number, index: number): number {
@@ -38,6 +41,7 @@ export function firstRun(job: Job, lastRun: number | null, now: number, index: n
 export function nextRun(job: Job, startedAt: number, outcome: Outcome, now: number): number {
   if (job.every === MINUTE) return Math.floor(now / MINUTE) * MINUTE + MINUTE + 2_000;
   if (outcome === "down") return now + Math.min(job.every, RETRY);
+  if (outcome === "more") return now + Math.min(job.every, CONTINUE);
   return startedAt + job.every;
 }
 
@@ -62,7 +66,8 @@ export function startScheduler(d: RecorderDeps, jobs: readonly Job[] = JOBS): Sc
     } finally {
       running.delete(job.name);
     }
-    if (outcome !== "down") setMeta(d.db, `last_run:${job.name}`, startedAt);
+    // a run that stopped at its cap is not a finished run: a restart goes on with it at once
+    if (outcome !== "down" && outcome !== "more") setMeta(d.db, `last_run:${job.name}`, startedAt);
     const before = state.get(job.name);
     if (outcome === "down" && before !== "down") d.log(`fishnet recorder: ${job.name} not recorded (cakeutils unreachable or refused), retrying`);
     if (outcome !== "down" && before === "down") d.log(`fishnet recorder: ${job.name} recording again`);

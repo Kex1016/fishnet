@@ -12,7 +12,7 @@ import type { Scenario } from "../cakeutils/mock/index.ts";
 import { type Db, getMetaNumber, setMeta, tx } from "./db.ts";
 import {
   knownServers, recordAdvancements, recordBoards, recordMilestones, recordMinis, recordNetwork, recordPlayers, recordServerAdvancements,
-  recordServerMilestones, recordTotals, type RecorderDeps
+  recordServerMilestones, recordTotals, sweepMilestones, type RecorderDeps
 } from "./jobs.ts";
 import { DAY, HOUR, MINUTE, floorTo, weekday } from "./time.ts";
 
@@ -24,6 +24,7 @@ export async function seedMock(d: RecorderDeps, scenario: Scenario): Promise<voi
   await recordTotals(d);
   await recordMilestones(d, "network");
   await recordServerMilestones(d);
+  for (let i = 0; i < 50 && (await sweepMilestones(d)) === "more"; i++);
   await recordAdvancements(d, "network");
   await recordServerAdvancements(d);
   if (scenario === "busy") synthesize(d.db, d.now());

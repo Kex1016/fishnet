@@ -58,7 +58,7 @@
   <div class="fp-filters">
     <nav class="fp-chips" aria-label="Stat type">
       {#each chips as ch (ch.key ?? "")}
-        <a class="fp-chip" href={at(ch.key)} aria-current={ch.key === type ? "true" : undefined}>{ch.label}</a>
+        <a class="fp-chip" href={at(ch.key)} aria-current={ch.key === type ? "page" : undefined}>{ch.label}</a>
       {/each}
       {#if type && !chips.some((ch) => ch.key === type)}<span class="fp-chip" aria-current="true">{typeName(catalogue, type)}</span>{/if}
     </nav>

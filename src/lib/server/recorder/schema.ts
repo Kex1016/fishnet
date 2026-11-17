@@ -128,5 +128,13 @@ export const MIGRATIONS: readonly string[] = [
     PRIMARY KEY (scope, advancement)
   ) WITHOUT ROWID;
   CREATE INDEX advancement_first_earned ON advancement_first (scope, earned_at);
+  `,
+  // 3: the milestone table becomes a full copy of the feed, so a player's milestones can be counted without
+  // paging the API (which has no "milestones per player" route): the stat type of each row for the type
+  // filter, and from now on the rows reached before tracking began (backfilled, no reached_at) as well.
+  // Rows written before this have no type until the next full read (jobs.ts sweepMilestones) rewrites them.
+  `
+  ALTER TABLE milestone ADD COLUMN type TEXT;
+  CREATE INDEX milestone_holder ON milestone (scope, uuid);
   `
 ];

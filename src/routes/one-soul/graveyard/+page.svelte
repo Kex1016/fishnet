@@ -47,7 +47,7 @@
           <div class="t-small t-muted">Round {g.cycle}, turn {g.soul.turn} · {day(g.created_at)}</div>
           <div class="t-small">{g.items} item{g.items === 1 ? "" : "s"}{#if g.marked}, {g.marked} marked with love{/if} · {dimLabel(g.dim)} <span class="t-num">{g.x} {g.y} {g.z}</span></div>
           {#if g.contents?.length}<div class="t-small t-muted os-grave__items">{g.contents.slice(0, 6).map((c) => `${c.count} × ${titleId(c.item)}`).join(" · ")}</div>{/if}
-          {#if g.claimed_by}<div class="t-small">Claimed by <a href={osHref.player(g.claimed_by.uuid)}>{g.claimed_by.name}</a>{#if g.claimed_at} after {life(g.claimed_at - g.created_at)}{/if}</div>{/if}
+          {#if g.claimed_by}<div class="t-small">Claimed by <a href={osHref.player(g.claimed_by.uuid)}>{g.claimed_by.name}</a>{#if g.claimed_at}{" "}after {life(g.claimed_at - g.created_at)}{/if}</div>{/if}
         </article>
       {/each}
     </div>

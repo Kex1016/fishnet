@@ -1,10 +1,10 @@
 <script lang="ts">
   import { page } from "$app/state";
-  import { Map as MapIcon } from "@lucide/svelte";
+  import { Map as MapIcon, Table2 } from "@lucide/svelte";
   import AsOf from "#lib/design/AsOf.svelte";
   import EmptyState from "#lib/design/EmptyState.svelte";
   import Notice from "#lib/design/Notice.svelte";
-  import { DataTable, ViewSwitch } from "#lib/charts/index.ts";
+  import { DataTable } from "#lib/charts/index.ts";
   import WorldMap from "#lib/onesoul/WorldMap.svelte";
   import RoundMap from "#lib/map/layers/RoundMap.svelte";
   import type { LayerId } from "#lib/onesoul/map.ts";
@@ -14,7 +14,7 @@
   const NAMES: Record<LayerId, string> = { trails: "Trails", deaths: "Deaths", graves: "Graves", waystones: "Waystones", spawn: "Spawn" };
   let show = $state<Record<LayerId, boolean>>({ trails: true, deaths: true, graves: true, waystones: true, spawn: true });
   const KIND: Record<string, string> = { spawn: "Spawn", death: "Death", grave: "Grave", waystone: "Waystone", other: "Point" };
-  // a finished round with archived tiles is drawn on them, full bleed; ?view=tables is its table twin
+  // a finished round with archived tiles is drawn on them, full bleed; ?view=tables lists the same points in tables
   const tiled = $derived(data.ok && data.tile !== null && data.view !== "tables");
   const q = (extra: Record<string, string | null>) => withParams(page.url, extra);
 </script>
@@ -42,7 +42,10 @@
           {#each data.rounds as r (r)}<a href={withParams(page.url, { round: String(r) })} aria-current={r === data.cycle ? "page" : undefined}>Round {r}</a>{/each}
         </nav>
       {/if}
-      <ViewSwitch url={page.url} view={data.view} />
+      <nav class="fp-seg" aria-label="Map or table">
+        <a href={q({ view: null })} aria-current={data.view === "charts" ? "page" : undefined}><MapIcon class="fp-ico fp-ico--sm" strokeWidth={1.4} />Map</a>
+        <a href={q({ view: "tables" })} aria-current={data.view === "tables" ? "page" : undefined}><Table2 class="fp-ico fp-ico--sm" strokeWidth={1.4} />Table</a>
+      </nav>
     </div>
     {#if data.ok && data.view === "charts" && data.layers.length > 1}
       <fieldset class="os-layers">

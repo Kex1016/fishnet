@@ -10,7 +10,7 @@
   import { PlayerAdvancementFirsts, PlayerFirsts } from "#lib/milestones/index.ts";
   import ShowOnMap from "#lib/map/ShowOnMap.svelte";
   import HiddenServersNote from "#lib/milestones/HiddenServersNote.svelte";
-  import { day, ago, dateTime } from "#lib/format/dates.ts";
+  import { day, ago, dateTime, iso } from "#lib/format/dates.ts";
   import { durationMs, group } from "#lib/format/stat-display.ts";
   import { titleCase } from "#lib/players/names.ts";
   let { data } = $props();
@@ -30,7 +30,7 @@
 <div class="fp-page">
   {#if !data.player.ok}
     {#if data.player.kind === "rate_limited"}
-      <Notice kind="warning"><b>Too many requests to cakeutils.</b> This profile will be back in a moment.</Notice>
+      <Notice kind="info"><b>The site is busy.</b> This profile will load again in a moment.</Notice>
     {:else}
       <Notice kind="warning"><b>cakeutils could not be reached.</b> This profile will be back when it is.</Notice>
     {/if}
@@ -46,12 +46,12 @@
           {#if p.online}
             <span class="fp-dot fp-dot--on" aria-hidden="true"></span> Online{#if p.server}{" on "}<a href="/servers/{encodeURIComponent(p.server)}">{data.serverNames[p.server] ?? p.server}</a>{/if}{#if data.currentMini}{" · "}{data.currentMini}{/if}
           {:else}
-            Last seen <time datetime={new Date(p.last_seen).toISOString()} title={dateTime(p.last_seen)}>{ago(p.last_seen)}</time>
+            Last seen <time datetime={iso(p.last_seen)} title={dateTime(p.last_seen)}>{ago(p.last_seen)}</time>
           {/if}
-          · first seen <time datetime={new Date(p.first_seen).toISOString()} title={dateTime(p.first_seen)}>{day(p.first_seen)}</time>
+          · first seen <time datetime={iso(p.first_seen)} title={dateTime(p.first_seen)}>{day(p.first_seen)}</time>
         </p>
         {#if data.onMap}<div class="fp-who__map"><ShowOnMap state={data.onMap} /></div>{/if}
-        <p class="t-caption t-faint fp-who__uuid">{p.uuid}{#if isUuidName(p.name)} · no name yet: this player was first seen through a stat, before logging in{/if}</p>
+        <p class="t-caption t-faint fp-who__uuid">{p.uuid}{#if isUuidName(p.name)}{" "}· no name yet: this player was first seen through a stat, before logging in{/if}</p>
       </div>
       {#if data.player.stale}<AsOf at={data.player.asOf} stale />{/if}
     </header>
@@ -82,7 +82,7 @@
         {#if a.playtime_milestones.length}
           <ul class="fp-pt-miles">
             {#each a.playtime_milestones as m (m.threshold_ms)}
-              <li class="fp-tag {m.first ? 'fp-tag--acc' : ''}">{m.display}{m.reached_at ? `, ${day(m.reached_at)}` : ", before tracking began"}{#if m.first} · first on the network{/if}</li>
+              <li class="fp-tag {m.first ? 'fp-tag--acc' : ''}">{m.display}{m.reached_at ? `, ${day(m.reached_at)}` : ", before tracking began"}{#if m.first}{" "}· first on the network{/if}</li>
             {/each}
           </ul>
         {/if}

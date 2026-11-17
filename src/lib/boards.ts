@@ -3,6 +3,8 @@
 // until it exists; composites sum players' values inside ONE scope only (never across scopes).
 import { boardHref, metricKey, type Metric } from "#lib/api/metric.ts";
 import type { Scope } from "#lib/api/scope.ts";
+import type { LeaderboardEntry } from "#lib/api/types.ts";
+import { playerHref, playerRowLabel } from "#lib/players/names.ts";
 
 export type FeaturedBoard = {
   /** URL segment under /leaderboards and the key the recorder stores it under */
@@ -92,4 +94,9 @@ export function featuredHref(b: FeaturedBoard, scope?: Scope | string): string {
 export function compositeHref(b: CompositeBoard, scope?: Scope | string): string {
   const q = scope && scope !== "network" ? `?scope=${encodeURIComponent(scope)}` : "";
   return `/leaderboards/${encodeURIComponent(b.id)}${q}`;
+}
+
+/** Board entries as the rows a BarList takes: every entry, or the first `limit`. */
+export function barRows(entries: LeaderboardEntry[], limit = entries.length) {
+  return entries.slice(0, limit).map((e) => ({ rank: e.rank, key: e.uuid, uuid: e.uuid, label: playerRowLabel(e), v: e.value, display: e.display, href: playerHref(e) }));
 }

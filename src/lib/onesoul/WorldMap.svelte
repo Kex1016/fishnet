@@ -36,7 +36,7 @@
     <span class="t-title-4">{map.label}</span>
     <span class="t-caption os-map__readout" aria-live="polite">
       {#if hot}
-        {#if "points" in hot}{hot.title}{#if hot.detail} · {hot.detail}{/if}{:else}{kindWord[hot.kind]}: {hot.title}{#if hot.detail} · {hot.detail}{/if} · {coords(hot)}{/if}
+        {#if "points" in hot}{hot.title}{#if hot.detail}{" "}· {hot.detail}{/if}{:else}{kindWord[hot.kind]}: {hot.title}{#if hot.detail}{" "}· {hot.detail}{/if} · {coords(hot)}{/if}
       {:else}
         {map.marks.length} point{map.marks.length === 1 ? "" : "s"}{#if map.paths.length}, {map.paths.length} trail{map.paths.length === 1 ? "" : "s"}{/if}
       {/if}

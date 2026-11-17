@@ -4,10 +4,9 @@
   import EmptyState from "#lib/design/EmptyState.svelte";
   import Notice from "#lib/design/Notice.svelte";
   import ScopeSwitch from "#lib/design/ScopeSwitch.svelte";
-  import { BarList, ViewSwitch, viewParam } from "#lib/charts/index.ts";
-  import { barRows } from "./board.ts";
+  import { BarList } from "#lib/charts/index.ts";
+  import { barRows } from "#lib/boards.ts";
   let { data } = $props();
-  const view = $derived(viewParam(page.url));
 </script>
 
 <div class="fp-page">
@@ -24,7 +23,6 @@
         <input type="search" name="q" placeholder="Find any stat" aria-label="Find any stat" maxlength="64" autocomplete="off" />
       </label>
     </form>
-    <ViewSwitch url={page.url} {view} />
   </div>
 
   {#if data.allDown}
@@ -37,7 +35,6 @@
             title={b.label}
             href={b.href}
             sub="{data.scopeName} · top {Math.min(10, b.result.data.entries.length || 10)} of {b.result.data.total}"
-            {view}
             faces
             unit={b.result.data.unit}
             asOf={b.result.asOf}

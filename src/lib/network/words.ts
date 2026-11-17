@@ -4,6 +4,7 @@ import { titleId } from "#lib/onesoul/format.ts";
 import { advHref, advTitle } from "#lib/milestones/advancements.ts";
 import { boardHref } from "#lib/api/metric.ts";
 import { statTitle } from "#lib/format/labels.ts";
+import { group } from "#lib/format/stat-display.ts";
 import type { First } from "./types.ts";
 
 export const FIRST_KINDS: { id: string; label: string }[] = [
@@ -36,7 +37,7 @@ export function critLabel(c: string): string {
 const str = (v: unknown): string | null => (typeof v === "string" && v ? v : null);
 const ID = /^[a-z0-9_.-]+:[a-z0-9_./-]+$/;
 /** The API's title, unless it is only an id (a backend that never saw the display name sends the id). */
-const own = (f: First): string | null => (f.title && !ID.test(f.title.trim()) ? f.title : null);
+const own = (f: Pick<First, "title">): string | null => (f.title && !ID.test(f.title.trim()) ? f.title : null);
 
 /**
  * What a first was, in words, and where it links (cakeutils `detail` by kind: stat {metric, type, subject,
@@ -61,25 +62,29 @@ export function firstLine(f: First): { text: string; href: string | null } {
     case "stat": {
       const type = str(d.type);
       const subject = str(d.subject);
-      const shown = str(d.display);
+      // a count reads grouped like every other number on the site ("100 000"); other units keep the API's text
+      const shown = str(d.unit) === "count" && typeof d.threshold === "number" && Number.isFinite(d.threshold) ? group(d.threshold) : str(d.display);
       if (!type || !subject) break;
       return { text: `${statTitle({ type, subject, unit: str(d.unit) })}${shown ? `: ${shown}` : ""}`, href: boardHref({ kind: "stat", type, subject }) };
     }
     case "playtime": {
-      const shown = str(d.display);
-      return { text: own(f) ?? (shown ? `First to ${shown} played` : "Playtime"), href: "/leaderboards/playtime" };
+      // the API's title is the duration alone ("100h 0m")
+      const shown = str(d.display) ?? own(f);
+      return { text: shown ? `First to ${shown} played` : "Playtime", href: "/leaderboards/playtime" };
     }
     case "dimension":
     case "biome":
     case "structure": {
+      // the title is the place's English name when the catalogue has one, else its key
       const id = str(d[f.kind]);
-      return { text: own(f) ?? (id ? `First into ${titleId(id)}` : f.title), href: null };
+      const name = own(f) ?? (id ? titleId(id) : null);
+      return { text: name ? `First into ${name}` : f.title, href: null };
     }
     case "item": {
       const id = str(d.item);
-      const via = str(d.via);
-      return { text: own(f) ?? (id ? `First to ${via === "crafted" ? "craft" : "pick up"} ${titleId(id)}` : f.title), href: null };
+      const name = own(f) ?? (id ? titleId(id) : null);
+      return { text: name ? `First to ${str(d.via) === "crafted" ? "craft" : "pick up"} ${name}` : f.title, href: null };
     }
   }
-  return { text: own(f) ?? titleId(f.title), href: null };
+  return { text: own(f) ?? titleId(f.title ?? ""), href: null };
 }

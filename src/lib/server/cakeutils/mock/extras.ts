@@ -134,9 +134,19 @@ function criteria(w: World, s: Scope, advancement: string | null) {
 }
 
 const RARE: [string, string][] = [["minecraft:elytra", "Elytra"], ["minecraft:totem_of_undying", "Totem of Undying"], ["minecraft:netherite_ingot", "Netherite Ingot"], ["minecraft:beacon", "Beacon"]];
-const DIM_FIRSTS: [string, string][] = [["minecraft:the_nether", "Entered the Nether"], ["minecraft:the_end", "Entered the End"]];
+// a dimension, biome or structure has no name in the catalogue: cakeutils sends its key as the title
+const DIM_FIRSTS = ["minecraft:the_nether", "minecraft:the_end"];
 
-function firsts(w: World, s: Scope, kinds: string[] | null) {
+/** What the main handler lends the firsts feed: the scope's advancement firsts and its newest stat milestones. */
+export type FirstsSources = {
+  advancements?: () => { advancement: string; title?: string | null; uuid?: string | null; name?: string | null; server: string; earned_at: number; imported: boolean }[];
+  milestones?: () => { metric: string; type: string; subject: string; stat_name: string | null; threshold: number; unit: string; display: string; reached_at: number | null; backfilled: boolean; uuid?: string | null; name?: string | null }[];
+};
+
+/** How many stat milestones the mock's firsts feed carries (the real feed has them all). */
+const STAT_FIRSTS = 12;
+
+function firsts(w: World, s: Scope, kinds: string[] | null, src: FirstsSources = {}) {
   const t = Date.now();
   const out: Record<string, unknown>[] = [];
   const want = (k: string) => !kinds || kinds.includes(k);
@@ -145,21 +155,26 @@ function firsts(w: World, s: Scope, kinds: string[] | null) {
     for (const [ms, f] of firstToThreshold(w, s)) {
       const display = THRESHOLDS.find(([x]) => x === ms)![1];
       const back = f.ago > w.milestones_since_ago_ms;
-      out.push({ kind: "playtime", at: back ? null : t - f.ago, uuid: f.p.uuid, name: f.p.name, server: null, title: `First to ${display} played`, detail: { threshold_ms: ms, display }, backfilled: back, imported: false });
+      out.push({ kind: "playtime", at: back ? null : t - f.ago, uuid: f.p.uuid, name: f.p.name, server: null, title: display, detail: { threshold_ms: ms, display }, backfilled: back, imported: false });
     }
+  if (want("advancement"))
+    for (const a of src.advancements?.() ?? []) out.push({ kind: "advancement", at: a.earned_at, uuid: a.uuid ?? null, name: a.name ?? null, server: a.server, title: a.title ?? a.advancement, detail: { advancement: a.advancement }, backfilled: false, imported: a.imported });
+  if (want("stat"))
+    for (const m of (src.milestones?.() ?? []).slice(0, STAT_FIRSTS))
+      out.push({ kind: "stat", at: m.reached_at, uuid: m.uuid ?? null, name: m.name ?? null, server: s.kind === "server" ? s.id : null, title: m.stat_name ?? m.subject, detail: { metric: m.metric, type: m.type, subject: m.subject, threshold: m.threshold, unit: m.unit, display: m.display }, backfilled: m.backfilled, imported: false });
   if (want("criterion")) for (const c of criteria(w, s, null).slice(0, 8)) out.push({ kind: "criterion", at: c.earned_at, uuid: c.uuid, name: c.name, server: c.server, title: c.title ?? c.advancement, detail: { advancement: c.advancement, criterion: c.criterion }, backfilled: false, imported: false });
   const r = rng(`firsts:${s.kind === "server" ? s.id : "network"}`);
   const active = w.players.filter((p) => servers.some((id) => (p.playtime.by_server[id] ?? 0) > 20 * H));
   if (active.length) {
     if (want("dimension"))
-      for (const [dim, title] of DIM_FIRSTS) {
+      for (const dim of DIM_FIRSTS) {
         const p = active[Math.floor(r() * active.length)];
-        out.push({ kind: "dimension", at: t - Math.floor(r() * 35 * DAY), uuid: p.uuid, name: p.name, server: servers[0], title, detail: { dimension: dim }, backfilled: false, imported: false });
+        out.push({ kind: "dimension", at: t - Math.floor(r() * 35 * DAY), uuid: p.uuid, name: p.name, server: servers[0], title: dim, detail: { dimension: dim }, backfilled: false, imported: false });
       }
     if (want("item"))
       for (const [item, label] of RARE.slice(0, Math.min(RARE.length, Math.ceil(active.length / 4)))) {
         const p = active[Math.floor(r() * active.length)];
-        out.push({ kind: "item", at: t - Math.floor(r() * 25 * DAY), uuid: p.uuid, name: p.name, server: servers[Math.floor(r() * servers.length)], title: `First ${label}`, detail: { item, via: "picked_up" }, backfilled: false, imported: false });
+        out.push({ kind: "item", at: t - Math.floor(r() * 25 * DAY), uuid: p.uuid, name: p.name, server: servers[Math.floor(r() * servers.length)], title: label, detail: { item, via: "picked_up" }, backfilled: false, imported: false });
       }
     if (want("stat")) {
       const p = active[Math.floor(r() * active.length)];
@@ -167,7 +182,7 @@ function firsts(w: World, s: Scope, kinds: string[] | null) {
     }
     if (want("biome")) {
       const p = active[Math.floor(r() * active.length)];
-      out.push({ kind: "biome", at: t - Math.floor(r() * 20 * DAY), uuid: p.uuid, name: p.name, server: servers[0], title: "First into a Cherry Grove", detail: { biome: "minecraft:cherry_grove" }, backfilled: false, imported: false });
+      out.push({ kind: "biome", at: t - Math.floor(r() * 20 * DAY), uuid: p.uuid, name: p.name, server: servers[0], title: "minecraft:cherry_grove", detail: { biome: "minecraft:cherry_grove" }, backfilled: false, imported: false });
     }
   }
   return out.sort((a, b) => (a.at === null ? 1 : 0) - (b.at === null ? 1 : 0) || ((b.at as number) ?? 0) - ((a.at as number) ?? 0));
@@ -209,7 +224,7 @@ function onlineSeries(w: World, s: Scope, bucket: string, since: number, until: 
 /** Stats the mock snapshots daily besides type totals and playtime (cakeutils `stats.snapshots.extra-stats`). */
 const SNAPSHOT_EXTRAS = ["minecraft:mined|minecraft:diamond_ore", "minecraft:mined|minecraft:deepslate_diamond_ore"];
 
-export function handleExtras(w: World, url: URL, seg: string[], req: Request, kit: Pick<Kit, "json" | "problem" | "paging">): Response | null {
+export function handleExtras(w: World, url: URL, seg: string[], req: Request, kit: Pick<Kit, "json" | "problem" | "paging"> & FirstsSources): Response | null {
   const key = seg.join("/");
   const known = ["firsts", "milestones/criteria", "deaths", "activity/playtime", "activity/heatmap", "activity/online", "milestones/playtime"];
   const isPlayer = seg[0] === "players" && seg.length === 3 && (seg[2] === "activity" || seg[2] === "advancement-criteria");
@@ -268,7 +283,7 @@ export function handleExtras(w: World, url: URL, seg: string[], req: Request, ki
   switch (key) {
     case "firsts": {
       const k = url.searchParams.get("kinds");
-      return page(firsts(w, s, k ? k.split(",") : null), "firsts");
+      return page(firsts(w, s, k ? k.split(",") : null, kit), "firsts");
     }
     case "milestones/criteria":
       return page(criteria(w, s, url.searchParams.get("advancement")), "criteria");

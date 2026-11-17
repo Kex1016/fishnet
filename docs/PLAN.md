@@ -181,6 +181,7 @@ A scheduler inside the same Node process, writing `data/fishnet.db` (SQLite, WAL
 | 1 h | playtime board (all pages) and the featured boards' top 100 | rank movement, "climbing this week" |
 | 6 h | network totals per featured stat (sum of every entry of its board) and per type total | "network has mined 1.2 M blocks" tiles with sparklines |
 | 10 min | milestone feed head (new rows only) | milestones per day, already stored by the API, recorded only to survive offsets |
+| 1 h (a full read once a day) | the whole milestone feed of the network and of each server, 40 pages a minute until done | milestones per player (`/milestones`, `/milestones/players`): the API has no such route |
 
 - Pure derived data: a cache of the API over time. Deleting the file loses history, never anything of
   cakeutils. Retention: minute rows 30 days, then hourly roll-ups for 2 years.
@@ -197,7 +198,7 @@ A scheduler inside the same Node process, writing `data/fishnet.db` (SQLite, WAL
 | `/players/[name]` | profile with prefix/suffix, first and last seen, playtime by server and mini, ranks on featured boards, stats explorer by type with icons and search, scope switch, milestones they were first to | player, playtime, stats, leaderboards, player milestones |
 | `/leaderboards`, `/leaderboards/[metric]` | playtime + featured boards + any stat from the catalogue; scope switch; top 10 bar chart, full paged table, distribution | leaderboards, catalogue |
 | `/stats`, `/stats/[type]`, `/stats/subject/[subject]` | the catalogue: types, subjects with icons, a subject's names and every type with data, its boards and its milestone ladder | catalogue, leaderboards, milestones |
-| `/milestones` | feed, filter by scope and type, milestones per day heatmap, "firsts" per player | milestones |
+| `/milestones`, `/milestones/players` | feed, filter by scope, type and player, milestones per day heatmap, every player's milestone total (top 10, and the whole table with search and order) | milestones, recorder |
 | `/about` | what the site is, data freshness, API reachable yes/no, milestones on/off, recorded since | health, recorder |
 | `/img/icon/[sha].png`, `/img/face/[uuid].png` | icon proxy (immutable cache), faces: skin texture via Mojang's session server by UUID, head crop in `sharp`, cached on disk 24 h, default head fallback | icons, Mojang |
 | `/healthz` | for Docker and the watcher | none |
@@ -264,7 +265,8 @@ reki's layout with a Fishnet skin, the way journey skins it for Minecraft:
 - Type: rounded Japanese-capable faces for headings and text, a mono face for numbers, dates "4 Nov 2026".
 - One accent for the site (a sea colour fits "fish"), warm greys, compact 6–12 px corners, quick motion.
 - Charts follow reki's rules: one hue, columns ≤ 24 px, 2 px lines, a readout in the card header that
-  follows hover and focus, a table twin behind one "Charts | Tables" switch, stat tiles for single numbers.
+  follows hover and focus, stat tiles for single numbers. (The "Charts | Tables" switch left the pages on
+  17 Nov 2026: the charts read better. The table twins remain in the components and the design preview.)
 - Copy: English, sentence case, no exclamation marks, no emoji; empty states are calm and short.
 - Item icons: cakeutils' rendered icons in slot frames; endfield.reki.dev's tile index (name, count, one
   line) for the home page's sections.

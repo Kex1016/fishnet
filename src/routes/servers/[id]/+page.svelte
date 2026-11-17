@@ -1,10 +1,9 @@
 <script lang="ts">
-  import { page } from "$app/state";
   import AsOf from "#lib/design/AsOf.svelte";
   import EmptyState from "#lib/design/EmptyState.svelte";
   import Face from "#lib/design/Face.svelte";
   import Notice from "#lib/design/Notice.svelte";
-  import { BarList, Heatmap, LineChart, StatTile, UptimeStrip, ViewSwitch, viewParam } from "#lib/charts/index.ts";
+  import { BarList, Heatmap, LineChart, StatTile, UptimeStrip } from "#lib/charts/index.ts";
   import { AdvancementFeed, MilestoneFeed } from "#lib/milestones/index.ts";
   import { boardHref, PLAYTIME } from "#lib/api/metric.ts";
   import { group } from "#lib/format/stat-display.ts";
@@ -12,7 +11,6 @@
   import { ArrowRight, Map as MapIcon } from "@lucide/svelte";
   import { HOURS, meanPlayers } from "../boards.ts";
   let { data } = $props();
-  const view = $derived(viewParam(page.url));
   const s = $derived(data.server);
   const linked = $derived(!!s?.mc_version);
   const pt = $derived(data.playtime);
@@ -70,13 +68,11 @@
     </a>
   {/if}
 
-  <div class="fp-filters" style="justify-content: flex-end"><ViewSwitch url={page.url} {view} /></div>
   <div class="fp-panels">
     <LineChart
       title="Online over the week"
       sub="{data.name} · players online"
       since={data.onlineWeek.since ?? data.since}
-      {view}
       points={data.onlineWeek.points}
       shadow={data.waiting.length ? { label: "Waiting", points: data.waiting } : undefined}
       emptyTitle="No history yet"
@@ -87,7 +83,6 @@
       sub="{data.name} · online and linked"
       since={data.since}
       samples={data.samples}
-      {view}
       emptyTitle="No history yet"
       emptyLine="Whether the server was linked is recorded every minute once the site is live."
     />
@@ -95,7 +90,6 @@
       title="Busiest hours"
       sub="{data.name} · mean players online · last 30 days · UTC"
       since={data.busiestHours.since ?? data.since}
-      {view}
       rows={data.busiestHours.rows}
       columns={HOURS}
       format={meanPlayers}
@@ -116,7 +110,6 @@
           title="Playtime here"
           href={boardHref(PLAYTIME, data.scope)}
           sub="server · top 5"
-          {view}
           faces
           unit="ms"
           asOf={pt.ok ? pt.asOf : undefined}
@@ -126,7 +119,7 @@
           rows={pt.ok && !pt.empty ? pt.rows : []}
         />
         {#each data.boards as b (b.id)}
-          <BarList title={b.label} href={b.href} sub="server · top 5" {view} faces unit={b.unit} asOf={b.asOf} stale={b.stale} emptyTitle="Nobody has done this yet" rows={b.rows} />
+          <BarList title={b.label} href={b.href} sub="server · top 5" faces unit={b.unit} asOf={b.asOf} stale={b.stale} emptyTitle="Nobody has done this yet" rows={b.rows} />
         {/each}
       </div>
     {/if}
@@ -159,7 +152,7 @@
           </section>
         {/if}
         {#if data.busiest.length}
-          <BarList title="Busiest mini-servers" sub="peak players this week" since={data.since} {view} rows={data.busiest} emptyTitle="No mini-servers yet" />
+          <BarList title="Busiest mini-servers" sub="peak players this week" since={data.since} rows={data.busiest} emptyTitle="No mini-servers yet" />
         {/if}
       </div>
     </section>

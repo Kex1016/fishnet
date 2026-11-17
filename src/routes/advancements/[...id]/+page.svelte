@@ -5,18 +5,18 @@
   import EmptyState from "#lib/design/EmptyState.svelte";
   import Notice from "#lib/design/Notice.svelte";
   import PlayerName from "#lib/design/PlayerName.svelte";
+  import Slot from "#lib/design/Slot.svelte";
   import { ago, dateTime, iso } from "#lib/format/dates.ts";
   import { group } from "#lib/format/stat-display.ts";
   import { titleCase } from "#lib/players/names.ts";
   let { data } = $props();
-  /** "minecraft:cherry_grove" → "Cherry grove"; free-form criteria stay as the game names them */
   const serverName = (id: string) => data.serverNames[id] ?? titleCase(id);
   const players = (n: number) => `${group(n)} player${n === 1 ? "" : "s"}`;
 </script>
 
 <div class="fp-page">
   <header class="fp-hero fp-adv-hero">
-    <span class="fp-slot fp-slot--lg"><Award class="fp-ico fp-slot__glyph" strokeWidth={1.4} /></span>
+    <Slot icon={data.icon} glyph={Award} size="lg" name={data.title} />
     <div class="fp-adv-hero__text">
       {#if data.category}<span class="t-kicker">{data.category}</span>{/if}
       <h1 class="t-display">{data.title}</h1>

@@ -19,6 +19,19 @@ export type ServerSeries = { since: number | null; samples: ServerSample[] };
 export type RankMove = { uuid: string; name: string; rank: number; before: number | null; value: number; display: string };
 export type RankMoves = { since: number | null; moves: RankMove[] };
 
+/** One player's milestones in a scope: how many they were first to, and when the newest was reached (null = all before tracking began). */
+export type MilestoneHolder = { uuid: string; name: string; count: number; latest: number | null };
+export type MilestoneHolders = {
+  /** when the recorder last finished reading the scope's whole feed; null = not yet, the counts cover `counted` rows only */
+  complete: number | null;
+  /** when the copy last took in new milestones (the head of the feed is read every few minutes) */
+  asOf: number | null;
+  /** milestones in the copy for this scope and stat type, with or without a known first player */
+  counted: number;
+  /** every player with at least one, most first (ties by name) */
+  holders: MilestoneHolder[];
+};
+
 /** A per-day grid for the activity heatmap: `days[i]` = day start (UTC) → value, oldest first. */
 export type DayGrid = { since: number | null; days: { day: number; v: number }[] };
 
@@ -59,6 +72,12 @@ export interface History {
    * the grid can reach back before recording began; `since` says so. Empty when the proxy has no advancements.
    */
   advancementsPerDay(scope: Scope, range: Range): Promise<DayGrid>;
+  /**
+   * How many milestones each player holds in a scope (the ones they were first to reach), optionally for one
+   * stat type: counted from the recorder's own copy of the milestone feed, because the API has no such
+   * route. Network and server scopes. `complete` is null until the copy has read the whole feed once.
+   */
+  milestoneHolders(scope: Scope, type?: string): Promise<MilestoneHolders>;
   /** New players per week (Monday 00:00 UTC) by first_seen, from the recorder's player table. Empty until every player's first_seen is known. */
   joinsPerWeek(range: Range): Promise<Series>;
 }
@@ -77,6 +96,7 @@ export const emptyHistory: History = {
   rankMoves: async () => ({ since: null, moves: [] }),
   milestonesPerDay: async () => ({ since: null, days: [] }),
   advancementsPerDay: async () => ({ since: null, days: [] }),
+  milestoneHolders: async () => ({ complete: null, asOf: null, counted: 0, holders: [] }),
   joinsPerWeek: async () => EMPTY
 };
 

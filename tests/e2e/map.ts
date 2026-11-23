@@ -193,7 +193,7 @@ export const MAP_CHECKS: Check[] = [
           const area = document.querySelector(".fx-main")!.getBoundingClientRect();
           const stage = document.querySelector(".mc-stage")!.getBoundingClientRect();
           const d = document.documentElement;
-          return { area: [area.left, area.top, area.width, area.height], stage: [stage.left, stage.top, stage.width, stage.height], scrolls: d.scrollHeight > d.clientHeight + 1 || d.scrollWidth > d.clientWidth + 1, framed: !!document.querySelector(".fp-page") };
+          return { area: [area.left, area.top, area.width, area.height], stage: [stage.left, stage.top, stage.width, stage.height], scrolls: d.scrollHeight > d.clientHeight + 1 || d.scrollWidth > d.clientWidth + 1, framed: !!document.querySelector(".mc-stage")!.closest(".window") };
         });
         expect(box.area.every((v: number, i: number) => Math.abs(v - box.stage[i]) <= 1), `the map is ${box.stage.map(Math.round)} in an area of ${box.area.map(Math.round)}`);
         expect(!box.scrolls && !box.framed, "the map page scrolls or sits in a page frame");

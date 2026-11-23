@@ -6,7 +6,6 @@
   import "#lib/design/tokens.css";
   import "#lib/design/base.css";
   import "#lib/design/components.css";
-  import "#lib/design/legacy.css";
 
   import { afterNavigate } from "$app/navigation";
   import { page } from "$app/state";

@@ -59,35 +59,35 @@
         <canvas class="mk-label" data-sample={s.id} data-k={s.k} use:label={s}></canvas>
       </div>
     </div>
-    <figcaption class="t-caption">{caption}</figcaption>
+    <figcaption>{caption}</figcaption>
   </figure>
 {/snippet}
 
 <section class="mk-preview" aria-labelledby="mk-preview-h">
-  <h2 id="mk-preview-h" class="t-heading">Area titles</h2>
-  <p class="t-small mk-note">
+  <h2 id="mk-preview-h">Area titles</h2>
+  <p class="mk-note">
     Minecraft font, tinted from the area colour: lighter than the area until {LABEL_CONTRAST} : 1 against it as drawn (the colour at {AREA_FILL_OPACITY * 100} % over grey), darker only where no lighter tint gets there;
     solid black shadow one font pixel right and down. Made-up titles, preview only.
   </p>
-  <h3 class="t-kicker">Scales k 1 to 4</h3>
+  <h3 class="lab">Scales k 1 to 4</h3>
   <div class="mk-row">{#each scales as s (s.id)}{@render tile(s, `k ${s.k}`)}{/each}</div>
-  <h3 class="t-kicker">Grounds</h3>
+  <h3 class="lab">Grounds</h3>
   <div class="mk-row">{#each grounds as s (s.id)}{@render tile(s, s.ground)}{/each}</div>
-  <h3 class="t-kicker">Text</h3>
+  <h3 class="lab">Text</h3>
   <div class="mk-row">{#each texts as s (s.id)}{@render tile(s, `k ${s.k}${s.wrap ? ", two lines" : ""}`)}{/each}</div>
-  <h3 class="t-kicker">Dye colours</h3>
+  <h3 class="lab">Dye colours</h3>
   <div class="mk-row">{#each dyes as s (s.id)}{@render tile(s, `${s.color} → ${labelTint(s.color).color}`)}{/each}</div>
 </section>
 
 <style>
   .mk-preview { padding: var(--space-6) var(--space-4) var(--space-8); display: flex; flex-direction: column; gap: var(--space-3); max-width: 1200px; }
-  .mk-note { margin: 0; color: var(--muted); max-width: 70ch; }
-  .mk-preview h3 { margin: var(--space-3) 0 0; color: var(--muted); }
+  .mk-note { margin: 0; color: var(--color-subtle); max-width: 70ch; }
+  .mk-preview h3 { margin: var(--space-3) 0 0; color: var(--color-subtle); }
   .mk-row { display: flex; flex-wrap: wrap; gap: var(--space-3); align-items: flex-start; }
   .mk-tile { margin: 0; display: flex; flex-direction: column; gap: var(--space-1); max-width: 100%; }
-  .mk-tile figcaption { color: var(--faint); font-size: 11px; }
+  .mk-tile figcaption { color: var(--ink-muted); font-size: 11px; }
   /* terrain-like grounds: two close shades in 8 px blocks, like a map tile at close zoom */
-  .mk-ground { --a: #5f9f35; --b: #6aa83d; padding: var(--space-4); background: repeating-conic-gradient(var(--a) 0 25%, var(--b) 0 50%) 0 0 / 16px 16px; border-radius: var(--radius-sm); overflow: hidden; max-width: 100%; }
+  .mk-ground { --a: #5f9f35; --b: #6aa83d; padding: var(--space-4); background: repeating-conic-gradient(var(--a) 0 25%, var(--b) 0 50%) 0 0 / 16px 16px; overflow: hidden; max-width: 100%; }
   .mk-ground[data-ground="sand"] { --a: #dbcfa3; --b: #d2c592; }
   .mk-ground[data-ground="stone"] { --a: #7d7d7d; --b: #727272; }
   .mk-ground[data-ground="water"] { --a: #3f5fd0; --b: #3858c2; }

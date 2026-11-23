@@ -30,7 +30,7 @@ await check("profile: online with positions is a link; the other three are disab
   for (const [who, text] of [["Dace", "offline"], ["Finnegan_B", "Live positions are off on Creative"], ["Lanternfish", "Lobby has no map"]] as const) {
     await page.goto(`${base}/players/${who}`);
     ok(await page.locator("button:has-text('Show on map')[disabled]").count(), `${who} disabled`);
-    ok((await page.locator(".fp-who").innerText()).includes(text), `${who} reason: ${text}`);
+    ok((await page.locator(".som__why").innerText()).includes(text), `${who} reason: ${text}`);
   }
   await ctx.close();
 });

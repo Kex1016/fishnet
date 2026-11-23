@@ -25,7 +25,6 @@ export type MilestoneLadderProps = {
   /** the stat's name from the catalogue (the ladder has none) */
   statName?: string | null;
   icon?: string | null;
-  kind?: string | null;
 };
 
 export type PlayerFirstsProps = {

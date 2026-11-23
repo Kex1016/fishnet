@@ -42,7 +42,7 @@
 .fx .window > .content { padding: 14px 12px 12px; }
 .fx-wh { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 8px 16px; margin-bottom: 12px; }
 .fx-wh h2, .fx-wh h3 { margin: 0; font-size: 14px; font-weight: 400; text-transform: uppercase; letter-spacing: 0.08em; color: var(--color-foam); }
-.fx-wh .asof { font-size: 12px; color: var(--ink-muted); }
+.fx-wh .asof { font-size: 12px; color: var(--ink-muted); white-space: normal; } /* a long sub line wraps under the title */
 .asof { font-size: 12px; color: var(--ink-muted); white-space: nowrap; } /* site: AsOf anywhere */
 .fx .asof.stale { color: var(--color-gold); } /* site: the last good answer, cakeutils is down */
 .fx-wh a { color: var(--color-foam); }
@@ -83,7 +83,7 @@
 .fx-faces a:hover { color: var(--color-text); }
 .fx-faces a span:last-child { max-width: 72px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 /* site: face and name on one line, a link to the profile (PlayerName) */
-.fx-player { display: inline-flex; align-items: center; gap: 8px; min-width: 0; max-width: 100%; text-decoration: none; }
+.fx-player { display: inline-flex; align-items: center; gap: 8px; min-width: 0; max-width: 100%; text-decoration: none; vertical-align: middle; } /* middle: the name stays on the line of a sentence */
 .fx-player > .who { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 a.fx-player:hover > .who { color: var(--color-foam); }
 .fx-player > .on { flex: none; width: 8px; height: 8px; background: var(--color-foam); }
@@ -96,7 +96,7 @@ a.fx-player:hover > .who { color: var(--color-foam); }
 .fx-slot > .dith { width: 100%; height: 100%; }
 
 /* ---- ranked rows (leaderboards, bar lists): rank, face, name, bar, value */
-.fx-rank { display: flex; flex-direction: column; }
+.fx-rank { display: flex; flex-direction: column; container-type: inline-size; }
 .fx-rank .row { display: grid; grid-template-columns: 4ch 20px minmax(0, 1fr) minmax(0, 1.2fr) 10ch; gap: 12px; align-items: center; min-height: 32px; padding: 4px 8px; text-decoration: none; border-top: 1px solid var(--ink-hairline); }
 .fx-rank .row:first-child { border-top: 0; }
 .fx-rank a.row:hover { background: var(--color-highlight-low); }
@@ -114,6 +114,12 @@ a.fx-player:hover > .who { color: var(--color-foam); }
 /* site: rows that are not players have no face column */
 .fx-rank.bare .row { grid-template-columns: 4ch minmax(0, 1fr) minmax(0, 1.2fr) 10ch; }
 .fx-rank.bare.compact .row { grid-template-columns: 3ch minmax(0, 1fr) auto; }
+/* site: in a narrow window (a side column) the bar goes, as it does on a phone, so names keep their room */
+@container (max-width: 440px) {
+  .fx-rank .row { grid-template-columns: 3ch 20px minmax(0, 1fr) auto; }
+  .fx-rank.bare .row { grid-template-columns: 3ch minmax(0, 1fr) auto; }
+  .fx-rank .bar { display: none; }
+}
 
 /* ---- pixel charts: squares, never lines */
 .fx-cols { display: flex; align-items: flex-end; gap: 3px; height: 120px; border-bottom: 1px solid var(--ink-hairline); }
@@ -167,8 +173,9 @@ a.fx-player:hover > .who { color: var(--color-foam); }
 .fx-notice { display: flex; gap: 12px; align-items: baseline; padding: 8px 12px; border: 1px dashed var(--color-gold); color: var(--color-gold); font-size: 14px; background: var(--color-surface); }
 .fx-notice > b { flex: none; font-weight: 400; }
 .fx-notice span { color: var(--color-text); }
-.fx-notice.love { border-color: var(--color-love); color: var(--color-love); } /* site: an error */
-.fx-notice.foam { border-color: var(--color-foam); color: var(--color-foam); } /* site: done, or plain information */
+.fx-notice span b { font-weight: 400; color: var(--color-gold); } /* site: the point of a notice takes its tone, not the 2x face */
+.fx-notice.love, .fx-notice.love span b { border-color: var(--color-love); color: var(--color-love); } /* site: an error */
+.fx-notice.foam, .fx-notice.foam span b { border-color: var(--color-foam); color: var(--color-foam); } /* site: done, or plain information */
 .fx-empty { padding: 16px; border: 1px dashed var(--color-text); color: var(--ink-muted); }
 .fx-empty b { display: block; font-weight: 400; color: var(--color-text); margin-bottom: 4px; }
 .fx-empty .since { display: block; margin-top: 8px; font-size: 12px; } /* site: "Recording since 4 Nov 2026" */
@@ -248,11 +255,11 @@ a.fx-player:hover > .who { color: var(--color-foam); }
 
 /* ---- tables, the catalogue, prose */
 .fx-table { width: 100%; border-collapse: collapse; font-size: 14px; }
-.fx-table th { padding: 6px 8px; text-align: left; font-weight: 400; font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-muted); border-bottom: 1px solid var(--color-text); }
+.fx-table th { padding: 6px 8px; text-align: left; font-weight: 400; font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-muted); border-bottom: 1px solid var(--color-text); white-space: nowrap; }
 .fx-table td { padding: 6px 8px; border-top: 1px solid var(--ink-hairline); white-space: nowrap; }
 .fx-table td.r, .fx-table th.r { text-align: right; font-variant-numeric: tabular-nums; }
 .fx-table tr.sel td, .fx-table tr[aria-current] td { background: var(--color-overlay); }
-.fx-scroll { overflow-x: auto; scrollbar-width: thin; scrollbar-color: var(--color-foam) var(--color-muted); }
+.fx-scroll { position: relative; overflow-x: auto; scrollbar-width: thin; scrollbar-color: var(--color-foam) var(--color-muted); }
 .fx-cat { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 8px; }
 .fx-cat a { display: flex; justify-content: space-between; align-items: center; gap: 8px; min-width: 0; padding: 8px 10px; border: 1px solid var(--ink-hairline); text-decoration: none; }
 .fx-cat a:hover { border-color: var(--color-foam); }
@@ -276,7 +283,7 @@ a.fx-player:hover > .who { color: var(--color-foam); }
 
 /* ---- site: the stage mode. A page whose content is a stage (the map) gets the bar and nothing else: no
    strip, no rail, no blobs; the stage fills the window under the bar and the menu button opens the nav.
-   A stage is a direct child of .fx-main (or, until H9 rebuilds it, the One Soul round map in its frame). */
+   A stage is a direct child of .fx-main (or the One Soul round map in its frame). */
 .fx:has(.fx-main > :is(.fx-stage, .mc-stage), .fx-main > .os-frame > .rm-stage) {
   height: 100dvh; min-height: 0; display: flex; flex-direction: column; overflow: hidden;
   > :is(.fx-blobs, .fx-strip) { display: none; }

@@ -1,14 +1,10 @@
 // Every page of the site (PLAN §3.4), the sidebar and the breadcrumbs. Shared file: minimal
 // additive edits only, named in the unit's report. Milestones only show when the proxy has them.
-import type { Component } from "svelte";
-import { Activity, Award, ChartColumn, Flame, House, Info, Flag, Map as MapIcon, Server, Skull, Sparkles, Trophy, Users } from "@lucide/svelte";
-
 export type Crumb = { label: string; href?: string };
 
 export type NavItem = {
   href: string;
   label: string;
-  icon: Component<{ class?: string; strokeWidth?: number }>;
   /** only rendered when the proxy has milestones (layout data `milestones`) */
   needsMilestones?: boolean;
   /** only rendered when the proxy has advancement milestones (layout data `advancements`, D-111) */
@@ -25,31 +21,31 @@ export const NAV: NavGroup[] = [
   {
     label: "Network",
     items: [
-      { href: "/", label: "Home", icon: House },
-      { href: "/servers", label: "Servers", icon: Server },
-      { href: "/map", label: "Map", icon: MapIcon, needs: "map" },
-      { href: "/players", label: "Players", icon: Users }
+      { href: "/", label: "Home" },
+      { href: "/servers", label: "Servers" },
+      { href: "/map", label: "Map", needs: "map" },
+      { href: "/players", label: "Players" }
     ]
   },
   {
     label: "Stats",
     items: [
-      { href: "/leaderboards", label: "Leaderboards", icon: Trophy },
-      { href: "/stats", label: "Stats", icon: ChartColumn },
-      { href: "/milestones", label: "Milestones", icon: Flag, needsMilestones: true },
-      { href: "/advancements", label: "Advancements", icon: Award, needsAdvancements: true },
-      { href: "/firsts", label: "Firsts", icon: Sparkles, needs: "firsts" },
-      { href: "/activity", label: "Activity", icon: Activity, needs: "activity" },
-      { href: "/deaths", label: "Deaths", icon: Skull, needs: "deaths" }
+      { href: "/leaderboards", label: "Leaderboards" },
+      { href: "/stats", label: "Stats" },
+      { href: "/milestones", label: "Milestones", needsMilestones: true },
+      { href: "/advancements", label: "Advancements", needsAdvancements: true },
+      { href: "/firsts", label: "Firsts", needs: "firsts" },
+      { href: "/activity", label: "Activity", needs: "activity" },
+      { href: "/deaths", label: "Deaths", needs: "deaths" }
     ]
   },
   {
     label: "Games",
-    items: [{ href: "/one-soul", label: "One Soul", icon: Flame, needsOneSoul: true }]
+    items: [{ href: "/one-soul", label: "One Soul", needsOneSoul: true }]
   },
   {
     label: "Site",
-    items: [{ href: "/about", label: "About", icon: Info }]
+    items: [{ href: "/about", label: "About" }]
   }
 ];
 

@@ -289,16 +289,18 @@ export const CHECKS: Check[] = [
       const scoped = await ctx.get(`/players/${name}?scope=server%3Asurvival`);
       expect(scoped.status === 200, `a scoped profile answered ${scoped.status}`);
       const ms = await ctx.html("/milestones");
-      expect((ms.match(/class="fp-ms[\s"]/g) ?? []).length >= 5, "the milestone feed has fewer than 5 rows");
+      // a feed's rows are the .li of its .fx-feed (a ranked list beside it has rows of its own)
+      const feedRows = (html: string) => ((html.split('class="fx-feed"')[1] ?? "").split('class="section-header"')[0].match(/<(?:a|div) class="li"/g) ?? []).length;
+      expect(feedRows(ms) >= 5, "the milestone feed has fewer than 5 rows");
       expect(ms.includes("Reached before tracking began") || ms.includes("<time"), "milestone rows have no time or backfill tag");
       const adv = await ctx.html("/advancements");
-      expect((adv.match(/class="fp-ms fp-adv[\s"]/g) ?? []).length >= 5, "the advancement feed has fewer than 5 rows");
+      expect(feedRows(adv) >= 5, "the advancement feed has fewer than 5 rows");
       expect(adv.includes("<time") && adv.includes("first of "), "advancement rows have no time or earner count");
-      expect(adv.includes(">Imported<"), "no advancement row is tagged as imported on the busy fixtures");
+      expect(adv.includes(">imported<"), "no advancement row is tagged as imported on the busy fixtures");
       const advLink = (adv.match(/href="(\/advancements\/[^"]+)"/) ?? [])[1];
       expect(!!advLink, "the advancement feed links no advancement");
       const one = await ctx.html(advLink!);
-      expect(one.includes("First in the network") && one.includes("By server") && one.includes("fp-table"), `${advLink} has no network first or server table`);
+      expect(one.includes("First in the network") && one.includes("By server") && one.includes('class="fx-table"'), `${advLink} has no network first or server table`);
       expect(profile.includes("First to complete"), "the profile has no advancement firsts section");
       const stats = await ctx.html("/stats");
       const subject = (stats.match(/href="(\/stats\/subject\/[^"]+)"/) ?? [])[1];
@@ -309,7 +311,7 @@ export const CHECKS: Check[] = [
       expect(server.includes("Busiest hours") && /<i class="h[1-4]\b/.test(server), "the server page has no heatmap cells");
       expect(/class="fx-plot"/.test(server) && /class="fx-(cols|steps|heat|up)\b/.test(server), "the server page has no chart drawn on the server");
       const home = await ctx.html("/");
-      expect(/fp-seg-text|fp-faces/.test(home), "the home page shows no faces or segments");
+      expect(/class="(sg|fx-face)[\s"]/.test(home), "the home page shows no faces or segments");
       return `profile ${decodeURIComponent(name)}, subject ${decodeURIComponent(subject!.slice(15))}`;
     }
   },
@@ -375,7 +377,7 @@ export const CHECKS: Check[] = [
         ["/players/nobody_such_player_zz", [404], "This page wandered off"],
         ["/servers/no-such-server", [404]],
         ["/no-such-route", [404]],
-        ["/leaderboards/mined:minecraft:unobtainium_zz", [200], "fp-empty"],
+        ["/leaderboards/mined:minecraft:unobtainium_zz", [200], "fx-empty"],
         ["/leaderboards?scope=garbage", [200]],
         ["/leaderboards?scope=server%3Ano-such-server", [200]],
         ["/players?q=zzzzqq", [200], "fx-empty"],
@@ -405,7 +407,7 @@ export const CHECKS: Check[] = [
         expect(statuses.includes(r.status), `${p} answered ${r.status}`);
         const body = await r.text();
         expect(!body.includes("Something went wrong"), `${p} shows the error page`);
-        if (text) expect(text === "fp-empty" ? /f[px]-empty/.test(body) : body.includes(text), `${p} does not say "${text}"`);
+        if (text) expect(body.includes(text), `${p} does not say "${text}"`);
       }
     }
   },

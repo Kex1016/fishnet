@@ -14,15 +14,11 @@
     size?: "md" | "lg";
     /** 2 (common) to 6 (the rarest): the frame colour, classes .r2 to .r6 */
     rarity?: Rarity;
-    /** @deprecated haiiro has no icon set: ignored. Units drop these as they rebuild their pages. */
-    kind?: string | null;
-    /** @deprecated ignored, see `kind` */
-    glyph?: unknown;
   } = $props();
   const href = $derived(iconHref(icon));
 </script>
 
-<span class="fx-slot fp-slot{size === 'lg' ? ' lg' : ''}{rarity ? ` r${rarity}` : ''}" title={name ?? undefined}>
+<span class="fx-slot{size === 'lg' ? ' lg' : ''}{rarity ? ` r${rarity}` : ''}" title={name ?? undefined}>
   {#if href}
     <img src={href} alt="" width={size === "lg" ? 48 : 32} height={size === "lg" ? 48 : 32} loading="lazy" decoding="async" />
   {:else}

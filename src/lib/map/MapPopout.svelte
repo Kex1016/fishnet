@@ -4,14 +4,12 @@
   // keyboard works by itself; popouts that share `group` close each other. Escape and a click outside close it.
   // Classes in map.css (`mc-pop`). The window's heading is a prompt: `fish: <path> <cmd>`.
   import type { Snippet } from "svelte";
-  let { label, value, count, icon: _icon, path = "~/map", cmd, group = "mc-pop", open = $bindable(false), children }: {
+  let { label, value, count, path = "~/map", cmd, group = "mc-pop", open = $bindable(false), children }: {
     /** what the popout holds: "Worlds", "Players", "Layers" (the chip's accessible name) */
     label: string;
     /** shown on the chip instead of the label, e.g. the world's name (plain text) */
     value?: string;
     count?: number;
-    /** accepted and ignored: haiiro has no icons on the map (deprecated) */
-    icon?: unknown;
     /** the place in the window's prompt heading */
     path?: string;
     /** the command in the window's prompt heading; the label in lower case without it */

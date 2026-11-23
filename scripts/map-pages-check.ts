@@ -83,7 +83,7 @@ await check("the map fills the whole area beside the nav (JS)", async () => {
   expect(r.a.every((v: number, i: number) => Math.abs(v - r.b[i]) <= 1), `stage ${r.b} vs area ${r.a}`);
   expect(Math.abs(r.m[0] - r.b[2]) <= 1 && Math.abs(r.m[1] - r.b[3]) <= 1, `canvas ${r.m} vs stage ${r.b}`);
   expect(r.sh <= r.a[3] + 1 && r.sw <= r.a[2] + 1, "the page scrolls");
-  expect((await page.$$(".fp-page")).length === 0, "a page frame around the map");
+  expect((await page.$$(".window:has(.mc-stage)")).length === 0, "a page frame around the map");
   await page.context().close();
 });
 
@@ -211,7 +211,7 @@ if (freshBase) {
   console.log(`empty states on ${freshBase}`);
   await check("fresh: /map says no server has a map, a server map is 404", async () => {
     const page = await open(freshBase, "/map");
-    expect((await page.textContent(".fp-empty__title"))?.includes("No server has a map yet"), "no empty state");
+    expect((await page.textContent(".fx-empty"))?.includes("No server has a map yet"), "no empty state");
     const res = await fetch(`${freshBase}/map/survival`);
     expect(res.status === 404, `fresh /map/survival: ${res.status}`);
     await page.context().close();

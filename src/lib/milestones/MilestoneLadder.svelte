@@ -13,7 +13,7 @@
   import { ago, day } from "#lib/format/dates.ts";
   import { nextRung, whenOf, whoOf } from "./helpers.ts";
   import When from "./When.svelte";
-  let { result, statName, icon, kind }: MilestoneLadderProps = $props();
+  let { result, statName, icon }: MilestoneLadderProps = $props();
   const next = $derived(result.ok ? nextRung(result.data.milestones) : -1);
   // the squares: every rung as reached, the next one, or not reached yet; the title says it in words
   const steps = $derived(
@@ -52,7 +52,7 @@
   {#if result.stale}<Notice kind="warning"><b>cakeutils could not be reached.</b> Showing the last good data, <AsOf at={result.asOf} stale />.</Notice>{/if}
   {#if statName || icon}
     <div class="head">
-      <Slot {icon} {kind} name={statName} />
+      <Slot {icon} name={statName} />
       <b>{statName}</b>
     </div>
   {/if}
@@ -66,7 +66,7 @@
         {@const who = whoOf(m)}
         {@const when = whenOf(m)}
         <div class="li" aria-current={i === next ? "step" : undefined}>
-          <span class="thr"><b>{m.display}</b></span>
+          <span class="thr num">{m.display}</span>
           <span class="txt">
             {#if who}<PlayerName uuid={who.uuid} name={who.name} />
             {:else if when.state === "none"}<span class="c1">{i === next ? "Next to reach" : "Not reached yet"}</span>
@@ -82,6 +82,7 @@
 
 <style>
   .head { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
-  .thr { flex: none; width: 12ch; }
+  /* plain face: a threshold in the 2x face runs out of room at seven digits */
+  .thr { flex: none; min-width: 9ch; white-space: nowrap; }
   .li :global(.when) { margin-left: auto; }
 </style>

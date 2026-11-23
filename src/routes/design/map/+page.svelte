@@ -14,7 +14,6 @@
   import { readout } from "#lib/map/crs.ts";
   import { mapHref } from "#lib/map/links.ts";
   import type { MapLayer, MapView, PlayerDot, PlayersSnapshot, TilesEvent } from "#lib/map/types.ts";
-  import { Globe, Layers, Map as MapIcon, Users } from "@lucide/svelte";
   import LabelPreview from "./LabelPreview.svelte";
   let { data } = $props();
 
@@ -84,13 +83,13 @@
 </script>
 
 {#if !v}
-  <div class="fp-page">
+  <div class="fx-stack">
     {#if !data.servers.ok && data.servers.kind === "off"}
-      <EmptyState icon={MapIcon} title="There is no map on this network" />
+      <EmptyState title="There is no map on this network" />
     {:else if !data.servers.ok}
       <Notice kind="warning"><b>cakeutils could not be reached.</b></Notice>
     {:else}
-      <EmptyState icon={MapIcon} title="No server has a map yet" line="A server's map shows up here as soon as it shares one." />
+      <EmptyState title="No server has a map yet" line="A server's map shows up here as soon as it shares one." />
     {/if}
   </div>
 {:else}
@@ -112,7 +111,7 @@
     {/key}
     <div class="mc-over">
       <div class="mc-over__row">
-        <MapPopout label="Worlds" value={v.name} icon={Globe}>
+        <MapPopout label="Worlds" value={v.name}>
           {#each servers as s (s.server)}
             <div class="mc-pop__list">
               <span class="mc-pop__line">{s.display_name}{s.live_players ? "" : " · live positions are off"}</span>
@@ -124,10 +123,10 @@
               {/each}
             </div>
           {/each}
-          <span class="mc-pop__line t-mono">zoom {v.zoom.min}..{v.zoom.max} (+{v.zoom.extra}) · spawn {readout(v.spawn)} · change log {v.tiles.epoch !== null ? "yes" : "no"}</span>
+          <span class="mc-pop__line">zoom {v.zoom.min}..{v.zoom.max} (+{v.zoom.extra}) · spawn {readout(v.spawn)} · change log {v.tiles.epoch !== null ? "yes" : "no"}</span>
           {#if at}<code class="mp-link">{mapHref(v.server, { ...at, follow })}</code>{/if}
         </MapPopout>
-        <MapPopout label="Players" count={data.positions === "on" ? here.length : undefined} icon={Users}>
+        <MapPopout label="Players" count={data.positions === "on" ? here.length : undefined}>
           {#if data.positions === "off"}
             <span class="mc-pop__line">Live positions are off</span>
           {:else if data.positions === "down"}
@@ -147,7 +146,7 @@
             <span class="mc-pop__line">Pick a player to follow them.</span>
           {/if}
         </MapPopout>
-        <MapPopout label="Layers" icon={Layers}>
+        <MapPopout label="Layers">
           <div class="mc-pop__list">
             <button type="button" class="mc-pop__item mp-sample" aria-pressed={sample} onclick={() => (sample = !sample)}>
               <span class="mc-pop__shape mc-mark" data-shape="cross"><span class="mc-mark__glyph"></span></span>

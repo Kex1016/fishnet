@@ -35,9 +35,9 @@
 .mc .leaflet-dragging .leaflet-grab, .mc .leaflet-dragging .leaflet-interactive { cursor: grabbing; }
 
 /* ---- the frame */
-/* legacy.css still points --font-mono at its one-weight face inside .mc-stage until H11 removes it: the map is
-   rebuilt, so it takes the haiiro face back */
-.mc-stage, .mc { --font-mono: IBM, Unifont, "Unifont Upper", ui-monospace, monospace; font-family: var(--font-mono); }
+.mc-stage, .mc { font-family: var(--font-mono); }
+/* links on the stage carry no underline (as weak as a bare `a`: a class that asks for one still gets it) */
+:where(.mc-stage) a { text-decoration: none; }
 .mc {
   position: relative; width: 100%; height: 100%; min-height: 240px; overflow: hidden; isolation: isolate;
   color: var(--color-text); font-size: 14px; line-height: 1.15;

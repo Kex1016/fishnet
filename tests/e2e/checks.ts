@@ -344,7 +344,7 @@ export const CHECKS: Check[] = [
       // the feed of the top player lists exactly as many milestones as the table says
       const one = await ctx.html(rows[0].href);
       expect(one.includes("Milestones first reached by"), `${rows[0].href} does not say whose milestones it shows`);
-      const heading = (one.match(/<h2 class="t-title-3">(?:<!--[^>]*-->)*([^<]+) milestones?/) ?? [])[1];
+      const heading = (one.match(/<h2[^>]*>(?:<!--[^>]*-->)*([^<]+) milestones?/) ?? [])[1];
       expect(!!heading && Number(digits(heading)) === rows[0].count, `${rows[0].href} lists ${heading} milestones, the table says ${rows[0].count}`);
 
       const byName = await ctx.html("/milestones/players?sort=name");
@@ -360,8 +360,8 @@ export const CHECKS: Check[] = [
     run: async (ctx) => {
       for (const p of ["/firsts", "/advancements"]) {
         const html = await ctx.html(p);
-        const slots = (html.match(/class="fx-slot[^"]*"/g) ?? []).length;
-        const pictures = (html.match(/class="fx-slot[^"]*"[^>]*>(?:<!--[^>]*-->)*<img src="\/img\/icon\/[0-9a-f]+\.png"/g) ?? []).length;
+        const slots = (html.match(/class="(?:fx-slot|pic)[^"]*"/g) ?? []).length;
+        const pictures = (html.match(/class="(?:fx-slot|pic)[^"]*"[^>]*>(?:<!--[^>]*-->)*<img src="\/img\/icon\/[0-9a-f]+\.png"/g) ?? []).length;
         expect(slots >= 5, `${p} has ${slots} picture slots`);
         expect(pictures >= 5, `${p} shows ${pictures} pictures in ${slots} slots`);
       }

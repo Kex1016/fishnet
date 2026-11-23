@@ -1,31 +1,31 @@
 <script lang="ts">
-  // An item slot: cakeutils' rendered icon in a frame, or a per-kind glyph when there is none (PLAN §2.2).
-  import { Box, Package, Rabbit, Sigma, Shapes } from "@lucide/svelte";
+  // A picture in a frame: cakeutils' rendered icon, or a dithered square when there is none (PLAN §2.2).
+  // The frame takes the rarity colour when one is given (advancement frames, milestone tiers).
   import { iconHref } from "#lib/images.ts";
+  import type { Rarity } from "./types.ts";
   let {
     icon,
-    kind,
     name,
     size = "md",
-    glyph
+    rarity
   }: {
     icon: string | null | undefined;
-    /** the catalogue's kind as the API gives it; an unknown one gets the generic glyph */
-    kind?: string | null;
     name?: string | null;
     size?: "md" | "lg";
-    /** the glyph to show without an icon, for rows that are not a stat subject (an advancement, a biome) */
-    glyph?: typeof Box;
+    /** 2 (common) to 6 (the rarest): the frame colour, classes .r2 to .r6 */
+    rarity?: Rarity;
+    /** @deprecated haiiro has no icon set: ignored. Units drop these as they rebuild their pages. */
+    kind?: string | null;
+    /** @deprecated ignored, see `kind` */
+    glyph?: unknown;
   } = $props();
-  const glyphs: Record<string, typeof Box> = { block: Box, item: Package, entity: Rabbit, custom: Sigma, other: Shapes };
-  const Glyph = $derived(glyph ?? glyphs[kind ?? "other"] ?? Shapes);
   const href = $derived(iconHref(icon));
 </script>
 
-<span class="fp-slot" class:fp-slot--lg={size === "lg"} title={name ?? undefined}>
+<span class="fx-slot fp-slot{size === 'lg' ? ' lg' : ''}{rarity ? ` r${rarity}` : ''}" title={name ?? undefined}>
   {#if href}
     <img src={href} alt="" width={size === "lg" ? 48 : 32} height={size === "lg" ? 48 : 32} loading="lazy" decoding="async" />
   {:else}
-    <Glyph class="fp-ico fp-slot__glyph" strokeWidth={1.4} />
+    <span class="dith lo"></span>
   {/if}
 </span>

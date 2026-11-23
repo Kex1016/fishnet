@@ -1,102 +1,187 @@
 <script lang="ts">
+  // Every shared part once, in the order of docs/HAIIRO.md. Sample data: this page is dev and mock only.
   import { page } from "$app/state";
-  import { ChevronDown, Search } from "@lucide/svelte";
-  import AsOf from "#lib/design/AsOf.svelte";
-  import Card from "#lib/design/Card.svelte";
-  import EmptyState from "#lib/design/EmptyState.svelte";
-  import Face from "#lib/design/Face.svelte";
-  import Notice from "#lib/design/Notice.svelte";
-  import Pager from "#lib/design/Pager.svelte";
-  import PlayerName from "#lib/design/PlayerName.svelte";
-  import ScopeSwitch from "#lib/design/ScopeSwitch.svelte";
-  import Slot from "#lib/design/Slot.svelte";
-  import { BarList, ColumnChart, Heatmap, LineChart, StatTile, UptimeStrip, ViewSwitch, viewParam } from "#lib/charts/index.ts";
-  import { Segments } from "#lib/players/index.ts";
-  const view = $derived(viewParam(page.url));
+  import { AsOf, Catalogue, EmptyState, Face, Feed, FeedRow, KeyValueSheet, KV, Ladder, Notice, PageHead, Pager, PlayerName, Progress, PromptLine, RankList, ScopeSwitch, Segmented, Slot, Window, WindowHead } from "#lib/design/index.ts";
+  import { withParams } from "#lib/url.ts";
   const uuid = "346d7245-336d-40b2-a26d-6f1f316d6d8c";
-  const now = Date.UTC(2026, 10, 4, 17, 0);
-  const pts = Array.from({ length: 12 }, (_, i) => ({ t: now - (11 - i) * 3_600_000, v: [3, 5, 4, 8, 12, 9, 7, 11, 14, 10, 6, 4][i] }));
+  const now = Date.UTC(2026, 10, 23, 21, 31);
+  const colours = ["base", "surface", "overlay", "muted", "subtle", "text", "love", "gold", "rose", "pine", "foam", "iris", "highlight-low", "highlight-med", "highlight-high"];
+  const cols = [3, 5, 4, 8, 12, 9, 7, 11, 14, 10, 6, 4, 9, 13, 8, 5, 7, 12, 16, 11, 9, 6, 8, 10];
+  const heat = Array.from({ length: 3 }, (_, d) => Array.from({ length: 24 }, (_, h) => (d * 7 + h * 5) % 5));
+  const rows = [
+    { key: "a", rank: 1, uuid, label: "Pebblewick", share: 1, value: "187h 12m", href: "/design" },
+    { key: "b", rank: 2, uuid, label: "Saltmarsh", share: 0.74, value: "139h 2m", href: "/design", current: true },
+    { key: "c", rank: 3, uuid, label: "Finnegan_B", share: 0.5, value: "93h 40m", href: "/design" },
+    { key: "d", rank: 4, uuid, label: "koi_pond", share: 0.31, value: "58h 5m", sub: "online", href: "/design" }
+  ];
+  const view = $derived(page.url.searchParams.get("view") ?? "all");
 </script>
 
-<div class="fp-page">
-  <header class="fp-hero">
-    <span class="t-kicker">Design system</span>
-    <h1 class="t-hero">Fishnet look</h1>
-    <p class="fp-lede t-body-lg">reki's layout with the Fishnet skin: warm greys, one sea-blue accent, compact corners, quick motion. Dark first, light works.</p>
-  </header>
+<PageHead cmd="cat" args="haiiro.md" title="design" lede="Every shared part of the look, once. The page is for the people who build the site: the numbers on it are samples." note="Tokens: src/lib/design/tokens.css. Classes: base.css and components.css. The contract: docs/HAIIRO.md.">
+  <Segmented label="View" options={[{ href: withParams(page.url, { view: null }), label: "all", current: view === "all" }, { href: withParams(page.url, { view: "realm" }), label: "one soul realm", current: view === "realm" }, { label: "no link" }]} />
+  <div class="fx-head row"><a class="c6" href="/design/charts">charts</a><a class="c6" href="/design/map">map</a><a class="c1" href="/">home</a></div>
+</PageHead>
 
-  <section class="fp-section">
-    <h2 class="t-title-2">Type</h2>
-    <div class="fp-panel" style="display: flex; flex-direction: column; gap: var(--space-2)">
-      <div class="t-display">Display · 魚の群れ</div>
-      <div class="t-title-1">Title 1</div><div class="t-title-2">Title 2</div><div class="t-title-3">Title 3</div><div class="t-title-4">Title 4</div>
-      <p class="t-body">Body text for notes and descriptions, in Zen Kaku Gothic New. Sentence case, no exclamation marks.</p>
-      <p class="t-small t-muted">Small secondary line in muted.</p>
-      <div><span class="t-kicker">Kicker</span> <span class="t-num">1 234 567</span> <span class="t-caption">4 Nov 2026, 17:44 UTC</span> <span class="t-score t-acc">9/13</span></div>
-      <div class="t-stat">12.5 ♥</div>
+<div class={view === "realm" ? "realm fx-stack" : "fx-stack"} style="gap: 48px; background: none">
+  <Window path="~/design/colour">
+    <WindowHead title="Colour" asof="Rosé Pine main; Gruvbox dark inside .realm" />
+    <div class="dz-sw">
+      {#each colours as c (c)}<div><i style="background: var(--color-{c})"></i><span>{c}</span></div>{/each}
     </div>
-  </section>
+    <p class="cap">Ink classes: <span class="c1">c1 muted</span> <span class="c2">c2 love</span> <span class="c3">c3 gold</span> <span class="c4">c4 rose</span> <span class="c5">c5 pine</span> <span class="c6">c6 foam</span> <span class="c7">c7 iris</span>. Inverse links: <a class="c2" href="/design">c2</a> <a class="c3" href="/design">c3</a> <a class="c4" href="/design">c4</a> <a class="c5" href="/design">c5</a> <a class="c6" href="/design">c6</a> <a class="c7" href="/design">c7</a> <a class="c1" href="/design">c1</a></p>
+  </Window>
 
-  <section class="fp-section">
-    <h2 class="t-title-2">Controls</h2>
-    <div class="fp-panel fp-filters">
-      <button class="fp-btn fp-btn--primary">Add picks</button>
-      <button class="fp-btn">Open board</button>
-      <button class="fp-btn fp-btn--quiet">Later</button>
-      <a class="fp-chip" href="#x">Chip</a><a class="fp-chip" href="#x" aria-current="true">Chosen chip</a>
-      <span class="fp-tag">tag</span><span class="fp-tag fp-tag--acc">accent</span><span class="fp-tag fp-tag--success">linked</span><span class="fp-tag fp-tag--warning">waiting</span><span class="fp-tag fp-tag--error">down</span>
-      <label class="fp-field fp-search"><Search class="fp-ico fp-ico--sm" strokeWidth={1.4} /><input placeholder="Find a player" /></label>
-      <span class="fp-select"><select aria-label="Type"><option>Mined</option><option>Killed</option></select><ChevronDown class="fp-ico fp-ico--sm" strokeWidth={1.4} /></span>
-      <ScopeSwitch url={page.url} scope="network" servers={[{ id: "survival", display_name: "Survival" }, { id: "creative", display_name: "Creative" }]} />
-      <ViewSwitch url={page.url} {view} />
-      <span class="fp-spin" role="status" aria-label="Working"></span> <span class="t-small t-muted">Fetching the board</span>
+  <Window path="~/design/type">
+    <WindowHead title="Type" asof="IBM VGA 8x16, Jacquard 24 at 28px and up, Unifont behind both" />
+    <div class="fx-stack">
+      <PromptLine cmd="cat" args="network.md" />
+      <p>Body text is IBM VGA at 16px. <b>Bold is the 2x face.</b> Characters it does not have come from Unifont: ★ – … ‹ › ő 魚.</p>
+      <p class="c4">Narration is rose.</p>
+      <p><span class="lab">a label</span> <span class="num">1,234,567</span> <span class="cap">a caption</span> <span class="kbd">Esc</span> <span class="chip">chip</span> <span class="chip on">chip on</span> <span class="badge">badge</span></p>
+      <div class="fx-read"><span class="big num">23</span><span class="cap">a big readout in Jacquard 24</span></div>
     </div>
-  </section>
+  </Window>
 
-  <section class="fp-section">
-    <h2 class="t-title-2">Tiles</h2>
-    <div class="fp-tiles">
-      <StatTile label="Online now" value="8" note="as of 17:44 UTC" />
-      <StatTile label="Network playtime" value="4d 2h 9m" note="since 15 Oct 2026" spark={pts} />
-      <StatTile label="Blocks mined" value="1.2M" unit="blocks" href="#x" />
-      <StatTile label="Players seen" value="37" />
+  <div class="fx-grid">
+    <Window path="~/design/windows" args="--tone" tone="gold">
+      <WindowHead title="Gold" level={3} asof="needs you, the living" />
+      <p>The frame colour carries meaning.</p>
+    </Window>
+    <Window path="~/design/windows" tone="love">
+      <WindowHead title="Love" level={3} asof="critical, failed, the dead" />
+      <p>Never colour alone: the words say it too.</p>
+    </Window>
+    <Window path="~/design/windows" tone="foam">
+      <WindowHead title="Foam" level={3} asof="done" />
+      <p>A window with a foot.</p>
+      {#snippet foot()}<span>foot line</span><AsOf at={now} />{/snippet}
+    </Window>
+    <Window path="~/design/windows" tone="off">
+      <WindowHead title="Off" level={3} asof="not linked" />
+      <EmptyState title="Not linked" line="Events shows up here as soon as it connects to the network." />
+    </Window>
+  </div>
+
+  <Window path="~/design/controls">
+    <WindowHead title="Controls" asof="square, stepwise, no easing" />
+    <div class="fx-stack">
+      <div class="fx-filters">
+        <ScopeSwitch url={page.url} scope="network" servers={[{ id: "survival", display_name: "Survival" }, { id: "creative", display_name: "Creative" }]} />
+        <label class="fx-search"><span class="c4">»</span><input type="search" placeholder="find a player" aria-label="Find a player" /></label>
+      </div>
+      <p><button class="ink c3" type="button">the one action</button> <button class="ink" type="button">ink</button> <button class="ink c5" type="button">pine</button> <button class="ink flat" type="button">flat</button> <button class="ink" type="button" disabled>disabled</button></p>
+      <div class="list" style="max-width: 320px">
+        <a class="li" href="/design"><span class="mk">»</span><span class="grow">A list row</span><span class="meta">12</span></a>
+        <a class="li" href="/design" aria-current="page"><span class="mk">»</span><span class="grow">The current row</span><span class="meta">312</span></a>
+      </div>
+      <Pager url={page.url} total={148} limit={15} offset={15} what="players" />
     </div>
-  </section>
+  </Window>
 
-  <section class="fp-section">
-    <div class="fp-section__head"><h2 class="t-title-2">Charts</h2><ViewSwitch url={page.url} {view} /></div>
-    <div class="fp-panels">
-      <ColumnChart title="Joins per week" sub="network" {view} points={pts.map((p, i) => ({ key: String(i), label: `W${i + 1}`, v: p.v }))} />
-      <LineChart title="Online over the day" sub="network · players" {view} points={pts} since={now - 86_400_000 * 20} />
-      <LineChart title="Online over the week" sub="network" since={null} points={[]} emptyTitle="No history yet" emptyLine="Online counts are recorded every minute once the site is live." />
-      <Heatmap title="Busiest hours" sub="mean online" {view} rows={[{ label: "Mon", cells: [1, 2, null, 4] }, { label: "Tue", cells: [0, 3, 5, 2] }]} columns={["00", "06", "12", "18"]} />
-      <BarList title="Playtime" sub="network · top 5" {view} faces unit="ms" rows={[{ rank: 1, key: "a", uuid, label: "Pebblewick", v: 148_000_000, display: "1d 17h 7m" }, { rank: 2, key: "b", uuid, label: "Sealily", v: 90_000_000, display: "1d 1h 0m" }, { rank: 3, key: "c", uuid, label: "Bream", v: 40_000_000, display: "11h 6m" }]} />
-      <UptimeStrip title="Survival · last 7 days" samples={[]} since={null} emptyTitle="No history yet" />
+  <Window path="~/design/states">
+    <WindowHead title="States" asof="three answers for not happened yet" />
+    <div class="fx-stack">
+      <Notice kind="warning"><b>cakeutils could not be reached.</b> Showing the last good data.</Notice>
+      <Notice kind="error">The board could not be loaded.</Notice>
+      <Notice kind="info">Charts bucketed by UTC day keep UTC labels.</Notice>
+      <EmptyState title="Nobody has done this yet" line="The first player to do it shows up here." since={now - 19 * 86_400_000} />
+      <p><AsOf at={now} /> · <AsOf at={now - 3_600_000} stale /></p>
     </div>
-  </section>
+  </Window>
 
-  <section class="fp-section">
-    <h2 class="t-title-2">Rows, states and words</h2>
-    <div class="fp-panels">
-      <Card title="Players" sub="3 online">
-        {#snippet readout()}<b>3</b><span>online</span>{/snippet}
-        <div class="fp-rows">
-          <div class="fp-row" style="grid-template-columns: minmax(0,1fr) auto"><PlayerName {uuid} name="Pebblewick" online /><span class="fp-row__value">1d 17h 7m</span></div>
-          <div class="fp-row" style="grid-template-columns: 36px minmax(0,1fr) auto"><Slot icon={null} kind="block" name="Stone" /><span class="fp-row__name">Stone <span class="fp-row__sub">minecraft:mined</span></span><span class="fp-row__value">119 921</span></div>
-          <div class="fp-row" style="grid-template-columns: 36px minmax(0,1fr) auto"><Slot icon={null} kind="entity" name="Iron Golem" /><span class="fp-row__name">Iron Golem</span><span class="fp-row__value">6</span></div>
+  <Window path="~/design/numbers">
+    <WindowHead title="Numbers"><span class="num">23</span> online</WindowHead>
+    <div class="stat-panel fx-tiles">
+      <div><span class="kv_label">Online now</span><span class="kv_value num">23</span><span class="note">2 waiting</span><div class="spark">{#each cols as c, i (i)}<i style="height: {c + 4}px"></i>{/each}</div></div>
+      <a href="/design"><span class="kv_label">Survival</span><span class="kv_value num">11<small>online</small></span><span class="note">a tile can be a link</span></a>
+      <div class="off"><span class="kv_label">Events</span><span class="kv_value num">0</span><span class="note">not linked</span></div>
+    </div>
+    <div class="fx-grid" style="margin-top: 24px">
+      <div>
+        <div class="fx-read"><span class="big num">14</span><span class="cap">peak · 18:00 UTC</span></div>
+        <div class="fx-cols">{#each cols as c, i (i)}<i class={i === cols.length - 1 ? "now" : undefined} style="height: {c * 6}%"></i>{/each}</div>
+        <div class="fx-axis"><span>00</span><span>06</span><span>12</span><span>18</span><span>23</span></div>
+      </div>
+      <div>
+        <div class="fx-heat">
+          {#each heat as day, d (d)}<span>{["Mon", "Tue", "Wed"][d]}</span>{#each day as h, i (i)}<i class={h ? `h${h}` : undefined}></i>{/each}{/each}
         </div>
-        {#snippet foot()}<span>Recording since 15 Oct 2026</span><AsOf at={now} />{/snippet}
-      </Card>
-      <div style="display: flex; flex-direction: column; gap: var(--space-3)">
-        <Notice kind="info"><b>Milestones are off on this proxy.</b> They appear once it is updated.</Notice>
-        <Notice kind="warning"><b>cakeutils could not be reached.</b> Showing the last good data, as of 17:40 UTC.</Notice>
-        <Notice kind="error"><b>The token was refused.</b> Check its scopes.</Notice>
-        <Notice kind="success"><b>Linked.</b> Survival is sending stats.</Notice>
-        <EmptyState title="Nobody has done this yet" line="This board fills in when someone records the stat." since={now - 86_400_000 * 20} />
-        <div class="t-title-3"><Segments segments={[{ text: "[Admin] ", color: "red", bold: true }]} />Pebblewick<Segments segments={[{ text: " ♪", color: "light_purple", italic: true }]} /></div>
-        <div class="fp-faces"><Face {uuid} name="a" size="sm" /><Face {uuid} name="b" /><Face {uuid} name="c" size="lg" /></div>
-        <Pager url={page.url} total={137} limit={50} offset={50} what="players" />
+        <div class="fx-legend"><span>less</span><i></i><i class="h1"></i><i class="h2"></i><i class="h3"></i><i class="h4"></i><span>more</span></div>
+        <div style="margin-top: 16px">
+          <Progress label="Network" value="9,184 h" share={1} />
+          <Progress label="Survival" value="6,020 h" share={0.66} ink="c6" />
+          <Progress label="skyblock" value="1,204 h" share={0.13} ink="c7" indent={1} />
+        </div>
       </div>
     </div>
-  </section>
+  </Window>
+
+  <div class="fx-grid wide">
+    <Window path="~/design/rank">
+      <WindowHead title="Ranked rows" asof="share of the leader, inside one scope" />
+      <RankList {rows} label="Sample board" />
+    </Window>
+    <Window path="~/design/rank" args="--compact">
+      <WindowHead title="Compact" level={3} />
+      <RankList rows={rows.map((r) => ({ ...r, uuid: undefined, sub: undefined }))} compact />
+    </Window>
+  </div>
+
+  <div class="fx-grid">
+    <Window path="~/design/feed">
+      <WindowHead title="Feed" />
+      <Feed label="Sample feed">
+        <FeedRow rarity={6} when="23 Nov 2026" href="/design"><span class="c6">Pebblewick</span> mined 1,000,000 blocks{#snippet sub()}network · stone{/snippet}</FeedRow>
+        <FeedRow rarity={4} when="19 Nov 2026">Play 100 hours{#snippet sub()}<span class="c6">Saltmarsh</span> · first in the network{/snippet}</FeedRow>
+        <FeedRow {uuid}>Join the network{#snippet sub()}<span class="c6">koi_pond</span> · reached before tracking began{/snippet}</FeedRow>
+      </Feed>
+    </Window>
+    <Window path="~/design/people">
+      <WindowHead title="People and pictures" />
+      <div class="fx-stack">
+        <div class="fx-soul">
+          <Face {uuid} name="Pebblewick" size="lg" />
+          <div class="fx-stack">
+            <p><Face {uuid} size="sm" /> <Face {uuid} /> <Face {uuid} tint="iris" /> sm 20, md 32, lg 128</p>
+            <p><PlayerName {uuid} name="Pebblewick" online /></p>
+            <p><Slot icon={null} name="No picture" /> <Slot icon={null} rarity={6} size="lg" /> <Slot icon={null} rarity={5} /> <Slot icon={null} rarity={4} /> <Slot icon={null} rarity={3} /> <Slot icon={null} rarity={2} /></p>
+          </div>
+        </div>
+        <div class="fx-faces"><a href="/design"><Face {uuid} /><span>Pebblewick</span></a><a href="/design"><Face {uuid} tint="pine" /><span>Driftwood_Dan</span></a></div>
+        <Ladder label="Sample ladder" steps={[{ label: "100", state: "reached", title: "100 blocks, reached 4 Nov 2026" }, { label: "1k", state: "reached", title: "1,000 blocks, reached 12 Nov 2026" }, { label: "10k", state: "next", title: "10,000 blocks, next" }, { label: "100k", state: "locked", title: "100,000 blocks, not reached yet" }, { label: "3", state: "dead", title: "Turn 3, dead" }]} />
+      </div>
+    </Window>
+  </div>
+
+  <div class="fx-grid">
+    <Window path="~/design/sheet">
+      <WindowHead title="Sheet" level={3} />
+      <KeyValueSheet rows={[{ label: "first seen", value: "1 Nov 2026" }, { label: "playtime", value: "187h 12m", num: true }, { label: "second chance", value: "unused", ink: "c3" }]}>
+        <KV label="on"><a class="c6" href="/design">Survival</a></KV>
+      </KeyValueSheet>
+    </Window>
+    <Window path="~/design/table">
+      <WindowHead title="Table" level={3} />
+      <div class="fx-scroll">
+        <table class="fx-table">
+          <thead><tr><th>Player</th><th class="r">Playtime</th><th class="r">Last seen</th></tr></thead>
+          <tbody>
+            <tr><td>Pebblewick</td><td class="r">187h 12m</td><td class="r">23 Nov 2026</td></tr>
+            <tr aria-current="true"><td>Saltmarsh</td><td class="r">139h 2m</td><td class="r">22 Nov 2026</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </Window>
+  </div>
+
+  <Window path="~/design/catalogue">
+    <WindowHead title="Catalogue" level={3} />
+    <Catalogue pic label="Sample catalogue" items={[{ href: "/design?c=1", label: "Stone", meta: "12 boards" }, { href: "/design?c=2", label: "Cobblestone", meta: "9 boards", current: true }, { href: "/design?c=3", label: "A very long subject name that has to wrap", meta: "1 board" }]} />
+  </Window>
 </div>
+
+<style>
+  .dz-sw { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px; margin-bottom: 12px; }
+  .dz-sw > div { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--ink-muted); }
+  .dz-sw i { display: block; height: 40px; border: 1px solid var(--ink-hairline); }
+</style>

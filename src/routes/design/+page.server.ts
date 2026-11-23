@@ -1,5 +1,5 @@
-// The design preview: every component in both themes, for units and screenshots. Not a public page:
-// dev and mock mode only.
+// The design preview: every shared part of the haiiro look, for units and screenshots. Not a public page:
+// dev and mock mode only. The numbers on it are samples, which is why it never ships to visitors.
 import { error } from "@sveltejs/kit";
 import { dev } from "$app/env";
 import type { PageServerLoad } from "./$types";

@@ -443,9 +443,8 @@ if (scenario === "fresh") {
     await ready(page);
     const r = await page.evaluate(() => {
       const f = document.querySelector(".mc")!.getBoundingClientRect();
-      const top = document.querySelector(".fp-top")!.getBoundingClientRect();
-      const side = document.querySelector(".fp-side")!.getBoundingClientRect();
-      return { left: f.left - side.right, top: f.top - top.bottom, right: window.innerWidth - f.right, bottom: window.innerHeight - f.bottom };
+      const top = document.querySelector(".fx-bar")!.getBoundingClientRect();
+      return { left: f.left, top: f.top - top.bottom, right: window.innerWidth - f.right, bottom: window.innerHeight - f.bottom };
     });
     expect(Object.values(r).every((v) => Math.abs(v as number) <= 1), `the map does not fill the view: ${JSON.stringify(r)}`);
     expect(!(await page.isVisible(".mc .mc-dot__tip")), "the popup shows without hover");

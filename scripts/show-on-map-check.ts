@@ -41,7 +41,7 @@ await check("hidden player: profile is a 404, no button, and a follow link says 
   ok(r.status() === 404, "404");
   await page.goto(`${base}/map/survival?follow=5a1c0de0-0000-4000-8000-00000000a11e`);
   ok(!(await page.content()).includes("quietgill"), "name leaked");
-  ok(!(await page.locator(".fp-notice").count()), "notice for a hidden player");
+  ok(!(await page.locator(".fx-notice").count()), "notice for a hidden player");
   await ctx.close();
 });
 await check("without JavaScript: the link opens the player's world, centred", async () => {
@@ -66,7 +66,7 @@ await check("not there: a Notice (offline; on a server whose positions are off)"
   const page = await ctx.newPage();
   const u = (await (await ctx.request.get(`${base}/players/Dace`)).text()).match(/[0-9a-f]{8}-[0-9a-f-]{27}/)![0];
   await page.goto(`${base}/map/survival?follow=${u}`);
-  ok((await page.locator(".fp-notice").innerText()).includes("offline"), "offline notice");
+  ok((await page.locator(".fx-notice").innerText()).includes("offline"), "offline notice");
   ok(!(await page.locator(".mc__follow").count()), "no follow chip");
   await ctx.close();
 });

@@ -6,13 +6,8 @@
   const label = $derived(playerRowLabel({ uuid, name }));
 </script>
 
-<a class="fp-player" href={playerHref({ uuid, name })}>
+<a class="fx-player" href={playerHref({ uuid, name })}>
   <Face {uuid} name={label} {size} />
-  <span class="t-truncate">{label}</span>
-  {#if online}<span class="fp-dot fp-dot--on" title="Online"></span>{/if}
+  <span class="who">{label}</span>
+  {#if online}<span class="on" title="Online"><span class="visually-hidden">online</span></span>{/if}
 </a>
-
-<style>
-  .fp-player { display: inline-flex; align-items: center; gap: var(--space-2); color: inherit; min-width: 0; font-weight: 500; }
-  .fp-player:hover { color: var(--acc-ink); text-decoration: none; }
-</style>

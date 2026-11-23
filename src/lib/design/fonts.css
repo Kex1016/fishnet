@@ -2,7 +2,7 @@
    or anyone else. Sources and licences: src/lib/design/fonts/README.md.
    - IBM: Web437 IBM VGA 8x16, the face of everything. Its "bold" is the 2x face, registered as weight 700,
      so <b> and font-weight: bold switch to it and the browser never fakes a bold.
-   - Jacquard 24: display only (28px and up).
+   - Jacquard 24: the page title and the lede's drop cap, nothing else.
    - Unifont: behind both. IBM VGA has only the 256 CP437 glyphs, so a "★", an en dash or an "ő" comes from
      Unifont on the same pixel grid. The interface's own characters are in a small slice (unifont-ui.woff2,
      scripts/fonts-subset.py); the whole font loads only when a page shows something outside it (a name in

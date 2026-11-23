@@ -114,8 +114,8 @@
   <nav class="fx-strip" aria-label="Pages">
     {#each groups as g, gi (gi)}{#each g.items as n (n.href)}<a href={n.href} aria-current={here(n.href, page.url.pathname) ? "page" : undefined}>{n.label}</a>{/each}{/each}
   </nav>
-  <button class="fx-scrim" type="button" tabindex="-1" aria-label="Close the menu" onclick={() => (open = false)}></button>
   <div class="fx-body">
+    <button class="fx-scrim" type="button" tabindex="-1" aria-label="Close the menu" onclick={() => (open = false)}></button>
     <aside class="fx-side" id="site-nav">
       <nav class="window" aria-label="Site">
         <span class="section-header">fish: <b>{page.error ? "~" : sectionPath(page.url.pathname)}</b></span>

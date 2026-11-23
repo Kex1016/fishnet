@@ -1,6 +1,6 @@
 <script lang="ts">
   // The frame every chart shares, now a haiiro window: the label notched into the frame, the heading line
-  // (title, the quiet `sub` on the right), the readout in Jacquard 24, the body (chart or its table twin) and
+  // (title, the quiet `sub` on the right), the readout at 32px, the body (chart or its table twin) and
   // a foot with "Recording since" and "as of". The charts draw inside it.
   import type { Snippet } from "svelte";
   import type { ChartFrame } from "./types.ts";

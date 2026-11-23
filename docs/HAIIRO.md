@@ -52,8 +52,8 @@ for the regular site is right in One Soul without a line of its own.
   `--ink-track` (14%: the empty part of a bar). `--veil-heavy` (under the dither veil), `--clearing-fill`
   (text over the blobs without a window).
 - `--realm-*`: the Gruvbox values. Never used by a component directly.
-- Type: `--font-mono` (IBM VGA 8x16, then Unifont: everything), `--font-display` (Jacquard 24: 28px and up
-  only, never labels, body or tables).
+- Type: `--font-mono` (IBM VGA 8x16, then Unifont: everything), `--font-display` (Jacquard 24: the page
+  title and the lede's drop cap only).
 - Space: `--space-1` 4, `-2` 8, `-3` 12, `-4` 16, `-6` 24, `-8` 32, `-12` 50, `-20` 80 (px).
 - Shape: `--radius-none` (every corner is square), `--border-hairline` 1px, `--border-divider` 3px,
   `--border-window` 5px (always double), `--shadow-title` and `--shadow-art` (hard 8px offset, no blur).
@@ -79,9 +79,10 @@ also `legacy.css`, `Card.svelte`, the old `fp-` and `t-` classes and the old tok
 
 Everything is IBM VGA 8x16 at 16px, line height 1.15; 12px and 14px for small text. `<b>` and
 `font-weight: 700` switch to the 2x face (twice as wide); the browser never fakes a bold or an italic, and
-nothing is smoothed. Jacquard 24 is for the page title, the wordmark, window headings (`.fx-wh h2` 52px,
-`h3` 38px), the living soul's name, big readouts (`.fx-read .big`, `.fx-tiles .kv_value`, `.fx-pos-big`) and
-the side nav's group labels. Characters outside CP437 (★ – … ‹ › ő, kanji) come from Unifont on the same
+nothing is smoothed. Jacquard 24 is for the page title (`.fx-head .title`) and the lede's drop cap, nothing
+else (David, 23 Nov 2026). Window headings are IBM VGA in upper case, foam (`.fx-wh h2` 16px, `h3` 14px); the
+wordmark, big readouts and tile values (`.fx-read .big`, `.fx-tiles .kv_value`, `.fx-pos-big`) are IBM VGA at
+32px, the living soul's name at 64px, the side nav's group labels at 12px. Characters outside CP437 (★ – … ‹ › ő, kanji) come from Unifont on the same
 grid; the interface's own characters are in a small slice, the whole font loads only when a page shows
 something outside it.
 
@@ -100,6 +101,7 @@ head and the side nav are lower case ("players", "one soul"); a name keeps its o
   </header>
   <nav class="fx-strip">…</nav>         <!-- under 960px: the pages as a scrolling strip -->
   <div class="fx-body">
+    <button class="fx-scrim"></button>  <!-- the drawer's veil: inside .fx-body, so the drawer stacks above it -->
     <aside class="fx-side" id="site-nav"><nav class="window">…</nav></aside>   <!-- the rail; the drawer under 960px -->
     <main class="fx-main" id="main">{page}</main>
   </div>

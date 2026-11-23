@@ -3,7 +3,7 @@
 //
 // Rules every chart follows: one hue (foam; iris for a second measure; the current bucket gold); heat
 // steps differ in lightness; columns ≤ 24px, square, on one hairline base; a step line instead of a
-// polyline; a readout above the plot (Jacquard 24) that follows hover and keyboard focus; a table twin
+// polyline; a readout above the plot (32px) that follows hover and keyboard focus; a table twin
 // behind `view`; fewer than two points → the window, the empty state inside it and "Recording since
 // <date>" when `since` is set; rendered on the server as HTML (no script needed to see a chart).
 import type { Unit } from "#lib/api/types.ts";

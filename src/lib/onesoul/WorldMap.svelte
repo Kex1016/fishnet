@@ -33,8 +33,8 @@
 
 <figure class="os-map">
   <figcaption class="os-map__head">
-    <span class="t-title-4">{map.label}</span>
-    <span class="t-caption os-map__readout" aria-live="polite">
+    <span class="c6">{map.label}</span>
+    <span class="os-map__readout" aria-live="polite">
       {#if hot}
         {#if "points" in hot}{hot.title}{#if hot.detail}{" "}· {hot.detail}{/if}{:else}{kindWord[hot.kind]}: {hot.title}{#if hot.detail}{" "}· {hot.detail}{/if} · {coords(hot)}{/if}
       {:else}
@@ -104,7 +104,8 @@
     align-items: baseline;
   }
   .os-map__readout {
-    color: var(--muted);
+    font-size: 12px;
+    color: var(--ink-muted);
     overflow-wrap: anywhere;
     min-height: 16px;
   }
@@ -112,27 +113,26 @@
     height: auto;
     display: block;
     margin: 0 auto;
-    border: 1px solid var(--line);
-    border-radius: var(--radius-md);
-    background: var(--sunk);
+    border: var(--border-hairline) solid var(--ink-hairline);
+    background: var(--color-base);
   }
   .bg {
-    fill: var(--sunk);
+    fill: var(--color-base);
   }
   .grid {
-    stroke: var(--line-soft);
+    stroke: var(--ink-track);
     stroke-width: 1;
   }
   .grid.axis {
-    stroke: var(--line);
+    stroke: var(--ink-muted);
   }
   .tick {
-    fill: var(--faint);
+    fill: var(--color-subtle);
     font-family: var(--font-mono);
   }
   .trail {
     fill: none;
-    stroke: var(--acc-viz);
+    stroke: var(--color-foam);
     stroke-width: 2;
     stroke-linejoin: round;
     stroke-linecap: round;
@@ -146,35 +146,35 @@
     stroke-width: 1.5;
   }
   .mark--death .shape {
-    stroke: var(--error-ink);
+    stroke: var(--color-love);
     stroke-width: 2.5;
   }
   .mark--grave .shape {
-    fill: var(--text);
-    stroke: var(--sunk);
+    fill: var(--color-text);
+    stroke: var(--color-base);
   }
   .mark--grave.muted .shape {
     fill: none;
-    stroke: var(--muted);
+    stroke: var(--color-subtle);
   }
   .mark--waystone .shape {
-    fill: var(--soul);
-    stroke: var(--sunk);
+    fill: var(--color-gold);
+    stroke: var(--color-base);
   }
   .mark--waystone.muted .shape {
     fill: none;
-    stroke: var(--soul);
+    stroke: var(--color-gold);
   }
   .mark--spawn .shape {
-    fill: var(--acc);
-    stroke: var(--acc);
+    fill: var(--color-iris);
+    stroke: var(--color-iris);
   }
   .mark--spawn .ring {
     fill: none;
     stroke-width: 2;
   }
   .mark--other .shape {
-    fill: var(--muted);
+    fill: var(--color-subtle);
   }
   .hit {
     fill: transparent;
@@ -184,7 +184,7 @@
     outline: none;
   }
   .mark:focus-visible .hit {
-    stroke: var(--acc-ink);
+    stroke: var(--color-gold);
     stroke-width: 2;
     vector-effect: non-scaling-stroke;
   }

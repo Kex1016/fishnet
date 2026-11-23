@@ -1,10 +1,14 @@
 <script lang="ts">
   import { page } from "$app/state";
-  import { Map as MapIcon, Table2 } from "@lucide/svelte";
   import AsOf from "#lib/design/AsOf.svelte";
   import EmptyState from "#lib/design/EmptyState.svelte";
   import Notice from "#lib/design/Notice.svelte";
+  import PageHead from "#lib/design/PageHead.svelte";
+  import Segmented from "#lib/design/Segmented.svelte";
+  import Window from "#lib/design/Window.svelte";
+  import WindowHead from "#lib/design/WindowHead.svelte";
   import { DataTable } from "#lib/charts/index.ts";
+  import OsTabs from "#lib/onesoul/OsTabs.svelte";
   import WorldMap from "#lib/onesoul/WorldMap.svelte";
   import RoundMap from "#lib/map/layers/RoundMap.svelte";
   import type { LayerId } from "#lib/onesoul/map.ts";
@@ -20,6 +24,7 @@
 </script>
 
 {#if data.ok && data.tile && tiled}
+  <OsTabs bar />
   <RoundMap
     world={data.tile.view}
     map={data.maps.find((m) => m.dim === data.tile!.dim)}
@@ -29,42 +34,45 @@
     tableHref={q({ view: "tables" })}
   />
 {:else}
-<div class="fp-page">
-  <section class="fp-section">
-    <div class="fp-section__head">
-      <h1 class="t-display">Map, round {data.cycle}</h1>
-      {#if data.ok && data.asOf}<AsOf at={data.asOf} stale={data.stale} />{/if}
-    </div>
-    <p class="t-body t-muted">Where souls walked, died and left their graves, one map per dimension in block coordinates: x runs east, z runs south. The soul who is playing now is not on the map until their turn ends.</p>
-    <div class="os-controls">
+  <PageHead
+    path="~/one-soul"
+    cmd="open"
+    args="map-round-{data.cycle}"
+    title="map"
+    lede="Where souls walked, died and left their graves, one map per dimension in block coordinates: x runs east, z runs south. The soul who is playing now is not on the map until their turn ends."
+    note="round {data.cycle}"
+  >
+    <OsTabs />
+    <div class="fx-filters">
       {#if data.rounds.length > 1}
-        <nav class="fp-seg" aria-label="Round">
-          {#each data.rounds as r (r)}<a href={withParams(page.url, { round: String(r) })} aria-current={r === data.cycle ? "page" : undefined}>Round {r}</a>{/each}
-        </nav>
+        <Segmented label="Round" options={data.rounds.map((r: number) => ({ href: q({ round: String(r) }), label: `round ${r}`, current: r === data.cycle }))} />
       {/if}
-      <nav class="fp-seg" aria-label="Map or table">
-        <a href={q({ view: null })} aria-current={data.view === "charts" ? "page" : undefined}><MapIcon class="fp-ico fp-ico--sm" strokeWidth={1.4} />Map</a>
-        <a href={q({ view: "tables" })} aria-current={data.view === "tables" ? "page" : undefined}><Table2 class="fp-ico fp-ico--sm" strokeWidth={1.4} />Table</a>
-      </nav>
+      <Segmented
+        label="Map or table"
+        options={[
+          { href: q({ view: null }), label: "map", current: data.view === "charts" },
+          { href: q({ view: "tables" }), label: "table", current: data.view === "tables" }
+        ]}
+      />
     </div>
     {#if data.ok && data.view === "charts" && data.layers.length > 1}
       <fieldset class="os-layers">
         <legend class="visually-hidden">Layers</legend>
         {#each data.layers as l (l)}
-          <label class="os-layer os-layer--{l}"><input type="checkbox" bind:checked={show[l]} /><span class="os-key" aria-hidden="true"></span>{NAMES[l]}</label>
+          <label class="os-layer"><input class="visually-hidden" type="checkbox" bind:checked={show[l]} /><span class="box" aria-hidden="true">{show[l] ? "[x]" : "[ ]"}</span><span class="os-key os-key--{l}" aria-hidden="true"></span>{NAMES[l]}</label>
         {/each}
       </fieldset>
     {/if}
-  </section>
+  </PageHead>
 
   {#if !data.ok}
     <Notice kind="warning">The map could not be loaded right now.</Notice>
   {:else if data.maps.length === 0}
-    <EmptyState icon={MapIcon} title="Nothing on the map yet" line="Deaths, graves, waystones and trails appear here as the round goes on." />
+    <EmptyState title="Nothing on the map yet" line="Deaths, graves, waystones and trails appear here as the round goes on." />
   {:else if data.view === "tables"}
     {#each data.maps as m (m.dim)}
-      <section class="fp-section">
-        <h2 class="t-title-3">{m.label}</h2>
+      <Window path="~/one-soul/map" args="--table {m.label.toLowerCase()}">
+        <WindowHead title={m.label}>{#if data.asOf}<AsOf at={data.asOf} stale={data.stale} />{/if}</WindowHead>
         <DataTable
           caption="Points in {m.label}"
           columns={[
@@ -88,72 +96,71 @@
             rows={m.paths.map((p) => ({ title: p.title, detail: p.detail ?? "", n: p.points.length }))}
           />
         {/if}
-      </section>
+      </Window>
     {/each}
   {:else}
     <div class="os-maps">
       {#each data.maps as m (m.dim)}
-        <section class="fp-card os-mapcard"><WorldMap map={m} {show} /></section>
+        <Window path="~/one-soul/map" args="--{m.label.toLowerCase()}"><WorldMap map={m} {show} /></Window>
       {/each}
     </div>
   {/if}
-</div>
 {/if}
 
 <style>
-  .os-controls {
-    display: flex;
-    gap: var(--space-3);
-    flex-wrap: wrap;
-  }
   .os-layers {
     border: 0;
     margin: 0;
-    padding: 0;
+    padding: 0 4px;
     display: flex;
     flex-wrap: wrap;
-    gap: var(--space-2) var(--space-4);
+    gap: 4px 24px;
+    align-self: flex-start;
+    background: var(--color-base);
   }
   .os-layer {
     display: inline-flex;
     align-items: center;
-    gap: var(--space-2);
-    font: 400 14px/20px var(--font-text);
+    gap: 1ch;
+    min-height: var(--touch);
     cursor: pointer;
+  }
+  .os-layer:has(input:focus-visible) {
+    outline: 2px solid var(--color-gold);
+  }
+  .os-layer .box {
+    color: var(--color-foam);
   }
   .os-key {
     width: 12px;
     height: 12px;
     display: inline-block;
   }
-  .os-layer--trails .os-key {
+  .os-key--trails {
     height: 3px;
-    background: var(--acc-viz);
+    background: var(--color-foam);
   }
-  .os-layer--deaths .os-key {
+  .os-key--deaths {
     background:
-      linear-gradient(45deg, transparent 42%, var(--error-ink) 42% 58%, transparent 58%),
-      linear-gradient(-45deg, transparent 42%, var(--error-ink) 42% 58%, transparent 58%);
+      linear-gradient(45deg, transparent 42%, var(--color-love) 42% 58%, transparent 58%),
+      linear-gradient(-45deg, transparent 42%, var(--color-love) 42% 58%, transparent 58%);
   }
-  .os-layer--graves .os-key {
+  .os-key--graves {
     width: 9px;
-    background: var(--text);
+    background: var(--color-text);
   }
-  .os-layer--waystones .os-key {
-    background: var(--soul);
+  .os-key--waystones {
+    background: var(--color-gold);
     transform: rotate(45deg) scale(0.75);
   }
-  .os-layer--spawn .os-key {
+  .os-key--spawn {
     border-radius: 50%;
-    border: 2px solid var(--acc);
-    background: radial-gradient(var(--acc) 30%, transparent 32%);
+    border: 2px solid var(--color-iris);
+    background: radial-gradient(var(--color-iris) 30%, transparent 32%);
   }
   .os-maps {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr));
-    gap: var(--space-4);
-  }
-  .os-mapcard {
-    padding: var(--space-4);
+    gap: 40px 32px;
   }
 </style>

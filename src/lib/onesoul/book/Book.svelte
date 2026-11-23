@@ -94,11 +94,11 @@
   </div>
   {#if extra.length}
     <div class="mcb-more">
-      <button type="button" class="fp-btn" aria-expanded={more} onclick={() => (more = !more)}>
+      <button type="button" class="ink" aria-expanded={more} onclick={() => (more = !more)}>
         {more ? "Hide" : "Show"} {extra.length} more line{extra.length === 1 ? "" : "s"} on this page
       </button>
       {#if more}
-        <p class="mcb-more__text t-small">{extra.map((l) => l.glyphs.map((g) => g.ch).join("")).join("\n")}</p>
+        <p class="mcb-more__text">{extra.map((l) => l.glyphs.map((g) => g.ch).join("")).join("\n")}</p>
       {/if}
     </div>
   {/if}
@@ -146,7 +146,8 @@
     }
   }
   .mcb:focus-visible {
-    box-shadow: var(--focus-ring);
+    outline: 2px solid var(--color-gold);
+    outline-offset: 4px;
   }
   .mcb-ind,
   .mcb-line {
@@ -170,7 +171,7 @@
     vertical-align: top;
     width: calc(var(--a) * var(--s));
     height: calc(9 * var(--s));
-    font: 400 calc(8 * var(--s)) / calc(9 * var(--s)) var(--font-text);
+    font: 400 calc(8 * var(--s)) / calc(9 * var(--s)) var(--font-mono);
     color: transparent;
     overflow: visible;
   }
@@ -215,7 +216,7 @@
   /* a character no font here has (Unifont metrics missing): a system font stands in */
   .u {
     color: #000;
-    font-family: var(--font-text), system-ui, sans-serif;
+    font-family: var(--font-mono), system-ui, sans-serif;
     font-size: calc(8 * var(--s));
     white-space: pre;
   }
@@ -243,7 +244,7 @@
     background-image: url("/mc/page_forward_highlighted.png");
   }
   .mcb-arrow:focus-visible {
-    outline: 2px solid var(--acc-ink);
+    outline: 2px solid var(--color-gold);
     outline-offset: 2px;
   }
   .mcb-more {
@@ -255,6 +256,7 @@
   }
   .mcb-more__text {
     margin: 0;
+    font-size: 14px;
     white-space: pre-wrap;
     overflow-wrap: anywhere;
   }

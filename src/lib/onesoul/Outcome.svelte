@@ -1,11 +1,15 @@
 <script lang="ts">
-  // An outcome as an icon and a word: state never rests on colour alone (WEBSITE-BRIEF §4).
-  import { Flame, Skull, UserX, Hourglass, Repeat, Circle } from "@lucide/svelte";
+  // An outcome as a mark and a word: state never rests on colour alone (WEBSITE-BRIEF §4).
   import { outcomeLabel } from "./format.ts";
   let { outcome }: { outcome: string } = $props();
-  const icons: Record<string, typeof Flame> = { playing: Flame, died: Skull, skipped: UserX, round_ended: Hourglass, replaced: Repeat };
-  const Icon = $derived(icons[outcome] ?? Circle);
-  const tone = $derived(outcome === "playing" ? "acc" : outcome === "died" ? "error" : "");
+  const MARKS: Record<string, [string, string]> = { playing: ["☼", "c3"], died: ["✝", "c2"], skipped: ["○", "c1"], round_ended: ["◘", "c1"], replaced: ["↔", "c1"] };
+  const m = $derived(MARKS[outcome] ?? ["·", "c1"]);
 </script>
 
-<span class="fp-tag {tone ? `fp-tag--${tone}` : ''}"><Icon class="fp-ico fp-ico--sm" strokeWidth={1.4} aria-hidden="true" />{outcomeLabel(outcome)}</span>
+<span class="os-outcome {m[1]}"><span aria-hidden="true">{m[0]}</span> {outcomeLabel(outcome)}</span>
+
+<style>
+  .os-outcome {
+    white-space: nowrap;
+  }
+</style>

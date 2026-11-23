@@ -1,62 +1,37 @@
 <script lang="ts">
-  // One round as a card: its dates, souls, time survived, longest life, graves. Counts are inside the round only.
+  // One round as a window: its dates, souls, time survived, longest life, graves. Counts are inside the
+  // round only. The running round has the gold frame (the living), a finished one the plain pine.
   import type { RoundSummary } from "#lib/server/onesoul/section.ts";
+  import Window from "#lib/design/Window.svelte";
+  import WindowHead from "#lib/design/WindowHead.svelte";
+  import KeyValueSheet from "#lib/design/KeyValueSheet.svelte";
+  import type { SheetRow } from "#lib/design/types.ts";
   import { day } from "#lib/format/dates.ts";
   import { life, stateLabel } from "./format.ts";
   import { osHref } from "./links.ts";
   let { r, current }: { r: RoundSummary; current: boolean } = $props();
+
+  const when = $derived(r.started_at ? `${day(r.started_at)}${r.ended_at ? ` to ${day(r.ended_at)}` : ""}` : "world not opened yet");
+  const rows = $derived.by(() => {
+    const out: SheetRow[] = [
+      { label: "souls", value: String(r.souls), num: true },
+      { label: "time survived", value: life(r.total_survival_ms), num: true }
+    ];
+    if (r.longest) out.push({ label: "longest life", value: `${life(r.longest.duration_ms)}, ${r.longest.name}`, num: true });
+    if (r.graves) out.push({ label: "graves claimed", value: r.graves.total ? `${r.graves.claimed} of ${r.graves.total}` : "none", num: true });
+    if (r.registered !== null) out.push({ label: "signed up", value: String(r.registered), num: true });
+    return out;
+  });
 </script>
 
-<a class="fp-card os-round" href={osHref.round(r.cycle)}>
-  <div class="os-round__head">
-    <h2 class="t-title-2">Round {r.cycle}</h2>
-    <span class="fp-tag {current ? 'fp-tag--acc' : ''}">{current ? (r.state ? stateLabel(r.state) : "Now") : "Over"}</span>
-  </div>
-  <div class="t-small t-muted">
-    {#if r.started_at}{day(r.started_at)}{#if r.ended_at}{" "}to {day(r.ended_at)}{/if}{:else}World not opened yet{/if}
-  </div>
-  <dl class="os-round__facts">
-    <div><dt>Souls</dt><dd class="t-num">{r.souls}</dd></div>
-    <div><dt>Time survived</dt><dd class="t-num">{life(r.total_survival_ms)}</dd></div>
-    {#if r.longest}<div><dt>Longest life</dt><dd><span class="t-num">{life(r.longest.duration_ms)}</span> <span class="t-small t-muted">{r.longest.name}</span></dd></div>{/if}
-    {#if r.graves}<div><dt>Graves claimed</dt><dd class="t-num">{r.graves.total ? `${r.graves.claimed} of ${r.graves.total}` : "none"}</dd></div>{/if}
-    {#if r.registered !== null}<div><dt>Signed up</dt><dd class="t-num">{r.registered}</dd></div>{/if}
-  </dl>
-</a>
+<Window tag="article" path="~/one-soul/rounds/{r.cycle}" tone={current ? "gold" : "pine"}>
+  <WindowHead title="Round {r.cycle}" href={osHref.round(r.cycle)} asof={current ? (r.state ? stateLabel(r.state) : "now") : "over"} />
+  <p class="c1">{when}</p>
+  <div class="os-sheet"><KeyValueSheet {rows} /></div>
+</Window>
 
 <style>
-  .os-round {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-2);
-    padding: var(--space-4);
-    color: inherit;
-    text-decoration: none;
-  }
-  .os-round:hover {
-    text-decoration: none;
-    border-color: var(--acc);
-  }
-  .os-round__head {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: var(--space-2);
-  }
-  .os-round__facts {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-    gap: var(--space-3);
-    margin: var(--space-2) 0 0;
-  }
-  .os-round__facts dt {
-    font: 600 11px/16px var(--font-mono);
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--faint);
-  }
-  .os-round__facts dd {
-    margin: 0;
-    overflow-wrap: anywhere;
+  .os-sheet {
+    margin-top: 12px;
   }
 </style>

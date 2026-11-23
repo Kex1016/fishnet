@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { REALM_TRANSITION, REALM_TRANSITION_FRAMES } from "../src/lib/design/dither.ts";
-import { frameProgress, litCells, maskFrames, maskGrid } from "../src/lib/onesoul/transition-mask.ts";
+import { SHEET_COLUMNS, frameProgress, litCells, maskFrames, maskGrid, sheetCell } from "../src/lib/onesoul/transition-mask.ts";
 
 const count = (a: Uint8Array) => a.reduce((n, v) => n + v, 0);
 
@@ -50,5 +50,16 @@ describe("realm transition frames", () => {
         if (n > 0 && n < 16) partly++;
       }
     expect(partly).toBeGreaterThan(10);
+  });
+  test("the sprite sheet holds every frame once", () => {
+    const seen = new Set<string>();
+    for (let i = 0; i < REALM_TRANSITION_FRAMES; i++) {
+      const c = sheetCell(i);
+      expect(c.col).toBeLessThan(SHEET_COLUMNS);
+      seen.add(`${c.col},${c.row}`);
+    }
+    expect(seen.size).toBe(REALM_TRANSITION_FRAMES);
+    expect(sheetCell(0)).toEqual({ col: 0, row: 0 });
+    expect(sheetCell(4)).toEqual({ col: 1, row: 1 });
   });
 });

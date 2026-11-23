@@ -284,7 +284,7 @@ export const CHECKS: Check[] = [
       const name = links.map((l) => l.slice(15, -1)).find((n) => !/^[0-9a-f-]{36}$/.test(n))!;
       const profile = await ctx.html(`/players/${name}`);
       expect(profile.includes(`<h1`) && profile.includes(decodeURIComponent(name)), `the profile of ${name} has no heading`);
-      expect(profile.includes("fp-tile__label"), "the profile has no playtime tiles");
+      expect(profile.includes("kv_label") && profile.includes("fx-read"), "the profile has no playtime readout and tiles");
       expect(profile.includes('aria-label="Scope"'), "the profile has no scope switch");
       const scoped = await ctx.get(`/players/${name}?scope=server%3Asurvival`);
       expect(scoped.status === 200, `a scoped profile answered ${scoped.status}`);
@@ -378,7 +378,7 @@ export const CHECKS: Check[] = [
         ["/leaderboards/mined:minecraft:unobtainium_zz", [200], "fp-empty"],
         ["/leaderboards?scope=garbage", [200]],
         ["/leaderboards?scope=server%3Ano-such-server", [200]],
-        ["/players?q=zzzzqq", [200], "fp-empty"],
+        ["/players?q=zzzzqq", [200], "fx-empty"],
         ["/players?offset=99999", [200]],
         ["/stats/subject/minecraft%3Ano_such_thing_zz", [200, 404]],
         ["/stats/no_such_type_zz", [200, 404]],

@@ -1,4 +1,4 @@
-// Players (W5): the directory. Search, the online filter and paging are the API's own
+// Players (W5, H3): the directory. Search, the online filter and paging are the API's own
 // (/v2/players is ordered by name); each page's playtime comes from one batch call (PLAN §2.3).
 // Hidden players leave the page before anything renders; the count stays the API's (a hidden
 // player is still a player the network has seen).
@@ -21,25 +21,23 @@ export const load: PageServerLoad = async ({ url }) => {
   if (players.ok) players.data.players = rows;
 
   // playtime per row, when there are rows; a failure here only loses the playtime column
-  const playtime: Record<string, BatchPlayer["playtime"]> = {};
+  const batchRows: Record<string, NonNullable<BatchPlayer["playtime"]>> = {};
   let batchDown = false;
   if (rows.length) {
     const b = await c.batch(
       rows.map((p) => p.uuid),
       ["playtime"]
     );
-    if (b.ok) for (const p of b.data.players) playtime[p.uuid] = p.playtime;
+    if (b.ok) for (const p of b.data.players) if (p.playtime) batchRows[p.uuid] = p.playtime;
     else batchDown = true;
   }
   const serverNames = serverNameMap(network);
 
-  const title = q ? `Players matching “${q}”` : online ? "Online players" : "Players";
   return {
     title: "Players",
     crumbs: [{ label: "Players", href: "/players" }],
-    heading: title,
     players,
-    playtime,
+    rows: batchRows,
     batchDown,
     serverNames,
     totalOnline: network.ok ? network.data.total_online : null,

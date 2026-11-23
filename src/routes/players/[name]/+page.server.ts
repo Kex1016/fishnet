@@ -1,7 +1,7 @@
 // Player profile (W5, PLAN §3.4): prefix/suffix, first and last seen, playtime by server and mini,
 // standing on the featured boards, the stats explorer (by type, with icons and search), the scope
-// switch, the milestones this player was first to and the advancements they completed first. Everything but
-// the header follows ?scope=.
+// switch, the milestone ladders (H3: thresholds passed, read against the player's own values), the milestones
+// this player was first to and the advancements they completed first. Everything but the header follows ?scope=.
 // Hidden players are a 404 before any other call (PLAN §3.4, §8.5).
 import { error } from "@sveltejs/kit";
 import type { PageServerLoad } from "./$types";
@@ -13,6 +13,7 @@ import type { BatchPlayer, Leaderboard, PlayerAdvancements, PlayerMilestones, St
 import { COMPOSITES, FEATURED } from "#lib/boards.ts";
 import { featuredLeaderboard } from "#lib/server/featured.ts";
 import { batchIncludes, compositeValue, standing, type BoardStanding } from "#lib/players/ranks.ts";
+import { playtimeLadder, statLadder, type LadderView } from "#lib/players/ladders.ts";
 import { playerLabel, splitMini, titleCase } from "#lib/players/names.ts";
 import { showOnMap } from "#lib/map/showOnMap.ts";
 import { prepareFeed } from "#lib/milestones/prepare.server.ts";
@@ -66,6 +67,10 @@ export const load: PageServerLoad = async ({ params, url }) => {
   const offset = offsetParam(url);
   const miniScope = parsed?.kind === "mini";
 
+  // the ladders of the featured stat boards that are one stat (a board that adds stats has no one ladder); read in
+  // parallel with the rest. Milestones have no mini scope (PLAN §2.5): no call there.
+  const ladderBoards = FEATURED.filter((b) => b.metric.kind === "stat" && !b.also);
+  const ladderCalls = player.ok && !miniScope ? ladderBoards.map((b) => (b.metric.kind === "stat" ? c.milestoneLadder(b.metric.type, b.metric.subject, scope) : Promise.resolve(null))) : [];
   const activity = player.ok ? extras().playerActivity(ref) : Promise.resolve(null);
   // "Show on map" (FM-8): only an online player on a server the map knows needs the map's server list
   const maps = player.ok ? mapApi().mapServers() : Promise.resolve(null);
@@ -96,6 +101,27 @@ export const load: PageServerLoad = async ({ params, url }) => {
     });
   }
   const composites = COMPOSITES.map((cb) => ({ id: cb.id, label: cb.label, value: compositeValue(cb, meRow) })).filter((x) => x.value !== null);
+
+  // ladders: the player's own value against each rung. No batch row, no ladder (a value of 0 is a row with no stat).
+  const ladders: { id: string; label: string; view: LadderView }[] = [];
+  let laddersDown = false;
+  let laddersOff = false;
+  const results = await Promise.all(ladderCalls);
+  ladderBoards.forEach((b, i) => {
+    const r = results[i];
+    if (!r || b.metric.kind !== "stat") return;
+    if (!r.ok) {
+      if (r.kind === "off") laddersOff = true;
+      else if (r.kind === "down" || r.kind === "rate_limited") laddersDown = true;
+      return; // not_found: nobody recorded the stat yet, so there is no ladder
+    }
+    // the standing already holds the player's value in this scope (the board's own entry, else the batch row's)
+    const st = standings.find((x) => x.id === b.id);
+    const view = st ? statLadder(r.data, st.value, st.value > 0 ? st.unit : null) : null;
+    if (view) ladders.push({ id: b.id, label: b.label, view });
+  });
+  const activityRes = await activity;
+  const playtimeSteps = activityRes?.ok ? playtimeLadder(activityRes.data.playtime_milestones) : null;
 
   // names for the playtime breakdown and the scope switch
   const serverNames = serverNameMap(network);
@@ -140,7 +166,11 @@ export const load: PageServerLoad = async ({ params, url }) => {
     firsts: (firsts ?? fail("bad_request")) as Result<PlayerMilestones>,
     advFirsts: (advFirsts ?? fail("bad_request")) as Result<PlayerAdvancements>,
     /** sessions, streaks and play time milestones (cakeutils B5), network-wide; null or off when absent */
-    activity: await activity,
+    activity: activityRes,
+    ladders,
+    laddersDown,
+    laddersOff,
+    playtimeSteps,
     showFirsts: !miniScope,
     standings,
     boardsDown,

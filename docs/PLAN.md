@@ -311,7 +311,7 @@ first pass misses contracts or states. Do not use `max`. Subagents and workflows
 
 - `bun run check`, `bun test` and `bun run build` pass; the token leak check passes.
 - The page works in both mock scenarios, `fresh` showing every empty state on purpose.
-- Screenshots at 390 px and 1440 px, dark and light, in the unit's PR.
+- Screenshots at 390 px and 1440 px, dark only since the haiiro redesign (23 Nov 2026), in the unit's PR.
 - No numbers that do not come from the API or the recorder.
 
 ### Order

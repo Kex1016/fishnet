@@ -1,5 +1,6 @@
-// Every page gets: the theme, whether the proxy has milestones and advancement milestones (nav entries),
-// mock scenario (dev banner), and whether servers are hidden (src/lib/server/hidden-servers.ts).
+// Every page gets: what the shell's bar and nav show (who is on, the moment, the counts beside the nav
+// entries), whether the proxy has milestones and advancement milestones (nav entries), the mock scenario,
+// and whether servers are hidden (src/lib/server/hidden-servers.ts).
 import { error } from "@sveltejs/kit";
 import type { LayoutServerLoad } from "./$types";
 import { api, exclusionStatus, extras, mapApi } from "#lib/server/cakeutils/client.ts";
@@ -18,19 +19,27 @@ export const load: LayoutServerLoad = async ({ locals, url }) => {
     if (hidden.hidesScope(url.searchParams.get("scope")) || (m && hidden.has(decodeURIComponent(m[1])))) error(404, "Not found");
   }
   const x = extras();
-  const [milestones, advancements, onesoul, firsts, deaths, activity, map] = await Promise.all([
+  const [milestones, advancements, onesoul, firsts, deaths, activity, map, network, seen] = await Promise.all([
     api().milestonesEnabled(),
     api().advancementsEnabled(),
     oneSoul().enabled("status"),
     x.enabled("firsts"),
     x.enabled("deaths"),
     x.enabled("activity"),
-    mapApi().mapEnabled()
+    mapApi().mapEnabled(),
+    // the bar and the nav: the same cached answers the pages read, so the shell costs no call of its own
+    api().network(),
+    api().players({ limit: 1 })
   ]);
   const ex = exclusionStatus();
   return {
-    theme: locals.theme,
     tz: locals.tz,
+    /** the moment of this render, for the bar's clock until the browser takes over */
+    now: Date.now(),
+    /** players online on the network right now; null while cakeutils cannot be reached */
+    online: network.ok ? network.data.total_online : null,
+    /** the counts beside the nav entries; null = not known, nothing is shown */
+    counts: { servers: network.ok ? network.data.servers.length : null, players: seen.ok ? seen.data.total : null },
     mock: locals.mock,
     milestones,
     advancements,

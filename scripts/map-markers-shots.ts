@@ -75,7 +75,7 @@ const stages: Record<string, (page: any, narrow: boolean) => Promise<void>> = {
 
 try {
   for (const width of [390, 1440]) {
-    for (const theme of ["dark", "light"]) {
+    for (const theme of ["dark"]) {
       for (const [name, run] of Object.entries(stages)) {
         const ctx = await browser.newContext({ viewport: { width, height: width < 600 ? 844 : 900 }, deviceScaleFactor: 1, colorScheme: theme as "dark" | "light" });
         await ctx.addCookies([{ name: "theme", value: theme, url: base }]);

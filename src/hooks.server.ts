@@ -1,6 +1,6 @@
 // Shared file (PLAN §7): minimal additive edits only, named in the unit's report.
-// W0: theme cookie → <html data-theme>, mock-mode guard, security headers beyond the CSP set in
-// vite.config.ts. W2 adds the recorder's start in `init`.
+// W0: mock-mode guard, security headers beyond the CSP set in vite.config.ts. W2 adds the recorder's start
+// in `init`. H0: one dark theme (no theme cookie), the realm on <html>, the two faces every page shows preloaded.
 import type { Handle, ServerInit } from "@sveltejs/kit/hooks";
 import { apiToken, config, displayUrl, tokenId } from "#lib/server/env.ts";
 import { startRecorder } from "#lib/server/recorder/index.ts";
@@ -25,8 +25,6 @@ export const init: ServerInit = async () => {
 };
 
 export const handle: Handle = async ({ event, resolve }) => {
-  const t = event.cookies.get("theme");
-  event.locals.theme = t === "dark" || t === "light" ? t : "system";
   event.locals.mock = config().mock;
   event.locals.tz = validZone(event.cookies.get("tz")) ?? "UTC";
   // the owner's stat names (src/routes/admin/names), before any load builds a label; the root layout
@@ -37,8 +35,9 @@ export const handle: Handle = async ({ event, resolve }) => {
   // the realm is on the server-rendered <html>, so a direct load of a One Soul page never flashes the other theme
   const realm = realmOf(event.url.pathname);
   const response = await zoneOfRequest.run(event.locals.tz, () => resolve(event, {
-    transformPageChunk: ({ html }) =>
-      html.replace("%fishnet.theme%", event.locals.theme === "system" ? "" : event.locals.theme).replace("%fishnet.realm%", realm)
+    transformPageChunk: ({ html }) => html.replace("%fishnet.realm%", realm),
+    // the mono face and the display face are on every page: fetch them with the page, not after the CSS
+    preload: ({ type, path }) => type === "js" || type === "css" || (type === "font" && /Web437_IBM_VGA_8x16\.[^/]*woff$|jacquard-24-latin-400-normal[^/]*woff2$/.test(path))
   }));
   response.headers.set("referrer-policy", "strict-origin-when-cross-origin");
   response.headers.set("x-content-type-options", "nosniff");

@@ -1,31 +1,25 @@
 <script lang="ts">
-  import "@fontsource/zen-maru-gothic/latin-700.css";
-  import "@fontsource/zen-maru-gothic/japanese-700.css";
-  import "@fontsource/zen-kaku-gothic-new/latin-400.css";
-  import "@fontsource/zen-kaku-gothic-new/latin-500.css";
-  import "@fontsource/zen-kaku-gothic-new/latin-700.css";
-  import "@fontsource/zen-kaku-gothic-new/japanese-400.css";
-  import "@fontsource/jetbrains-mono/latin-400.css";
-  import "@fontsource/jetbrains-mono/latin-600.css";
+  // The shell (haiiro's SiteShell): the bar (wordmark, where you are, who is on, the clock), the page strip
+  // and the menu drawer where there is no room for the rail, the side nav window, and the page on the blob
+  // backdrop. A page whose content is a stage (the map) gets the bar and the stage only (components.css).
+  import "#lib/design/fonts.css";
   import "#lib/design/tokens.css";
   import "#lib/design/base.css";
   import "#lib/design/components.css";
-  import "@fontsource/cormorant-garamond/latin-700.css";
-  import "#lib/onesoul/realm.css";
-  import "../app.css";
+  import "#lib/design/legacy.css";
 
   import { afterNavigate } from "$app/navigation";
   import { page } from "$app/state";
   import { onMount, untrack } from "svelte";
-  import { PanelLeft, Search } from "@lucide/svelte";
   import { NAV, SITE, here, pageTitle, type Crumb, type NavItem } from "#lib/nav.ts";
-  import Mark from "#lib/design/Mark.svelte";
-  import ThemeToggle from "#lib/design/ThemeToggle.svelte";
+  import Blobs from "#lib/design/Blobs.svelte";
   import Notice from "#lib/design/Notice.svelte";
+  import { sectionPath } from "#lib/design/shell.ts";
+  import { group } from "#lib/format/stat-display.ts";
 
   let { children, data } = $props();
 
-  // the animated switch into and out of the One Soul section (WEBSITE-BRIEF §4)
+  // the switch into and out of the One Soul realm (src/lib/onesoul/transition.ts)
   import { installRealmTransition } from "#lib/onesoul/transition.ts";
   installRealmTransition();
 
@@ -37,7 +31,7 @@
   // the visitor's time zone (dates.ts): the server's guess (the `tz` cookie, else UTC) for hydration, then the
   // browser's own zone, remembered in the cookie so the next page is rendered in it. Dates re-render when it changes.
   import { browser } from "$app/env";
-  import { setZoneSource, validZone } from "#lib/format/dates.ts";
+  import { hm, setZoneSource, validZone, zoneName } from "#lib/format/dates.ts";
   let tz = $state(untrack(() => data.tz));
   if (browser) setZoneSource(() => tz);
   onMount(() => {
@@ -52,42 +46,48 @@
     document.cookie = `tz=${encodeURIComponent(mine)}; path=/; max-age=31536000; samesite=lax${location.protocol === "https:" ? "; secure" : ""}`;
   });
 
-  // Sidebar: full, icons only (rail) or hidden, cycled by the TopBar's toggle and remembered per
-  // device. "auto" until mounted: CSS shows the rail on phones, full otherwise. On phones the full
-  // sidebar opens over the page on a scrim and closes on navigation.
-  type SideState = "full" | "rail" | "hidden";
-  const next: Record<SideState, SideState> = { full: "rail", rail: "hidden", hidden: "full" };
-  const toggleLabel: Record<SideState, string> = { full: "Collapse sidebar to icons", rail: "Hide sidebar", hidden: "Show sidebar" };
-  const phone = () => matchMedia("(max-width: 640px)").matches;
-  let side = $state<SideState | "auto">("auto");
-  const shown = $derived<SideState>(side === "auto" ? "full" : side);
+  // the clock in the bar: the server's moment for the first render, the browser's own from then on
+  let now = $state(untrack(() => data.now));
   onMount(() => {
-    let saved: SideState | null = null;
-    try {
-      const s = localStorage.getItem("sidebar");
-      if (s === "full" || s === "rail" || s === "hidden") saved = s;
-    } catch {
-      /* private mode */
-    }
-    side = phone() ? "rail" : (saved ?? "full");
+    now = Date.now();
+    const t = setInterval(() => (now = Date.now()), 5000);
+    return () => clearInterval(t);
   });
-  afterNavigate(() => {
-    if (side === "full" && phone()) side = "rail";
-  });
-  function toggle() {
-    side = next[side === "auto" ? (phone() ? "rail" : "full") : side];
-    if (!phone()) {
-      try {
-        localStorage.setItem("sidebar", side);
-      } catch {
-        /* ignore */
-      }
-    }
+  const clock = $derived(`${hm(now)} ${zoneName(now)}`);
+
+  // the menu: the side nav as a drawer where the rail has no room (and on a stage). Closes on navigation
+  // and on Escape.
+  let open = $state(false);
+  afterNavigate(() => (open = false));
+  function key(e: KeyboardEvent) {
+    if (e.key === "Escape" && open) open = false;
   }
 
   const shows = (n: NavItem) => (!n.needsMilestones || data.milestones) && (!n.needsAdvancements || data.advancements) && (!n.needsOneSoul || data.onesoul) && (!n.needs || data[n.needs]);
+  const groups = $derived(NAV.map((g) => ({ ...g, items: g.items.filter(shows) })).filter((g) => g.items.length));
+  // the quiet count beside a nav entry: only what the layout already knows from the API
+  const meta = (n: NavItem): string => {
+    const v = n.href === "/servers" ? data.counts.servers : n.href === "/players" ? data.counts.players : null;
+    return v === null ? "" : group(v);
+  };
   const crumbs = $derived((page.data.crumbs ?? []) as Crumb[]);
   const title = $derived(pageTitle(page.data.title ?? crumbs.at(-1)?.label));
+  // where you are, as the prompt's path: every part is a link to that level
+  // An error page shows no path: a hidden server's address must not be echoed back (it answers like one that
+  // never existed).
+  const where = $derived.by(() => {
+    if (page.error) return [];
+    const parts = page.url.pathname.split("/").filter(Boolean);
+    return parts.map((p, i) => {
+      let label = p;
+      try {
+        label = decodeURIComponent(p);
+      } catch {
+        /* keep the raw part */
+      }
+      return { label, href: `/${parts.slice(0, i + 1).join("/")}` };
+    });
+  });
 </script>
 
 <svelte:head>
@@ -95,61 +95,52 @@
   <meta name="description" content="{SITE.name}: {SITE.tagline}. Servers, players, stats, leaderboards, milestones and advancements." />
 </svelte:head>
 
-<div class="fp-shell">
-  <aside class="fp-side" data-state={side}>
-    <div class="fp-side__in">
-      <a class="fp-brand" href="/" aria-label="{SITE.name} home"><Mark class="fp-brand__mark" /><span class="fp-brand__name">{SITE.name}</span></a>
-      {#each NAV.map((g) => ({ ...g, items: g.items.filter(shows) })).filter((g) => g.items.length) as group, gi (gi)}
-        <nav class="fp-nav-group" aria-label={group.label ?? "Main"}>
-          {#if group.label}<span class="fp-nav-group__label">{group.label}</span>{/if}
-          {#each group.items as n (n.href)}
-            <a class="fp-nav" href={n.href} aria-current={here(n.href, page.url.pathname) ? "page" : undefined} title={n.label}>
-              <n.icon class="fp-ico" strokeWidth={1.4} /><span class="fp-nav__label">{n.label}</span>
-            </a>
+<svelte:window onkeydown={key} />
+
+<div class="fx" class:fx-open={open}>
+  <a class="ink c3 fx-skip" href="#main">Skip to the page</a>
+  <Blobs />
+  <header class="fx-bar">
+    <a class="fx-brand" href="/" aria-label="{SITE.name} home">fishnet</a>
+    <nav class="fx-where" aria-label="Where you are">
+      <span class="c2">@</span> <span class="c6">fishplex</span> <span class="c4">»</span> <span class="c3">cd</span>
+      <span class="c7"><a href="/" aria-current={where.length ? undefined : "page"}>~</a>{#each where as w, i (w.href)}/<a href={w.href} aria-current={i === where.length - 1 ? "page" : undefined}>{w.label}</a>{/each}</span>
+    </nav>
+    <span class="grp">
+      {#if data.online !== null}<span class="fx-live num" class:off={data.online === 0}>{group(data.online)} online</span>{/if}
+      <time class="clock c1">{clock}</time>
+      <button class="ink c5 fx-menu" type="button" aria-expanded={open} aria-controls="site-nav" onclick={() => (open = !open)}>{open ? "close" : "menu"}</button>
+    </span>
+  </header>
+  <nav class="fx-strip" aria-label="Pages">
+    {#each groups as g, gi (gi)}{#each g.items as n (n.href)}<a href={n.href} aria-current={here(n.href, page.url.pathname) ? "page" : undefined}>{n.label}</a>{/each}{/each}
+  </nav>
+  <button class="fx-scrim" type="button" tabindex="-1" aria-label="Close the menu" onclick={() => (open = false)}></button>
+  <div class="fx-body">
+    <aside class="fx-side" id="site-nav">
+      <nav class="window" aria-label="Site">
+        <span class="section-header">fish: <b>{page.error ? "~" : sectionPath(page.url.pathname)}</b></span>
+        <div class="content">
+          {#each groups as g, gi (gi)}
+            {#if g.label}<span class="lab">{g.label}</span>{/if}
+            <div class="list">
+              {#each g.items as n (n.href)}
+                <a class="li" href={n.href} aria-current={here(n.href, page.url.pathname) ? "page" : undefined}><span class="mk">»</span><span class="grow">{n.label}</span><span class="meta num">{meta(n)}</span></a>
+              {/each}
+            </div>
           {/each}
-        </nav>
-      {/each}
-      <div class="fp-side__foot">
-        <span class="t-caption t-faint">{SITE.host}</span>
-        {#if data.mock}<span class="fp-tag fp-tag--warning" title="FISHNET_MOCK is set: fixture data, not the network">mock: {data.mock}</span>{/if}
-      </div>
-    </div>
-  </aside>
-  <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
-  <div class="fp-shell__scrim" onclick={() => (side = "rail")}></div>
-  <div class="fp-shell__col">
-    <header class="fp-top">
-      <button type="button" class="fp-ibtn" aria-label={toggleLabel[shown]} onclick={toggle}>
-        <PanelLeft class="fp-ico" strokeWidth={1.4} />
-      </button>
-      <nav class="fp-crumbs" aria-label="Breadcrumb">
-        {#if crumbs.length}<a href="/">{SITE.name}</a>{:else}<span aria-current="page">{SITE.name}</span>{/if}
-        {#each crumbs as c, i (i)}
-          <span aria-hidden="true">/</span>
-          {#if c.href && i < crumbs.length - 1}<a href={c.href}>{c.label}</a>{:else}<span aria-current={i === crumbs.length - 1 ? "page" : undefined}>{c.label}</span>{/if}
-        {/each}
-      </nav>
-      <div class="fp-top__end">
-        <form class="fp-field fp-search" action="/players" method="get" role="search">
-          <Search class="fp-ico fp-ico--sm" strokeWidth={1.4} />
-          <input type="search" name="q" placeholder="Find a player" aria-label="Find a player" autocomplete="off" maxlength="64" />
-        </form>
-        <ThemeToggle theme={data.theme} />
-      </div>
-    </header>
-    <div class="fp-shell__scroll">
-      {#if data.exclusionUnsupported}
-        <div class="fp-page fp-page--notice">
-          <Notice kind="warning">Network totals on this site still include servers that are not listed here, because cakeutils is older than this site. Per-server figures are not affected.</Notice>
         </div>
+        <div class="foot">
+          <span>{SITE.host}</span><span>read only</span>
+          {#if data.mock}<span class="c3" title="FISHNET_MOCK is set: fixture data, not the network">mock: {data.mock}</span>{/if}
+        </div>
+      </nav>
+    </aside>
+    <main class="fx-main" id="main">
+      {#if data.exclusionUnsupported}
+        <Notice kind="warning">Network totals on this site still include servers that are not listed here, because cakeutils is older than this site. Per-server figures are not affected.</Notice>
       {/if}
       {@render children()}
-    </div>
+    </main>
   </div>
 </div>
-
-<style>
-  .fp-page--notice {
-    padding-bottom: 0;
-  }
-</style>

@@ -75,10 +75,10 @@ await check("the map fills the whole area beside the nav (JS)", async () => {
   const page = await open(base, "/map/survival");
   await ready(page);
   const r = await page.evaluate(() => {
-    const a = document.querySelector(".fp-shell__scroll")!.getBoundingClientRect();
+    const a = document.querySelector(".fx-main")!.getBoundingClientRect();
     const b = document.querySelector(".mc-stage")!.getBoundingClientRect();
     const m = document.querySelector(".mc")!.getBoundingClientRect();
-    return { a: [a.left, a.top, a.width, a.height], b: [b.left, b.top, b.width, b.height], m: [m.width, m.height], sw: document.querySelector(".fp-shell__scroll")!.scrollWidth, sh: document.querySelector(".fp-shell__scroll")!.scrollHeight };
+    return { a: [a.left, a.top, a.width, a.height], b: [b.left, b.top, b.width, b.height], m: [m.width, m.height], sw: document.documentElement.scrollWidth, sh: document.documentElement.scrollHeight - document.querySelector(".fx-bar")!.getBoundingClientRect().height };
   });
   expect(r.a.every((v: number, i: number) => Math.abs(v - r.b[i]) <= 1), `stage ${r.b} vs area ${r.a}`);
   expect(Math.abs(r.m[0] - r.b[2]) <= 1 && Math.abs(r.m[1] - r.b[3]) <= 1, `canvas ${r.m} vs stage ${r.b}`);

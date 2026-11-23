@@ -23,6 +23,7 @@ export type NavGroup = { label?: string; items: NavItem[] };
 
 export const NAV: NavGroup[] = [
   {
+    label: "Network",
     items: [
       { href: "/", label: "Home", icon: House },
       { href: "/servers", label: "Servers", icon: Server },
@@ -47,6 +48,7 @@ export const NAV: NavGroup[] = [
     items: [{ href: "/one-soul", label: "One Soul", icon: Flame, needsOneSoul: true }]
   },
   {
+    label: "Site",
     items: [{ href: "/about", label: "About", icon: Info }]
   }
 ];

@@ -1,138 +1,112 @@
-/* fishnet design tokens: a rebuild of the reki look (journey's docs/reki.md, reki's public rules) with
-   the Fishnet skin (PLAN §6, §8.6): warm greys, one sea-blue accent, compact corners, quick motion.
-   Nothing here is copied from reki's files. Dark first; light and system work. Theme comes from
-   data-theme="dark|light" on <html>; no attribute = follow the system. */
+/* Fishnet design tokens: haiiro (https://haiiro.moe/~cakes), Rosé Pine main, one dark theme. The names and
+   values are the haiiro design system's tokens.json; var(--color-pine) means the same thing here and there.
+   The One Soul realm maps the same names to Gruvbox dark (the realm-* tokens) under
+   :root[data-realm="onesoul"] and .realm, so no component ever names a colour. Frozen contract: docs/HAIIRO.md. */
 
-:root {
-  /* type */
-  --font-head: "Zen Maru Gothic", "Hiragino Maru Gothic ProN", ui-rounded, system-ui, sans-serif;
-  --font-text: "Zen Kaku Gothic New", "Hiragino Sans", system-ui, sans-serif;
-  --font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
-
-  /* the 4px grid */
-  --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px; --space-5: 20px; --space-6: 24px;
-  --space-7: 28px; --space-8: 32px; --space-10: 40px; --space-12: 48px; --space-16: 64px; --space-24: 96px;
-
-  --size-page: 1080px;
-  --size-sidebar: 228px;
-  --size-rail: 56px;
-  --size-top: 52px;
-  --size-control: 32px;
-  --size-touch: 44px;
-
-  /* compact corners: controls md, segments sm, rows lg, panels xl, cards 2xl, modal 3xl */
-  --radius-xs: 3px; --radius-sm: 6px; --radius-md: 8px; --radius-lg: 10px; --radius-xl: 12px; --radius-2xl: 14px; --radius-3xl: 18px;
-
-  /* motion: state changes fast/base with ease-soft; things that move slow/enter with ease-glide */
-  --duration-fast: 110ms; --duration-base: 160ms; --duration-slow: 220ms; --duration-enter: 220ms;
-  --duration-switch: 180ms; --duration-stagger: 40ms; --duration-press: 60ms; --duration-spin: 900ms;
-  --ease-soft: cubic-bezier(0.2, 0.6, 0.2, 1);
-  --ease-glide: cubic-bezier(0.3, 0.7, 0.1, 1);
-  --ease-pixel: steps(4, end);
-
-  /* chart marks: columns at most this wide, lines this thick */
-  --chart-column: 24px;
-  --chart-line: 2px;
-
-  /* a drop shadow for icons on artwork; grain is for artwork only */
-  --on-art: #fff;
-  --on-art-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
-}
-
-@media (pointer: coarse) {
-  :root { --size-control: var(--size-touch); }
-}
-
-/* ---- dark (default) */
 :root {
   color-scheme: dark;
-  --bg: #171613;
-  --sunk: #100f0d;
-  --surface: #1f1d1a;
-  --raised: #2a2723;
-  --line: #37332d;
-  --line-soft: #2b2824;
-  --text: #ece7df;
-  --muted: #aaa397;
-  --faint: #867d71;
 
-  /* the one accent: sea blue. acc is the pastel fill, acc-ink the pastel itself in dark */
-  --acc: #7fc4d9;
-  --acc-ink: #8fd0e3;
-  --acc-soft: rgba(127, 196, 217, 0.16);
-  --acc-viz: #6fb9cf;
-  --acc-heat-1: #223f49;
-  --acc-heat-2: #2e6376;
-  --acc-heat-3: #3f8ba3;
-  --acc-heat-4: #7fc4d9;
-  --on-acc: #0d1b20;
+  /* ---- colour: Rosé Pine main */
+  --color-base: #191724; /* the night sky everything sits on; dark tone of dither and blobs */
+  --color-surface: #1f1d2e; /* window fill, the label notch, ink on light inverse links */
+  --color-overlay: #26233a; /* raised layers, selected rows, the blob halo */
+  --color-muted: #6e6a86; /* labels and quiet info only: 3.4:1 on base */
+  --color-subtle: #908caa; /* secondary text that must stay readable at 16px: 5.5:1 */
+  --color-text: #e0def4; /* body text and hairlines: 13:1 */
+  --color-love: #eb6f92; /* the prompt @, failed, critical, the dead */
+  --color-gold: #f6c177; /* commands, the one action, "needs you", rank 1, the living soul */
+  --color-rose: #ebbcba; /* narration and the » arrow */
+  --color-pine: #31748f; /* the signature: window frames, the wordmark, the current thing. 24px+ or borders */
+  --color-foam: #9ccfd8; /* paths, window headings, values, chart marks */
+  --color-iris: #c4a7e7; /* files and arguments, a second measure, rank 2 */
+  --color-highlight-low: #21202e; /* faintest highlight: hover rows on base */
+  --color-highlight-med: #403d52; /* hover rows, inactive borders, the blob core */
+  --color-highlight-high: #524f67; /* card borders with no rarity, heat level 1 */
+  --ink-muted: rgba(224, 222, 244, 0.55); /* text at 55%: kv labels, captions, as-of lines */
+  --ink-hairline: rgba(224, 222, 244, 0.25); /* text at 25%: dividers between rows */
+  --ink-track: rgba(224, 222, 244, 0.14); /* text at 14%: the empty part of a bar */
+  --veil-heavy: rgba(25, 23, 36, 0.55); /* base at 55%, under the dither veil */
+  --clearing-fill: rgba(25, 23, 36, 0.94); /* base at 94%: text over the blobs without a window */
 
-  --success: #86c3b2; --success-ink: #9bd3c3; --success-soft: rgba(134, 195, 178, 0.14);
-  --warning: #e2bb6e; --warning-ink: #ebc983; --warning-soft: rgba(226, 187, 110, 0.14);
-  --error: #e08c7c; --error-ink: #ec9f90; --error-soft: rgba(224, 140, 124, 0.14);
+  /* ---- the One Soul realm: Gruvbox dark. Used through the scope below, never directly by a component */
+  --realm-base: #282828;
+  --realm-surface: #32302f;
+  --realm-overlay: #3c3836;
+  --realm-muted: #928374;
+  --realm-subtle: #a89984;
+  --realm-text: #ebdbb2;
+  --realm-love: #fb4934;
+  --realm-gold: #fabd2f;
+  --realm-rose: #fe8019;
+  --realm-pine: #689d6a;
+  --realm-foam: #8ec07c;
+  --realm-iris: #d3869b;
+  --realm-highlight-low: #32302f;
+  --realm-highlight-med: #504945;
+  --realm-highlight-high: #665c54;
 
-  --scrim: rgba(0, 0, 0, 0.5);
-  --credit-chip: rgba(0, 0, 0, 0.45);
-  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.35), 0 4px 14px rgba(0, 0, 0, 0.22);
-  --shadow-pill: 0 1px 2px rgba(0, 0, 0, 0.35);
-  --shadow-float: 0 6px 24px rgba(0, 0, 0, 0.4);
-  --shadow-modal: 0 16px 48px rgba(0, 0, 0, 0.5);
-  --focus-ring: 0 0 0 2px var(--bg), 0 0 0 4px var(--acc-ink);
-  --hover-tint: rgba(236, 231, 223, 0.09);
-  --press-tint: rgba(236, 231, 223, 0.18);
-  /* Minecraft chat colours, dark ground (segments renderer, allow-listed) */
+  /* ---- type: IBM VGA 8x16 for everything (bold is its 2x face), Jacquard 24 for display at 28px and up,
+     GNU Unifont behind both (fonts.css) */
+  --font-mono: IBM, Unifont, "Unifont Upper", ui-monospace, monospace;
+  --font-display: "Jacquard 24", IBM, Unifont, "Unifont Upper", serif;
+
+  /* ---- space, shape, borders */
+  --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px; --space-6: 24px; --space-8: 32px; --space-12: 50px; --space-20: 80px;
+  --radius-none: 0;
+  --shadow-title: 8px 8px 0 #191724; /* hard offset under a display title on the blobs (text-shadow) */
+  --shadow-art: 8px 8px 0 #191724;
+  --border-hairline: 1px;
+  --border-divider: 3px;
+  --border-window: 5px; /* always "double", in pine */
+
+  /* ---- sizes */
+  --bar-height: 48px; /* the top bar; 52px on a phone */
+  --side-width: 240px; /* the side nav window */
+  --dither-tile: 4px;
+  --touch: 44px; /* controls grow to this under a coarse pointer */
+  --chart-column: 24px; /* columns are at most this wide */
+
+  /* ---- the realm transition (src/lib/onesoul/transition.ts; the same numbers in src/lib/design/dither.ts) */
+  --realm-transition-fps: 12;
+  --realm-transition-duration: 1s;
+  --realm-transition-cell: 8px;
+  --realm-transition-band: 0.22;
+
+  /* ---- Minecraft chat colours on a dark ground (the segments renderer, allow-listed) */
   --mc-black: #8a8a8a; --mc-dark_blue: #6b7cff; --mc-dark_green: #4fc24f; --mc-dark_aqua: #3fc6c6; --mc-dark_red: #e05555;
   --mc-dark_purple: #c75ac7; --mc-gold: #e8b23f; --mc-gray: #b3b3b3; --mc-dark_gray: #8c8c8c; --mc-blue: #7a8cff; --mc-green: #7cf27c;
   --mc-aqua: #7af2f2; --mc-red: #ff7c7c; --mc-light_purple: #ff8cff; --mc-yellow: #ffe97c; --mc-white: #f2f2f2;
 }
 
-/* ---- light */
-@media (prefers-color-scheme: light) {
-  :root:not([data-theme="dark"]) { --theme-light: 1; }
+@media (max-width: 720px) {
+  :root { --bar-height: 52px; }
 }
-:root[data-theme="light"] { --theme-light: 1; }
 
-@media (prefers-color-scheme: light) {
-  :root:not([data-theme="dark"]) {
-    color-scheme: light;
-    --bg: #f5f2ec; --sunk: #ebe7df; --surface: #fffdf9; --raised: #efebe4;
-    --line: #d8d2c7; --line-soft: #e5e0d6;
-    --text: #231f1a; --muted: #5d574e; --faint: #78716a;
-    --acc: #7fc4d9; --acc-ink: #1f6a82; --acc-soft: rgba(31, 106, 130, 0.12); --acc-viz: #3a8aa6;
-    --acc-heat-1: #d3e8ef; --acc-heat-2: #a3cfdd; --acc-heat-3: #5fa9c3; --acc-heat-4: #1f6a82; --on-acc: #0d1b20;
-    --success: #86c3b2; --success-ink: #1f6b5c; --success-soft: rgba(31, 107, 92, 0.12);
-    --warning: #e2bb6e; --warning-ink: #7a5a10; --warning-soft: rgba(122, 90, 16, 0.12);
-    --error: #e08c7c; --error-ink: #a23b2c; --error-soft: rgba(162, 59, 44, 0.12);
-    --scrim: rgba(30, 25, 20, 0.35); --credit-chip: rgba(255, 255, 255, 0.6);
-    --shadow-card: 0 1px 2px rgba(40, 30, 20, 0.08), 0 4px 14px rgba(40, 30, 20, 0.07);
-    --shadow-pill: 0 1px 2px rgba(40, 30, 20, 0.12);
-    --shadow-float: 0 6px 24px rgba(40, 30, 20, 0.16);
-    --shadow-modal: 0 16px 48px rgba(40, 30, 20, 0.22);
-    --focus-ring: 0 0 0 2px var(--bg), 0 0 0 4px var(--acc-ink);
-    --hover-tint: rgba(35, 31, 26, 0.07); --press-tint: rgba(35, 31, 26, 0.14);
-    --mc-black: #000; --mc-dark_blue: #0000aa; --mc-dark_green: #00aa00; --mc-dark_aqua: #00aaaa; --mc-dark_red: #aa0000;
-    --mc-dark_purple: #aa00aa; --mc-gold: #b8860b; --mc-gray: #7a7a7a; --mc-dark_gray: #555; --mc-blue: #3c3cff; --mc-green: #2fa52f;
-    --mc-aqua: #1d9c9c; --mc-red: #d43a3a; --mc-light_purple: #c93cc9; --mc-yellow: #9a8400; --mc-white: #6a6a6a;
-  }
+/* ---- the realm scope. hooks.server.ts puts data-realm on <html> for a One Soul address and transition.ts
+   switches it on navigation; `.realm` gives any element the same scope (a preview, a card). */
+:root[data-realm="onesoul"],
+.realm {
+  --color-base: var(--realm-base);
+  --color-surface: var(--realm-surface);
+  --color-overlay: var(--realm-overlay);
+  --color-muted: var(--realm-muted); /* about 4.1:1 on realm-base: labels only */
+  --color-subtle: var(--realm-subtle);
+  --color-text: var(--realm-text);
+  --color-love: var(--realm-love); /* the dead, graves */
+  --color-gold: var(--realm-gold); /* the living soul */
+  --color-rose: var(--realm-rose);
+  --color-pine: var(--realm-pine); /* about 3.6:1: frames and large text only */
+  --color-foam: var(--realm-foam);
+  --color-iris: var(--realm-iris);
+  --color-highlight-low: var(--realm-highlight-low);
+  --color-highlight-med: var(--realm-highlight-med);
+  --color-highlight-high: var(--realm-highlight-high);
+  --ink-muted: rgba(235, 219, 178, 0.6);
+  --ink-hairline: rgba(235, 219, 178, 0.25);
+  --ink-track: rgba(235, 219, 178, 0.14);
+  --veil-heavy: rgba(40, 40, 40, 0.55);
+  --clearing-fill: rgba(40, 40, 40, 0.94);
+  --shadow-title: 8px 8px 0 #282828;
+  --shadow-art: 8px 8px 0 #282828;
 }
-:root[data-theme="light"] {
-  color-scheme: light;
-  --bg: #f5f2ec; --sunk: #ebe7df; --surface: #fffdf9; --raised: #efebe4;
-  --line: #d8d2c7; --line-soft: #e5e0d6;
-  --text: #231f1a; --muted: #5d574e; --faint: #78716a;
-  --acc: #7fc4d9; --acc-ink: #1f6a82; --acc-soft: rgba(31, 106, 130, 0.12); --acc-viz: #3a8aa6;
-  --acc-heat-1: #d3e8ef; --acc-heat-2: #a3cfdd; --acc-heat-3: #5fa9c3; --acc-heat-4: #1f6a82; --on-acc: #0d1b20;
-  --success: #86c3b2; --success-ink: #1f6b5c; --success-soft: rgba(31, 107, 92, 0.12);
-  --warning: #e2bb6e; --warning-ink: #7a5a10; --warning-soft: rgba(122, 90, 16, 0.12);
-  --error: #e08c7c; --error-ink: #a23b2c; --error-soft: rgba(162, 59, 44, 0.12);
-  --scrim: rgba(30, 25, 20, 0.35); --credit-chip: rgba(255, 255, 255, 0.6);
-  --shadow-card: 0 1px 2px rgba(40, 30, 20, 0.08), 0 4px 14px rgba(40, 30, 20, 0.07);
-  --shadow-pill: 0 1px 2px rgba(40, 30, 20, 0.12);
-  --shadow-float: 0 6px 24px rgba(40, 30, 20, 0.16);
-  --shadow-modal: 0 16px 48px rgba(40, 30, 20, 0.22);
-  --focus-ring: 0 0 0 2px var(--bg), 0 0 0 4px var(--acc-ink);
-  --hover-tint: rgba(35, 31, 26, 0.07); --press-tint: rgba(35, 31, 26, 0.14);
-  --mc-black: #000; --mc-dark_blue: #0000aa; --mc-dark_green: #00aa00; --mc-dark_aqua: #00aaaa; --mc-dark_red: #aa0000;
-  --mc-dark_purple: #aa00aa; --mc-gold: #b8860b; --mc-gray: #7a7a7a; --mc-dark_gray: #555; --mc-blue: #3c3cff; --mc-green: #2fa52f;
-  --mc-aqua: #1d9c9c; --mc-red: #d43a3a; --mc-light_purple: #c93cc9; --mc-yellow: #9a8400; --mc-white: #6a6a6a;
-}
+.realm { background: var(--color-base); color: var(--color-text); }

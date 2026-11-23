@@ -190,10 +190,10 @@ export const MAP_CHECKS: Check[] = [
         await ready(o.page);
         await o.page.waitForFunction(() => [...document.querySelectorAll<HTMLImageElement>(".mc__map img.leaflet-tile")].some((i) => i.complete && i.naturalWidth > 0), null, { timeout: 15_000 });
         const box = await o.page.evaluate(() => {
-          const area = document.querySelector(".fp-shell__scroll")!.getBoundingClientRect();
+          const area = document.querySelector(".fx-main")!.getBoundingClientRect();
           const stage = document.querySelector(".mc-stage")!.getBoundingClientRect();
-          const scroll = document.querySelector(".fp-shell__scroll")!;
-          return { area: [area.left, area.top, area.width, area.height], stage: [stage.left, stage.top, stage.width, stage.height], scrolls: scroll.scrollHeight > area.height + 1 || scroll.scrollWidth > area.width + 1, framed: !!document.querySelector(".fp-page") };
+          const d = document.documentElement;
+          return { area: [area.left, area.top, area.width, area.height], stage: [stage.left, stage.top, stage.width, stage.height], scrolls: d.scrollHeight > d.clientHeight + 1 || d.scrollWidth > d.clientWidth + 1, framed: !!document.querySelector(".fp-page") };
         });
         expect(box.area.every((v: number, i: number) => Math.abs(v - box.stage[i]) <= 1), `the map is ${box.stage.map(Math.round)} in an area of ${box.area.map(Math.round)}`);
         expect(!box.scrolls && !box.framed, "the map page scrolls or sits in a page frame");
@@ -464,7 +464,7 @@ export const MAP_CHECKS: Check[] = [
       const strip = (html: string, uuid: string) => html.replaceAll(uuid, "UUID").replace(/asOf:\d+/g, "asOf:0").replace(/\b1[0-9]{12}\b/g, "T");
       const [a, b] = await Promise.all([ctx.html(`/map/survival?follow=${QUIET}`), ctx.html(`/map/survival?follow=${NOBODY}`)]);
       expect(!a.includes(QUIET) && !b.includes(NOBODY), "the follow of someone who is not there stays in the page");
-      expect(!a.includes("fp-notice") && !b.includes("fp-notice"), "a Notice about someone the page must not know");
+      expect(!a.includes("fx-notice") && !b.includes("fx-notice"), "a Notice about someone the page must not know");
       const sa = strip(a, QUIET).match(/link:\{[^}]*\}/)?.[0];
       const sb = strip(b, NOBODY).match(/link:\{[^}]*\}/)?.[0];
       expect(sa === sb, `a hidden player and nobody differ in the page's link: ${sa} vs ${sb}`);
@@ -535,7 +535,7 @@ export const MAP_CHECKS: Check[] = [
       // not there: a Notice that says why, no chip
       const dace = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/.exec(await ctx.html("/players/Dace"))![0];
       const away = await ctx.html(`/map/survival?follow=${dace}`);
-      expect(/fp-notice/.test(away) && away.includes("Dace is offline"), "following an offline player shows no Notice");
+      expect(/fx-notice/.test(away) && away.includes("Dace is offline"), "following an offline player shows no Notice");
       const fin = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/.exec(await ctx.html("/players/Finnegan_B"))![0];
       const off = await ctx.html(`/map/creative?follow=${fin}`);
       expect(off.includes("Live positions are off on this server"), "following on a server with positions off does not say so");
@@ -577,10 +577,10 @@ export const MAP_CHECKS: Check[] = [
           await done.page.setViewportSize({ width, height: width < 600 ? 844 : 900 });
           await sleep(150);
           const fit = await done.page.evaluate(() => {
-            const area = document.querySelector(".fp-shell__scroll")!;
-            const a = area.getBoundingClientRect();
+            const a = document.querySelector(".fx-main")!.getBoundingClientRect();
             const s = document.querySelector(".mc-stage")!.getBoundingClientRect();
-            return { gap: Math.round(a.bottom - s.bottom), left: Math.round(s.left - a.left), right: Math.round(a.right - s.right), scrolls: area.scrollHeight > area.clientHeight + 1 };
+            const d = document.documentElement;
+            return { gap: Math.round(a.bottom - s.bottom), left: Math.round(s.left - a.left), right: Math.round(a.right - s.right), scrolls: d.scrollHeight > d.clientHeight + 1 };
           });
           expect(fit.gap === 0 && fit.left === 0 && fit.right === 0 && !fit.scrolls, `at ${width} px the round map leaves ${fit.gap} px under it, ${fit.left} and ${fit.right} px beside it${fit.scrolls ? ", and the page scrolls" : ""}`);
         }
@@ -628,17 +628,15 @@ export const MAP_CHECKS: Check[] = [
     }
   },
   {
-    name: "map at phone width, dark and light: popouts are sheets inside the screen, controls are finger-sized",
+    name: "map at phone width: popouts are sheets inside the screen, controls are finger-sized",
     on: ANY_MAP,
     run: async (ctx) => {
       const server = ctx.scenario === "busy" ? "survival" : (await mapServers(ctx))[0];
       if (!server) return "no server has a map";
-      const grounds: string[] = [];
-      for (const theme of ["dark", "light"] as const) {
+      for (const theme of ["dark"] as const) {
         const o = await ctx.open(`/map/${server}`, { width: 390, theme });
         try {
           await ready(o.page);
-          expect((await o.page.getAttribute("html", "data-theme")) === theme, `the ${theme} theme is not on <html>`);
           for (const label of ["Worlds", "Players", "Share"]) {
             await o.page.click(`summary[title="${label}"]`);
             const r = await o.page.evaluate(() => {
@@ -656,13 +654,11 @@ export const MAP_CHECKS: Check[] = [
             return out;
           });
           expect(look.chip !== "rgba(0, 0, 0, 0)" && look.chip !== look.ink, `${theme}: the popout chips have no surface (${look.chip} on ${look.ink})`);
-          grounds.push(`${look.ground}|${look.chip}`);
           quiet(o, `/map/${server} at 390 px, ${theme}`);
         } finally {
           await o.close();
         }
       }
-      expect(grounds[0] !== grounds[1], "dark and light look the same on the map");
       // a coarse pointer gets 44 px controls (the design system's rule)
       const touch = await ctx.open(`/map/${server}`, { width: 390, touch: true });
       try {

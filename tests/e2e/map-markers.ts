@@ -548,11 +548,11 @@ export const MARKER_CHECKS: Check[] = [
           expect(d.areas === 5 && d.pins === 3, `with cakeutils down the map draws ${JSON.stringify(d)}`);
           await o.page.click('summary[title="Places"]');
           const text: string = (await o.page.textContent(".mc-pop[open]")) ?? "";
-          expect(/could not be refreshed, as of \d{1,2}:\d{2}/.test(text) && (await o.page.$(".mc-pop[open] .fp-notice")) !== null, `Places with cakeutils down: ${text.slice(0, 200)}`);
+          expect(/could not be refreshed, as of \d{1,2}:\d{2}/.test(text) && (await o.page.$(".mc-pop[open] .fx-notice")) !== null, `Places with cakeutils down: ${text.slice(0, 200)}`);
           expect((await o.page.$$(".mc-pop[open] button[data-place]")).length === 8, "Places lost the last good list");
           // the time is when the list was last good, not when the page asked again (the page refetches as its stream opens)
           await sleep(1500);
-          const shown = /as of (\d{2}:\d{2}) UTC/.exec((await o.page.textContent(".mc-pop[open] .fp-notice")) ?? "")?.[1];
+          const shown = /as of (\d{2}:\d{2}) UTC/.exec((await o.page.textContent(".mc-pop[open] .fx-notice")) ?? "")?.[1];
           if (shown) expect(shown === new Date(lastGood).toISOString().slice(11, 16), `Places says "as of ${shown} UTC", the list was last good at ${new Date(lastGood).toISOString().slice(11, 16)}`);
           await o.page.locator('.mc-pop[open] button[data-place="5"]').click();
           await o.page.waitForSelector(".mc-mpop .mk-pop");
@@ -578,7 +578,7 @@ export const MARKER_CHECKS: Check[] = [
     }
   },
   {
-    name: "map markers render: labels are crisp at DPR 2; at 390 px, dark and light, Places and the popup fit and nothing scrolls sideways",
+    name: "map markers render: labels are crisp at DPR 2; at 390 px, Places and the popup fit and nothing scrolls sideways",
     on: ANY_MAP,
     run: async (ctx) => {
       let path = `${OW}&x=40&z=-50&zoom=4`;
@@ -622,7 +622,7 @@ export const MARKER_CHECKS: Check[] = [
       } finally {
         await crisp.close();
       }
-      for (const theme of ["dark", "light"] as const) {
+      for (const theme of ["dark"] as const) {
         const o = await ctx.open(path, { width: 390, theme, touch: true });
         try {
           await ready(o.page);

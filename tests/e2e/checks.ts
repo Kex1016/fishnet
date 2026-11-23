@@ -65,7 +65,7 @@ export const CHECKS: Check[] = [
         expect(feed.includes("Most firsts") && feed.includes("Most completed"), "the advancements page has no side boards");
         expect(feed.includes("Firsts per day"), "the advancements page has no firsts-per-day heatmap");
         if (ctx.scenario === "busy") expect(feed.includes("fp-plot__cell--"), "the firsts-per-day heatmap has no cells on the busy fixtures");
-        expect(!/Nobody has completed this yet/.test(await ctx.html("/advancements")) || feed.includes("fp-empty"), "contradictory empty state");
+        expect(!/Nobody has completed this yet/.test(await ctx.html("/advancements")) || /f[px]-empty/.test(feed), "contradictory empty state");
       }
       return ctx.scenario === "live" ? `advancements ${on ? "on" : "off"}` : undefined;
     }
@@ -218,14 +218,12 @@ export const CHECKS: Check[] = [
     }
   },
   {
-    name: "nothing scrolls sideways at 390 px, dark and light",
+    name: "nothing scrolls sideways at 390 px",
     on: ALL,
     run: async (ctx) => {
-      for (const theme of ["dark", "light"] as const) {
-        const c = await ctx.crawl(390, theme);
-        const bad = c.pages.filter((p) => p.overflow.length);
-        expect(bad.length === 0, `${theme}: ${bad.slice(0, 5).map((p) => `${p.url}: ${p.overflow[0]}`).join(" | ")}`);
-      }
+      const c = await ctx.crawl(390, "dark");
+      const bad = c.pages.filter((p) => p.overflow.length);
+      expect(bad.length === 0, bad.slice(0, 5).map((p) => `${p.url}: ${p.overflow[0]}`).join(" | "));
     }
   },
   {
@@ -238,16 +236,15 @@ export const CHECKS: Check[] = [
     }
   },
   {
-    name: "the theme follows the cookie and the system otherwise",
+    name: "one dark theme: no theme switch, the realm on One Soul pages only",
     on: ALL,
     run: async (ctx) => {
-      for (const theme of ["dark", "light"] as const) {
-        const html = await ctx.html("/", { theme });
-        expect(new RegExp(`<html[^>]*data-theme="${theme}"`).test(html), `theme cookie ${theme} not applied to <html>`);
-      }
-      const none = await ctx.html("/");
-      expect(!/<html[^>]*data-theme="(dark|light)"/.test(none), "a theme is forced without a cookie");
-      expect(/aria-label="[^"]*theme/i.test(none) || /ThemeToggle|fp-theme/.test(none), "no theme toggle in the shell");
+      const home = await ctx.html("/", { theme: "light" });
+      expect(!/<html[^>]*data-theme=/.test(home), "a theme attribute on <html>");
+      expect(!/aria-label="[^"]*theme/i.test(home), "a theme toggle in the shell");
+      expect(/<html[^>]*data-realm=""/.test(home), "the regular site is in a realm");
+      const soul = await ctx.get("/one-soul");
+      if (soul.status === 200) expect(/<html[^>]*data-realm="onesoul"/.test(await soul.text()), "the One Soul section is not in its realm");
     }
   },
   {
@@ -271,7 +268,7 @@ export const CHECKS: Check[] = [
       // a stat nobody recorded is "nobody yet", never an error page
       const r = await ctx.get("/leaderboards/mined:minecraft:stone");
       expect(r.status === 200, `an unrecorded stat board answered ${r.status}`);
-      expect((await r.text()).includes("fp-empty"), "an unrecorded stat board has no empty state");
+      expect(/f[px]-empty/.test(await r.text()), "an unrecorded stat board has no empty state");
     }
   },
   {
@@ -363,8 +360,8 @@ export const CHECKS: Check[] = [
     run: async (ctx) => {
       for (const p of ["/firsts", "/advancements"]) {
         const html = await ctx.html(p);
-        const slots = (html.match(/class="fp-slot"/g) ?? []).length;
-        const pictures = (html.match(/class="fp-slot"[^>]*>(?:<!--[^>]*-->)*<img src="\/img\/icon\/[0-9a-f]+\.png"/g) ?? []).length;
+        const slots = (html.match(/class="fx-slot[^"]*"/g) ?? []).length;
+        const pictures = (html.match(/class="fx-slot[^"]*"[^>]*>(?:<!--[^>]*-->)*<img src="\/img\/icon\/[0-9a-f]+\.png"/g) ?? []).length;
         expect(slots >= 5, `${p} has ${slots} picture slots`);
         expect(pictures >= 5, `${p} shows ${pictures} pictures in ${slots} slots`);
       }
@@ -408,7 +405,7 @@ export const CHECKS: Check[] = [
         expect(statuses.includes(r.status), `${p} answered ${r.status}`);
         const body = await r.text();
         expect(!body.includes("Something went wrong"), `${p} shows the error page`);
-        if (text) expect(body.includes(text), `${p} does not say "${text}"`);
+        if (text) expect(text === "fp-empty" ? /f[px]-empty/.test(body) : body.includes(text), `${p} does not say "${text}"`);
       }
     }
   },

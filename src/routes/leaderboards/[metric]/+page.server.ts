@@ -84,6 +84,7 @@ export const load: PageServerLoad = async ({ params, url }) => {
   const servers = network.ok ? network.data.servers : [];
   const miniList = scopeMinis(scope, minis.ok ? minis.data.mini_servers.map((m) => ({ server: m.server, id: m.id, display_name: m.display_name })) : []);
   const head = {
+    id: params.metric,
     title,
     crumbs: [{ label: "Leaderboards", href: "/leaderboards" }, { label: title }],
     kicker,

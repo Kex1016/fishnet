@@ -5,6 +5,7 @@ import { boardHref, metricKey, type Metric } from "#lib/api/metric.ts";
 import type { Scope } from "#lib/api/scope.ts";
 import type { LeaderboardEntry } from "#lib/api/types.ts";
 import { playerHref, playerRowLabel } from "#lib/players/names.ts";
+import type { RankRow } from "#lib/design/types.ts";
 
 export type FeaturedBoard = {
   /** URL segment under /leaderboards and the key the recorder stores it under */
@@ -99,4 +100,23 @@ export function compositeHref(b: CompositeBoard, scope?: Scope | string): string
 /** Board entries as the rows a BarList takes: every entry, or the first `limit`. */
 export function barRows(entries: LeaderboardEntry[], limit = entries.length) {
   return entries.slice(0, limit).map((e) => ({ rank: e.rank, key: e.uuid, uuid: e.uuid, label: playerRowLabel(e), v: e.value, display: e.display, href: playerHref(e) }));
+}
+
+/**
+ * Board entries as RankList rows. The bar is the share of the leader's value inside this one board (one
+ * scope, never added across scopes); `leader` is the value the widest bar stands for, the first entry's
+ * by default. `current` marks the row the page is about.
+ */
+export function rankRows(entries: LeaderboardEntry[], opts: { limit?: number; leader?: number; current?: string } = {}): RankRow[] {
+  const top = opts.leader ?? entries[0]?.value ?? 0;
+  return entries.slice(0, opts.limit ?? entries.length).map((e) => ({
+    key: e.uuid,
+    rank: e.rank,
+    label: playerRowLabel(e),
+    href: playerHref(e),
+    uuid: e.uuid,
+    share: top > 0 ? e.value / top : 0,
+    value: e.display,
+    current: opts.current !== undefined && e.uuid === opts.current
+  }));
 }

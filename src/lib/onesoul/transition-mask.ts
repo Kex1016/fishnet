@@ -55,3 +55,12 @@ export function litCells(grid: MaskGrid, t: number, band: number = REALM_TRANSIT
 export function maskFrames(grid: MaskGrid, frames: number = REALM_TRANSITION_FRAMES): Uint8Array[] {
   return Array.from({ length: frames }, (_, i) => litCells(grid, frameProgress(i, frames)));
 }
+
+/** The frames sit on one sprite sheet, this many to a row (3 × 4 for 12 frames keeps both sides of the
+    scaled sheet near a screen's size times four). */
+export const SHEET_COLUMNS = 3;
+
+/** Where frame `i` sits on the sheet. */
+export function sheetCell(i: number, columns: number = SHEET_COLUMNS): { col: number; row: number } {
+  return { col: i % columns, row: Math.floor(i / columns) };
+}

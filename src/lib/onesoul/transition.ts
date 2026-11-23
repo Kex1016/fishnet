@@ -4,18 +4,18 @@
 // - With the View Transitions API: the new realm grows over the old one in a dithered circle from where the
 //   visitor clicked (or from the middle of the link activated by keyboard; the middle of the screen for back
 //   and forward). 8px cells, a 4x4 Bayer edge, 12 frames in one second: the circle steps, it never glides.
-//   The frames are a mask on `::view-transition-new(root)`, drawn on a canvas one pixel per cell before the
-//   transition starts and played by one animation with stepped keyframes, so the browser keeps the time and
-//   the transition ends with it. A new navigation during the reveal skips the old one (the browser does
+//   The frames are a mask on `::view-transition-new(root)`: one sprite sheet, drawn on a canvas one pixel per
+//   cell and decoded before the transition starts, and one animation that steps its position, so the browser
+//   keeps the time and the transition ends with it. The image never changes during the reveal. A new navigation during the reveal skips the old one (the browser does
 //   that); the reveal never takes pointer input (base.css: `::view-transition { pointer-events: none }`).
 // - prefers-reduced-motion: reduce, no View Transitions or no CSS masks: the realm swaps in one frame.
 // Same-realm navigations are untouched. The numbers live in src/lib/design/dither.ts (REALM_TRANSITION) and
 // the --realm-transition-* tokens; the cells per frame in transition-mask.ts.
 import { afterNavigate, onNavigate } from "$app/navigation";
 import { onMount } from "svelte";
-import { REALM_TRANSITION } from "#lib/design/dither.ts";
+import { REALM_TRANSITION, REALM_TRANSITION_FRAMES } from "#lib/design/dither.ts";
 import { realmOf, type RealmName } from "./realm.ts";
-import { maskFrames, maskGrid, type MaskGrid, type Point } from "./transition-mask.ts";
+import { SHEET_COLUMNS, maskFrames, maskGrid, sheetCell, type MaskGrid, type Point } from "./transition-mask.ts";
 
 type StartVT = (cb: () => Promise<void> | void) => { ready: Promise<void>; finished: Promise<void>; skipTransition(): void };
 
@@ -50,32 +50,55 @@ function setRealm(r: RealmName): void {
 
 const reduced = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-/** The frames as images, one pixel per cell: opaque where the new realm shows. Empty without a 2D canvas. */
-function frameImages(grid: MaskGrid): string[] {
+/** Every frame on one sprite sheet, one pixel per cell: opaque where the new realm shows. Null without a 2D
+    canvas. One image for the whole transition: swapping a mask image per frame lets a browser paint a frame
+    before the next image has loaded, and the screen then flickers between the realms (seen in Firefox). */
+function frameSheet(grid: MaskGrid): string | null {
+  const frames = maskFrames(grid);
   const cv = document.createElement("canvas");
-  cv.width = grid.cols;
-  cv.height = grid.rows;
+  cv.width = grid.cols * SHEET_COLUMNS;
+  cv.height = grid.rows * Math.ceil(frames.length / SHEET_COLUMNS);
   const ctx = cv.getContext("2d");
-  if (!ctx) return [];
+  if (!ctx) return null;
   const img = ctx.createImageData(grid.cols, grid.rows);
-  return maskFrames(grid).map((lit) => {
-    for (let i = 0; i < lit.length; i++) img.data[i * 4 + 3] = lit[i] ? 255 : 0;
-    ctx.putImageData(img, 0, 0);
-    return cv.toDataURL("image/png");
+  frames.forEach((lit, i) => {
+    for (let c = 0; c < lit.length; c++) img.data[c * 4 + 3] = lit[c] ? 255 : 0;
+    const at = sheetCell(i);
+    ctx.putImageData(img, at.col * grid.cols, at.row * grid.rows);
   });
+  return cv.toDataURL("image/png");
 }
 
-/** One keyframe per frame, each held until the next (step-end); the cells scale up to 8px without smoothing. */
-function keyframes(grid: MaskGrid, images: string[]): Keyframe[] {
+/** One keyframe per frame, each held until the next (step-end): the sheet stays, its position steps. The cells
+    scale up to 8px without smoothing. */
+function keyframes(grid: MaskGrid, sheet: string, frames: number): Keyframe[] {
+  const w = grid.cols * grid.cell;
+  const h = grid.rows * grid.cell;
   const fixed = {
-    maskSize: `${grid.cols * grid.cell}px ${grid.rows * grid.cell}px`,
+    maskImage: `url("${sheet}")`,
+    maskSize: `${w * SHEET_COLUMNS}px ${h * Math.ceil(frames / SHEET_COLUMNS)}px`,
     maskRepeat: "no-repeat",
-    maskPosition: "0 0",
     imageRendering: "pixelated"
   };
-  const frames: Keyframe[] = images.map((src, i) => ({ ...fixed, offset: i / images.length, easing: "step-end", maskImage: `url("${src}")` }));
-  frames.push({ ...fixed, offset: 1, maskImage: `url("${images[images.length - 1]}")` });
-  return frames;
+  const at = (i: number) => {
+    const c = sheetCell(i);
+    return `${-c.col * w}px ${-c.row * h}px`;
+  };
+  const out: Keyframe[] = Array.from({ length: frames }, (_, i) => ({ ...fixed, offset: i / frames, easing: "step-end", maskPosition: at(i) }));
+  out.push({ ...fixed, offset: 1, maskPosition: at(frames - 1) });
+  return out;
+}
+
+/** The sheet, decoded, before the transition starts: its first frame never waits on the image. */
+async function loaded(src: string): Promise<HTMLImageElement | null> {
+  const img = new Image();
+  img.src = src;
+  try {
+    await img.decode();
+    return img;
+  } catch {
+    return null;
+  }
 }
 
 /** Call once from the root layout's script (component init). */
@@ -97,32 +120,50 @@ export function installRealmTransition(): void {
     const vtApi = (document as { startViewTransition?: StartVT }).startViewTransition;
     const start = typeof vtApi === "function" ? vtApi.bind(document) : null;
     const grid = maskGrid(innerWidth, innerHeight, at);
-    const images = start && !reduced() && CSS.supports("mask-image", "url(a.png)") ? frameImages(grid) : [];
-    if (!start || images.length === 0) {
+    const sheet = start && !reduced() && CSS.supports("mask-image", "url(a.png)") ? frameSheet(grid) : null;
+    if (!start || !sheet) {
       // one frame: the new page and its realm arrive together
       nav.complete.then(() => setRealm(to), () => undefined);
       return;
     }
 
     const root = document.documentElement;
+    const target: RealmName = to;
+    const begin: StartVT = start;
+    const src: string = sheet;
     root.classList.add("realm-vt");
 
     return new Promise<void>((resolve) => {
-      const vt = start(async () => {
-        resolve();
-        await nav.complete;
-        setRealm(to);
-      });
-      vt.ready
-        .then(() => {
-          root.animate(keyframes(grid, images), {
-            duration: REALM_TRANSITION.durationMs,
-            easing: "linear",
-            pseudoElement: "::view-transition-new(root)"
-          });
-        })
-        .catch(() => undefined);
-      vt.finished.finally(() => root.classList.remove("realm-vt")).catch(() => undefined);
+      void run();
+      async function run(): Promise<void> {
+        const img = await loaded(src);
+        if (!img) {
+          root.classList.remove("realm-vt");
+          resolve();
+          nav.complete.then(() => setRealm(target), () => undefined);
+          return;
+        }
+        const vt = begin(async () => {
+          resolve();
+          await nav.complete;
+          setRealm(target);
+        });
+        vt.ready
+          .then(() => {
+            root.animate(keyframes(grid, src, REALM_TRANSITION_FRAMES), {
+              duration: REALM_TRANSITION.durationMs,
+              easing: "linear",
+              pseudoElement: "::view-transition-new(root)"
+            });
+          })
+          .catch(() => undefined);
+        vt.finished
+          .finally(() => {
+            root.classList.remove("realm-vt");
+            img.src = ""; // the decoded sheet stays referenced (and cached) until the end
+          })
+          .catch(() => undefined);
+      }
     });
   });
 }

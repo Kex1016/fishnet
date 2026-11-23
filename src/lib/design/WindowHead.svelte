@@ -1,5 +1,5 @@
 <script lang="ts">
-  // The heading line of a window: the heading on the left (Jacquard 24, foam), a small "as of" or count on
+  // The heading line of a window: the heading on the left (IBM VGA, upper case, foam), a small "as of" or count on
   // the right. `asof` is plain text; pass children instead for markup (an <AsOf>, a number in .num).
   import type { Snippet } from "svelte";
   let {

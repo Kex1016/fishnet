@@ -41,7 +41,8 @@
 /* ---- window extras */
 .fx .window > .content { padding: 14px 12px 12px; }
 .fx-wh { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 8px 16px; margin-bottom: 12px; }
-.fx-wh h2, .fx-wh h3 { margin: 0; font-size: 14px; font-weight: 400; text-transform: uppercase; letter-spacing: 0.08em; color: var(--color-foam); }
+.fx-wh h2, .fx-wh h3 { margin: 0; font-size: 16px; font-weight: 400; text-transform: uppercase; letter-spacing: 0.08em; color: var(--color-foam); }
+.fx-wh h3 { font-size: 14px; }
 .fx-wh .asof { font-size: 12px; color: var(--ink-muted); white-space: normal; } /* a long sub line wraps under the title */
 .asof { font-size: 12px; color: var(--ink-muted); white-space: nowrap; } /* site: AsOf anywhere */
 .fx .asof.stale { color: var(--color-gold); } /* site: the last good answer, cakeutils is down */
@@ -130,7 +131,7 @@ a.fx-player:hover > .who { color: var(--color-foam); }
 .fx-steps { display: flex; align-items: flex-end; gap: 0; height: 120px; border-bottom: 1px solid var(--ink-hairline); }
 .fx-steps > i { flex: 1 1 0; border-top: 4px solid var(--color-foam); background: var(--ink-track); }
 .fx-read { display: flex; flex-wrap: wrap; gap: 4px 16px; align-items: baseline; margin-bottom: 10px; }
-.fx-read .big { font-size: 32px; }
+.fx-read .big, .fx-pos-big { font-size: 32px; line-height: 1; }
 .fx-read .cap { margin: 0; }
 
 /* ---- heatmap: lightness steps from overlay to text */
@@ -234,23 +235,14 @@ a.fx-player:hover > .who { color: var(--color-foam); }
 .fx-head > .seg { align-self: flex-start; flex-wrap: wrap; max-width: 100%; }
 .fx-main > .stat-panel { background: var(--color-surface); }
 
-/* ---- Jacquard 24 beyond the page title: the wordmark, window headings, the living soul and big readouts.
-   It is a display face: 28px and up only, never for labels, body or tables. */
-.fx .fx-head .title, .fx .fx-brand, .fx .fx-wh h2, .fx .fx-wh h3, .fx .fx-soul .name, .fx .fx-read .big, .fx .fx-tiles .kv_value, .fx .fx-side .lab, .fx .fx-pos-big { font-family: var(--font-display) !important; font-weight: 400 !important; }
+/* ---- Jacquard 24 is for the page title and the lede's drop cap, nothing else. Window headings, the
+   wordmark, readouts, tile values and nav labels are IBM VGA: its own sizes are 16px and 32px. */
+.fx .fx-head .title { font-family: var(--font-display) !important; font-weight: 400 !important; }
 /* a title is as large as its words allow: PageHead gives its width in em (--fx-title-em), the shell the room */
 .fx .fx-head .title { font-size: clamp(48px, calc(var(--fx-main-w) / var(--fx-title-em, 4)), 168px); line-height: 0.9; letter-spacing: 0.01em; }
-.fx .fx-brand { font-size: 44px; line-height: 1; letter-spacing: 0.02em; }
-.fx .fx-wh { margin-bottom: 16px; }
-.fx .fx-wh h2 { font-size: 52px; line-height: 0.95; text-transform: none; letter-spacing: 0.01em; color: var(--color-foam); }
-.fx .fx-wh h3 { font-size: 38px; line-height: 1; text-transform: none; letter-spacing: 0.01em; color: var(--color-foam); }
 .fx .fx-wh h2 a, .fx .fx-wh h3 a { text-decoration: none; }
 .fx .fx-wh h2 a:hover, .fx .fx-wh h3 a:hover { color: var(--color-text); }
-.fx .fx-side .lab { font-size: 30px; line-height: 1; letter-spacing: 0.02em; color: var(--color-iris); padding-top: 18px; }
-.fx .fx-soul .name { font-size: 104px; line-height: 0.9; }
-.fx .fx-read .big { font-size: 64px; line-height: 0.9; }
-.fx .fx-pos-big { font-size: 64px; line-height: 0.9; }
-.fx .fx-tiles .kv_value { font-size: 52px; line-height: 0.95; }
-.fx .fx-tiles .kv_value small { font-family: var(--font-mono) !important; }
+.fx .fx-side .lab { color: var(--color-iris); }
 .fx-head .lede::first-letter { font-family: var(--font-display); font-size: 48px; line-height: 0.8; color: var(--color-gold); }
 
 /* ---- tables, the catalogue, prose */
@@ -274,11 +266,13 @@ a.fx-player:hover > .who { color: var(--color-foam); }
 .fx-prose a { color: var(--color-foam); }
 .hide-desk { display: none; }
 
-/* ---- site: the skip link, the menu drawer and its veil */
+/* ---- site: the skip link, the menu drawer and its veil. The veil and the drawer are both inside .fx-body
+   (one stacking context), the page in its own under them, so the drawer is always the top layer. */
+.fx-main { isolation: isolate; }
 .fx-skip { position: absolute; left: 8px; top: -100px; z-index: 40; }
 .fx-skip:focus { top: 8px; }
 .fx-scrim { display: none; }
-.fx.fx-open > .fx-scrim { display: block; position: fixed; inset: var(--bar-height) 0 0 0; z-index: 20; border: 0; padding: 0; cursor: default; background-color: var(--veil-heavy); background-image: conic-gradient(var(--color-base) 25%, transparent 0 50%, var(--color-base) 0 75%, transparent 0); background-size: 4px 4px; }
+.fx.fx-open .fx-scrim { display: block; position: fixed; inset: var(--bar-height) 0 0 0; z-index: 20; border: 0; padding: 0; cursor: default; background-color: var(--veil-heavy); background-image: conic-gradient(var(--color-base) 25%, transparent 0 50%, var(--color-base) 0 75%, transparent 0); background-size: 4px 4px; }
 .fx.fx-open .fx-side { display: block; position: fixed; top: var(--bar-height); left: 0; bottom: 0; z-index: 21; width: min(300px, calc(100vw - 48px)); padding: 16px 12px 24px; overflow-y: auto; background: var(--color-base); border-right: var(--border-divider) solid var(--color-overlay); }
 
 /* ---- site: the stage mode. A page whose content is a stage (the map) gets the bar and nothing else: no
@@ -315,12 +309,6 @@ a.fx-player:hover > .who { color: var(--color-foam); }
   .fx-body { padding: 24px 16px 64px; gap: 24px; }
   .fx-main { gap: 36px; }
   .fx .fx-head .title { font-size: clamp(40px, calc(var(--fx-main-w) / var(--fx-title-em, 4)), 96px); }
-  .fx .fx-brand { font-size: 38px; }
-  .fx .fx-wh h2 { font-size: 40px; }
-  .fx .fx-wh h3 { font-size: 32px; }
-  .fx .fx-soul .name { font-size: 64px; }
-  .fx .fx-read .big, .fx .fx-pos-big { font-size: 48px; }
-  .fx .fx-tiles .kv_value { font-size: 38px; }
   .fx-grid, .fx-grid.three, .fx-grid.wide { grid-template-columns: minmax(0, 1fr); gap: 36px; }
   .fx-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .fx-tiles > div, .fx-tiles > a { padding: 12px; }

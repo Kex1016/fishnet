@@ -248,6 +248,45 @@ export const CHECKS: Check[] = [
     }
   },
   {
+    name: "the menu's links can be clicked: the drawer at 390, the rail and a stage page's drawer at 1440",
+    on: ALL,
+    run: async (ctx) => {
+      const link = '#site-nav a.li[href="/players"]';
+      const go = async (path: string, width: number, drawer: boolean) => {
+        const o = await ctx.open(path, { width, touch: width < 600 });
+        const at = `${path} at ${width}`;
+        try {
+          if (drawer) {
+            await o.page.click(".fx-menu");
+            expect((await o.page.locator(".fx.fx-open").count()) === 1, `${at}: the menu button did not open the drawer`);
+          }
+          // what a click on the middle of the link would land on: the link itself, never the veil or the page
+          const over = await o.page.evaluate((sel: string) => {
+            const a = document.querySelector(sel);
+            if (!a) return "no Players link";
+            const r = a.getBoundingClientRect();
+            const el = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+            return el && a.contains(el) ? "" : `${el ? `${el.tagName.toLowerCase()}.${el.className}` : "nothing"} is over the Players link`;
+          }, link);
+          expect(over === "", `${at}: ${over}`);
+          await o.page.click(link, { timeout: 5_000 });
+          await o.page.waitForURL((u: URL) => u.pathname === "/players", { timeout: 10_000 });
+          expect((await o.page.locator(".fx.fx-open").count()) === 0, `${at}: the drawer stayed open after the click`);
+        } finally {
+          await o.close();
+        }
+      };
+      await go("/", 390, true);
+      await go("/", 1440, false);
+      // a stage page (the map) has no rail: at any width the menu button opens the drawer over the stage
+      const map = await ctx.get("/map");
+      const stage = map.status === 200 ? (/^\/map\/[^/]+$/.test(new URL(map.url).pathname) ? new URL(map.url).pathname : (/href="(\/map\/[A-Za-z0-9._-]+)"/.exec(await map.text())?.[1] ?? null)) : null;
+      if (!stage) return "no map on this network: the stage drawer was not checked";
+      await go(stage, 1440, true);
+      await go(stage, 390, true);
+    }
+  },
+  {
     name: "a fresh network shows every empty state on purpose",
     on: ["fresh"],
     run: async (ctx) => {

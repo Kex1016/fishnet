@@ -68,13 +68,10 @@ a.fx-tile:hover { background: var(--color-overlay); }
 .fx-tile .kv_value { font-size: 32px; }
 .fx-tile .kv_value small { margin-left: 6px; font-size: 16px; color: var(--color-subtle); }
 .fx-tile .note { font-size: 12px; color: var(--color-subtle); }
-.fx .fx-tile .kv_value { font-family: var(--font-display) !important; font-weight: 400 !important; font-size: 52px; line-height: 0.95; }
-.fx .fx-tile .kv_value small { font-family: var(--font-mono) !important; font-size: 16px; }
 .fx-tile-spark { display: block; margin-top: auto; padding-top: 6px; }
 .fx-tile-spark .spark.sized { width: 100%; }
 @media (max-width: 720px) {
   .fx-tile { padding: 12px; }
-  .fx .fx-tile .kv_value { font-size: 38px; }
 }
 
 /* legends wrap between entries, never inside one */

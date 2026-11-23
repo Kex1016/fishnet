@@ -1,5 +1,5 @@
 <script lang="ts">
-  // A number that is the point: a hairline tile with a label, the value in Jacquard 24, a note and an optional
+  // A number that is the point: a hairline tile with a label, the value at 32px, a note and an optional
   // sparkline of squares. Put tiles in `<div class="stat-panel fx-tiles">`; a tile also stands alone.
   import type { StatTileProps } from "./types.ts";
   import Sparkline from "./Sparkline.svelte";

@@ -32,13 +32,13 @@
   </Window>
 
   <Window path="~/design/type">
-    <WindowHead title="Type" asof="IBM VGA 8x16, Jacquard 24 at 28px and up, Unifont behind both" />
+    <WindowHead title="Type" asof="IBM VGA 8x16, Jacquard 24 for the page title and the drop cap, Unifont behind both" />
     <div class="fx-stack">
       <PromptLine cmd="cat" args="network.md" />
       <p>Body text is IBM VGA at 16px. <b>Bold is the 2x face.</b> Characters it does not have come from Unifont: ★ – … ‹ › ő 魚.</p>
       <p class="c4">Narration is rose.</p>
       <p><span class="lab">a label</span> <span class="num">1,234,567</span> <span class="cap">a caption</span> <span class="kbd">Esc</span> <span class="chip">chip</span> <span class="chip on">chip on</span> <span class="badge">badge</span></p>
-      <div class="fx-read"><span class="big num">23</span><span class="cap">a big readout in Jacquard 24</span></div>
+      <div class="fx-read"><span class="big num">23</span><span class="cap">a big readout at 32px</span></div>
     </div>
   </Window>
 

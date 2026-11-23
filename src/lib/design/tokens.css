@@ -45,7 +45,7 @@
   --realm-highlight-med: #504945;
   --realm-highlight-high: #665c54;
 
-  /* ---- type: IBM VGA 8x16 for everything (bold is its 2x face), Jacquard 24 for display at 28px and up,
+  /* ---- type: IBM VGA 8x16 for everything (bold is its 2x face), Jacquard 24 for the page title and the drop cap only,
      GNU Unifont behind both (fonts.css) */
   --font-mono: IBM, Unifont, "Unifont Upper", ui-monospace, monospace;
   --font-display: "Jacquard 24", IBM, Unifont, "Unifont Upper", serif;

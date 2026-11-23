@@ -22,7 +22,7 @@ export const load: PageServerLoad = async () => {
             faces: here.slice(0, FACES).map((p) => ({ uuid: p.uuid, name: p.name })),
             more: Math.max(0, s.online - Math.min(here.length, FACES)),
             // public mini-servers running on this server right now (a private one never shows, API §2.3)
-            minis: minis.ok ? minis.data.mini_servers.filter((m) => m.server === s.id && m.public).length : null,
+            minis: minis.ok ? minis.data.mini_servers.filter((m) => m.server === s.id && m.public).map((m) => ({ id: m.id, name: m.display_name, count: m.player_count })) : [],
             spark
           };
         })

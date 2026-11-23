@@ -36,7 +36,7 @@
   <div class="fx-grid">
     {#each data.cards as b (b.id)}
       {@const r = b.result}
-      <Window path="~/leaderboards/{b.id}" args={data.scope === "network" ? undefined : `--scope ${data.scope}`} tag="section" label={b.label}>
+      <Window path="~/leaderboards/{b.id}" tag="section" label={b.label}>
         {#if r.ok}
           <WindowHead title={b.label} href={b.href} level={2}>
             {#if r.stale}<AsOf at={r.asOf} stale />{:else if r.data.entries.length}<span class="num">top {r.data.entries.length} of {group(r.data.total)}</span>{/if}

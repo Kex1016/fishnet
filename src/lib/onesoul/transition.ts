@@ -1,41 +1,82 @@
-// The animated switch between the two realms (WEBSITE-BRIEF §4), for the browser.
+// The switch between the two realms (David, 23 Nov 2026; the "Transition" board of the haiiro canvas), in the
+// browser.
 //
-// - With the View Transitions API: the new realm is revealed by a circle that grows from where the visitor
-//   clicked (or from the link that was activated by keyboard), 450 ms. Both directions. A new navigation
-//   during the reveal skips the old transition (the browser does that); the reveal never takes pointer
-//   input (realm.css sets `::view-transition { pointer-events: none }`).
-// - Without it: the registered colour tokens interpolate (realm.css `@property` + transition), 400 ms.
-// - prefers-reduced-motion: reduce: no growth and no movement: a 150 ms cross-fade with the API, an instant
-//   swap without it.
-// Same-realm navigations are untouched.
-import { onNavigate } from "$app/navigation";
+// - With the View Transitions API: the new realm grows over the old one in a dithered circle from where the
+//   visitor clicked (or from the middle of the link activated by keyboard; the middle of the screen for back
+//   and forward). 8px cells, a 4x4 Bayer edge, 12 frames in one second: the circle steps, it never glides.
+//   The frames are a mask on `::view-transition-new(root)`, drawn on a canvas one pixel per cell before the
+//   transition starts and played by one animation with stepped keyframes, so the browser keeps the time and
+//   the transition ends with it. A new navigation during the reveal skips the old one (the browser does
+//   that); the reveal never takes pointer input (base.css: `::view-transition { pointer-events: none }`).
+// - prefers-reduced-motion: reduce, no View Transitions or no CSS masks: the realm swaps in one frame.
+// Same-realm navigations are untouched. The numbers live in src/lib/design/dither.ts (REALM_TRANSITION) and
+// the --realm-transition-* tokens; the cells per frame in transition-mask.ts.
+import { afterNavigate, onNavigate } from "$app/navigation";
 import { onMount } from "svelte";
+import { REALM_TRANSITION } from "#lib/design/dither.ts";
 import { realmOf, type RealmName } from "./realm.ts";
+import { maskFrames, maskGrid, type MaskGrid, type Point } from "./transition-mask.ts";
 
 type StartVT = (cb: () => Promise<void> | void) => { ready: Promise<void>; finished: Promise<void>; skipTransition(): void };
 
-let origin: { x: number; y: number } | null = null;
+/** A click older than this is not the one that started the navigation (back and forward have none). */
+const ORIGIN_MS = 2000;
 
-function remember(e: Event): void {
-  if (e instanceof PointerEvent || e instanceof MouseEvent) {
-    if (e.clientX || e.clientY) {
-      origin = { x: e.clientX, y: e.clientY };
-      return;
-    }
+let origin: { at: number; point: Point } | null = null;
+
+function remember(e: MouseEvent): void {
+  // a pointer click has a position; a keyboard activation (detail 0) takes the middle of its link or button
+  if (e.detail > 0) {
+    origin = { at: performance.now(), point: { x: e.clientX, y: e.clientY } };
+    return;
   }
-  // keyboard activation: the middle of the element
   const el = e.target instanceof Element ? e.target.closest("a, button") : null;
-  if (el) {
-    const r = el.getBoundingClientRect();
-    origin = { x: r.left + r.width / 2, y: r.top + r.height / 2 };
-  }
+  if (!el) return;
+  const r = el.getBoundingClientRect();
+  origin = { at: performance.now(), point: { x: r.left + r.width / 2, y: r.top + r.height / 2 } };
+}
+
+function takeOrigin(): Point {
+  const o = origin;
+  origin = null;
+  if (o && performance.now() - o.at < ORIGIN_MS) return o.point;
+  return { x: innerWidth / 2, y: innerHeight / 2 };
 }
 
 function setRealm(r: RealmName): void {
-  document.documentElement.dataset.realm = r;
+  const root = document.documentElement;
+  if ((root.dataset.realm ?? "") !== r) root.dataset.realm = r;
 }
 
 const reduced = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+/** The frames as images, one pixel per cell: opaque where the new realm shows. Empty without a 2D canvas. */
+function frameImages(grid: MaskGrid): string[] {
+  const cv = document.createElement("canvas");
+  cv.width = grid.cols;
+  cv.height = grid.rows;
+  const ctx = cv.getContext("2d");
+  if (!ctx) return [];
+  const img = ctx.createImageData(grid.cols, grid.rows);
+  return maskFrames(grid).map((lit) => {
+    for (let i = 0; i < lit.length; i++) img.data[i * 4 + 3] = lit[i] ? 255 : 0;
+    ctx.putImageData(img, 0, 0);
+    return cv.toDataURL("image/png");
+  });
+}
+
+/** One keyframe per frame, each held until the next (step-end); the cells scale up to 8px without smoothing. */
+function keyframes(grid: MaskGrid, images: string[]): Keyframe[] {
+  const fixed = {
+    maskSize: `${grid.cols * grid.cell}px ${grid.rows * grid.cell}px`,
+    maskRepeat: "no-repeat",
+    maskPosition: "0 0",
+    imageRendering: "pixelated"
+  };
+  const frames: Keyframe[] = images.map((src, i) => ({ ...fixed, offset: i / images.length, easing: "step-end", maskImage: `url("${src}")` }));
+  frames.push({ ...fixed, offset: 1, maskImage: `url("${images[images.length - 1]}")` });
+  return frames;
+}
 
 /** Call once from the root layout's script (component init). */
 export function installRealmTransition(): void {
@@ -44,45 +85,44 @@ export function installRealmTransition(): void {
     return () => document.removeEventListener("click", remember, { capture: true });
   });
 
+  // whatever happened on the way (a cancelled navigation, an error page), the realm ends up where the page is
+  afterNavigate(() => setRealm(realmOf(location.pathname)));
+
   onNavigate((nav) => {
     const to = nav.to ? realmOf(nav.to.url.pathname) : null;
     const from = (document.documentElement.dataset.realm ?? "") as RealmName;
-    if (to === null || to === from) return;
+    const at = takeOrigin();
+    if (to === null || to === from || nav.willUnload) return;
 
-    const start = (document as Document & { startViewTransition?: StartVT }).startViewTransition?.bind(document);
-    if (!start) {
-      // the tokens interpolate on their own (realm.css); reduced motion makes that instant
+    const vtApi = (document as { startViewTransition?: StartVT }).startViewTransition;
+    const start = typeof vtApi === "function" ? vtApi.bind(document) : null;
+    const grid = maskGrid(innerWidth, innerHeight, at);
+    const images = start && !reduced() && CSS.supports("mask-image", "url(a.png)") ? frameImages(grid) : [];
+    if (!start || images.length === 0) {
+      // one frame: the new page and its realm arrive together
       nav.complete.then(() => setRealm(to), () => undefined);
       return;
     }
 
     const root = document.documentElement;
-    const calm = reduced();
-    const at = origin ?? { x: innerWidth / 2, y: 0 };
-    origin = null;
-    root.classList.add(calm ? "realm-vt-fade" : "realm-vt");
+    root.classList.add("realm-vt");
 
     return new Promise<void>((resolve) => {
       const vt = start(async () => {
         resolve();
-        try {
-          await nav.complete;
-        } finally {
-          setRealm(to);
-        }
+        await nav.complete;
+        setRealm(to);
       });
-      if (!calm) {
-        vt.ready
-          .then(() => {
-            const r = Math.hypot(Math.max(at.x, innerWidth - at.x), Math.max(at.y, innerHeight - at.y));
-            root.animate(
-              { clipPath: [`circle(0px at ${at.x}px ${at.y}px)`, `circle(${r}px at ${at.x}px ${at.y}px)`] },
-              { duration: 450, easing: "cubic-bezier(0.3, 0.7, 0.1, 1)", pseudoElement: "::view-transition-new(root)" }
-            );
-          })
-          .catch(() => undefined);
-      }
-      vt.finished.finally(() => root.classList.remove("realm-vt", "realm-vt-fade")).catch(() => undefined);
+      vt.ready
+        .then(() => {
+          root.animate(keyframes(grid, images), {
+            duration: REALM_TRANSITION.durationMs,
+            easing: "linear",
+            pseudoElement: "::view-transition-new(root)"
+          });
+        })
+        .catch(() => undefined);
+      vt.finished.finally(() => root.classList.remove("realm-vt")).catch(() => undefined);
     });
   });
 }

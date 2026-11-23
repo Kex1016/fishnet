@@ -125,9 +125,9 @@ Components read tokens (`--color-*`, `--ink-*`), never a colour. IBM VGA 8x16 fo
 corners, 5px double pine windows labelled like a prompt, dither instead of blur, no easing. The shell is
 `.fx` (bar, strip, side nav window, blob backdrop); a page renders a `PageHead` and `Window`s into
 `.fx-main`, and a stage (the map) as a direct child of it. Classes `fx-` and haiiro's own; the frozen
-contract (tokens, classes, component props) is `docs/HAIIRO.md`. `legacy.css` keeps old `fp-`/`t-` pages
-working until they are rebuilt: nothing new uses it. Current links are `aria-current="page"`. Preview:
-`/design` (dev and mock only).
+contract (tokens, classes, component props) is `docs/HAIIRO.md`. The old `fp-`/`t-` classes and token names
+are gone (H11): nothing defines them. Current links are `aria-current="page"`. Preview: `/design` (dev and
+mock only).
 
 ## SvelteKit 3 (this repo) differs from the docs you may remember
 
@@ -141,6 +141,6 @@ working until they are rebuilt: nothing new uses it. Current links are `aria-cur
 ## Done means (PLAN §7)
 
 `bun run check`, `bun test`, `bun run build` (with the leak check) pass; the pages work in both mock
-scenarios, `fresh` showing every empty state on purpose; screenshots at 390 px and 1440 px, dark and
-light, in `docs/screenshots/<unit>/` and in the PR; no numbers that do not come from the API or the
+scenarios, `fresh` showing every empty state on purpose; screenshots at 390 px and 1440 px (one dark
+theme), in `docs/screenshots/<unit>/` and in the PR; no numbers that do not come from the API or the
 recorder; shared-file edits listed in the PR.

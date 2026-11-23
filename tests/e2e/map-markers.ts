@@ -472,7 +472,7 @@ export const MARKER_CHECKS: Check[] = [
           for (const [id, t] of [[30, titles[0]], [31, titles[1]], [32, titles[2]], [33, titles[3]]] as const) {
             await o.page.evaluate((id: number) => (window as any).__fmap.showMarker(id, { animate: false }), id);
             await o.page.waitForSelector(`.mc-mpop .mk-pop[data-marker="${id}"]`);
-            const got = await o.page.$eval(".mc-mpop .mk-pop", (e: HTMLElement) => ({ title: e.querySelector(".mk-pop__title")!.textContent, sub: e.querySelector(".mk-pop__sub")?.textContent ?? null, label: e.getAttribute("aria-label"), els: e.querySelectorAll("img, script, svg:not(.fp-ico):not(.lucide), b, red").length }));
+            const got = await o.page.$eval(".mc-mpop .mk-pop", (e: HTMLElement) => ({ title: e.querySelector(".mk-pop__title")!.textContent, sub: e.querySelector(".mk-pop__sub")?.textContent ?? null, label: e.getAttribute("aria-label"), els: e.querySelectorAll("img, script, svg, b, red").length }));
             expect(got.title === t && got.label?.startsWith(`${t}, `) && got.els === 0, `popup ${id}: ${JSON.stringify(got)}`);
             // fitted to the area, its title is drawn as glyphs on a canvas (nothing of it in the DOM but the canvas)
             await sleep(400);

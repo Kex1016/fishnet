@@ -43,7 +43,7 @@
         sparkLabel="Players online, recent"
       />
       {#each net.data.servers as s (s.id)}
-        <StatTile label={s.display_name} value={String(s.online)} unit="online" note={`${build(s.platform, s.mc_version)}${s.waiting ? ` · ${s.waiting} waiting` : ""}`} href="/servers/{s.id}" />
+        <StatTile label={s.display_name} value={String(s.online)} unit="online" note={`${build(s.platform, s.mc_version)}${s.waiting ? ` · ${s.waiting} waiting` : ""}`} href="/servers/{s.id}" off={!s.mc_version} />
       {/each}
     </div>
     {#if net.data.servers.length === 0}

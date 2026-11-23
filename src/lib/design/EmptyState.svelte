@@ -13,8 +13,6 @@
     line?: string;
     /** epoch ms when the recorder started; renders "Recording since 4 Nov 2026" */
     since?: number | null;
-    /** @deprecated haiiro has no icon set: ignored. Units drop it as they rebuild their pages. */
-    icon?: unknown;
     children?: Snippet;
   } = $props();
 </script>

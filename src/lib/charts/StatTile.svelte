@@ -4,10 +4,10 @@
   import type { StatTileProps } from "./types.ts";
   import Sparkline from "./Sparkline.svelte";
   import "./charts.css";
-  let { label, value, unit, note, href, spark, sparkLabel }: StatTileProps = $props();
+  let { label, value, unit, note, href, off, spark, sparkLabel }: StatTileProps = $props();
 </script>
 
-<svelte:element this={href ? "a" : "div"} class="fx-tile" {href}>
+<svelte:element this={href ? "a" : "div"} class="fx-tile{off ? ' off' : ''}" {href}>
   <span class="kv_label">{label}</span>
   <span class="kv_value num">{value}{#if unit}<small>{unit}</small>{/if}</span>
   {#if note}<span class="note">{note}</span>{/if}

@@ -19,11 +19,13 @@
     display: flex;
     flex-direction: column;
     gap: 48px;
-    /* the old layer gives the frame its own face; the section is haiiro's */
-    --font-mono: IBM, Unifont, "Unifont Upper", ui-monospace, monospace;
-    font-family: var(--font-mono);
   }
-  /* an inline link in running text, a table or a feed: foam, underlined (a filled `a.c6` is an action) */
+  /* links in the section carry no underline: a name is a link by its colour (`:where` keeps this as weak as
+     a bare `a`, so any class that asks for an underline still gets one) */
+  :global(:where(.os-frame) a) {
+    text-decoration: none;
+  }
+  /* an inline link in running text, a table or a feed: foam (a filled `a.c6` is an action) */
   :global(.os-frame) :global(a.lnk) {
     color: var(--color-foam);
     text-underline-offset: 3px;

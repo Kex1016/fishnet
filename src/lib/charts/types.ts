@@ -88,6 +88,8 @@ export type StatTileProps = {
   /** mono line under the value: "as of 17:44 UTC", "since 4 Nov 2026", a change */
   note?: string;
   href?: string;
+  /** a dashed, muted tile: the thing it counts is not there right now (a server that is not linked) */
+  off?: boolean;
   /** an inline sparkline under the value */
   spark?: TimePoint[];
   sparkLabel?: string;

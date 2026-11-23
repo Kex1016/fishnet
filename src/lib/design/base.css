@@ -150,6 +150,4 @@ a.li { text-decoration: none; }
 :root.realm-vt::view-transition-old(root),
 :root.realm-vt::view-transition-new(root) { animation: none; mix-blend-mode: normal; }
 :root.realm-vt::view-transition-new(root) { z-index: 1; }
-:root.realm-vt-fade::view-transition-old(root),
-:root.realm-vt-fade::view-transition-new(root) { animation: none; }
 ::view-transition { pointer-events: none; }

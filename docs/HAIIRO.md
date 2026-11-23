@@ -26,7 +26,6 @@ system artifact is an archive and no longer a source.
 | `src/lib/design/tokens.css` | every token, and the realm scope |
 | `src/lib/design/base.css` | reset, element defaults, haiiro's own parts (window, ink, stat panel, progress, chip, list rows, segmented, ink buttons, keycap, dither) |
 | `src/lib/design/components.css` | the Fishnet parts, `fx-` |
-| `src/lib/design/legacy.css` | the old `fp-` and `t-` classes and old token names on top of haiiro, for pages not rebuilt yet. **Nothing new uses it.** H11 deletes it |
 | `src/lib/design/types.ts` | the data shapes the components take |
 | `src/lib/design/*.svelte` | the components below, exported from `index.ts` |
 | `src/lib/design/dither.ts` | `BAYER4`, `bayer(x, y)`, `inCircle(t, d, x, y)`, `REALM_TRANSITION`, `hexTone` |
@@ -71,9 +70,10 @@ to Gruvbox. `.realm` also paints its own ground, so a preview card of One Soul o
 
 ### Not there any more
 
-`data-theme`, the `theme` cookie, `Locals.theme`, `ThemeToggle`, `Mark`, Lucide icons in shared components,
-`src/lib/onesoul/realm.css` (the realm is tokens now), `src/app.css` and the four old font packages. The old
-token names (`--bg`, `--surface`, `--acc`, `--font-head`, …) exist only in `legacy.css`.
+`data-theme`, the `theme` cookie, `Locals.theme`, `ThemeToggle`, `Mark`, Lucide icons (the package is gone),
+`src/lib/onesoul/realm.css` (the realm is tokens now), `src/app.css` and the four old font packages. Since H11
+also `legacy.css`, `Card.svelte`, the old `fp-` and `t-` classes and the old token names (`--bg`, `--surface`,
+`--acc`, `--font-head`, …): nothing defines them, so a page that uses one renders unstyled.
 
 ## Type
 
@@ -146,11 +146,11 @@ Fishnet's (`components.css`), markup as the design system's Fishnet group draws 
 | `.fx-head` > p (prompt) + `h1.title` + `.lede` + `.c1` + `.seg`/`.fx-filters`/`.fx-head.row` | the page head | H0 `PageHead` |
 | `.fx-wh` > h2/h3 + `.asof` | a window's heading line | H0 `WindowHead` |
 | `.fx-grid` (`.three`, `.wide`), `.fx-stack` | layout | pages |
-| `.stat-panel.fx-tiles` > div/a (`.off`) > `.kv_label` `.kv_value` (`small`) `.note` `.spark` | stat tiles | H1 `StatTile` |
+| `.stat-panel.fx-tiles` > div/a (`.off`) > `.kv_label` `.kv_value` (`small`) `.note` `.spark` | stat tiles; `.off` (dashed, muted) is `StatTile`'s `off` prop, for a server that is not linked | H1 `StatTile` |
 | `.fx-cols` (`.iris`) > i (`.now`), `.fx-axis`, `.fx-steps`, `.fx-read` > `.big` `.cap` | column and step charts | H1 `ColumnChart`, `LineChart` |
 | `.fx-heat` > span + i.h1…h4, `.fx-legend` | the heatmap | H1 `Heatmap` |
-| `.fx-scroll` > `table.fx-table` (`td.r`, `tr.sel`/`[aria-current]`) | tables | H1 `DataTable` |
-| `.fx-rank` (`.compact`, `.bare`) > `.row` > `.pos`(.g .i .f) face `.who` `.bar` > i `.val` | ranked rows | H0 `RankList`; H1 `BarList` renders it |
+| `.fx-scroll` > `table.fx-table` (`td.r`, `tr.sel`/`[aria-current]`) | tables; cells and headers never wrap, so a wide table scrolls inside `.fx-scroll`: always wrap a table in it | H1 `DataTable` |
+| `.fx-rank` (`.compact`, `.bare`) > `.row` > `.pos`(.g .i .f) face `.who` `.bar` > i `.val` | ranked rows; the bar goes on a phone and in a list narrower than 440px (a container query) | H0 `RankList`; H1 `BarList` renders it |
 | `.fx-feed` > `.li` > `.pic`/face `.txt` (`.sub`) `.when` | feeds | H0 `Feed`, `FeedRow` |
 | `.fx-turns` > span/a (`.reached` `.now` `.locked` `.dead`) | ladders and One Soul turns | H0 `Ladder` |
 | `.fx-sheet` > `.kv_label` + value | key/value sheet | H0 `KeyValueSheet`, `KV` |
@@ -188,7 +188,7 @@ string is rendered as text.
 | `Pager` | `url: UrlLike`, `total`, `limit`, `offset`, `what = "rows"`, `prev = "prev"`, `next = "next"`, `numbers = true` |
 | `Face` | `uuid`, `name?`, `size: "sm" \| "md" \| "lg" = "md"` (20, 32, 128px; 96px on a phone), `tint?: "pine" \| "iris" \| "rose"`, `frame?: "gold" \| "love"` |
 | `PlayerName` | `uuid`, `name`, `size: "sm" \| "md" = "sm"`, `online?` |
-| `Slot` | `icon`, `name?`, `size: "md" \| "lg" = "md"`, `rarity?: Rarity`; `kind`, `glyph` are accepted and ignored (deprecated) |
+| `Slot` | `icon`, `name?`, `size: "md" \| "lg" = "md"`, `rarity?: Rarity` |
 | `RankList` | `rows: RankRow[]` (`{ key, rank, label, href?, uuid?, share?, value, sub?, current? }`), `compact = false`, `label?` |
 | `Feed` | `label?`, `children` (FeedRows) |
 | `FeedRow` | `icon?`, `uuid?` (a face instead of a picture), `rarity?`, `href?`, `when?`, `sub?: Snippet`, `children` (first line) |
@@ -198,10 +198,9 @@ string is rendered as text.
 | `Catalogue` | `items: CatalogueItem[]` (`{ href, label, meta?, icon?, current? }`), `pic = false`, `label?` |
 | `Progress` | `label`, `value?`, `share` (0..1), `ink?` (a `cN` class), `indent = 0` |
 | `Notice` | `kind: info success warning error = "info"`, `word?` (the leading word; each kind has one), `children` |
-| `EmptyState` | `title`, `line?`, `since?` ("Recording since 4 Nov 2026"), `children?`; `icon` is accepted and ignored (deprecated) |
+| `EmptyState` | `title`, `line?`, `since?` ("Recording since 4 Nov 2026"), `children?` |
 | `AsOf` | `at` (epoch ms), `stale = false` |
 | `Blobs` | none; the shell renders it once |
-| `Card` | deprecated, legacy markup; H11 removes it |
 
 Rules the components keep, and pages using the classes directly keep too:
 
@@ -217,14 +216,6 @@ Rules the components keep, and pages using the classes directly keep too:
 No easing, no slides, no fades. The blob backdrop runs at 30 fps at most, pauses while the tab is hidden and
 is one still frame under `prefers-reduced-motion: reduce`. The realm transition steps at 12 fps (H9 owns
 `transition.ts`; `dither.ts` has the numbers and `inCircle`).
-
-## The legacy layer
-
-`legacy.css` keeps every page that H1 to H10 have not rebuilt yet working inside the new shell: the old
-`fp-` classes (minus the old shell), the `t-` type roles mapped onto the two faces, and the old token names
-pointing at haiiro tokens (`--acc` is foam, `--warning` gold, `--error` love, radii 0, durations 0). Old
-pages render as a clearing on the blobs. A unit that rebuilds a page removes the page's `fp-`/`t-` classes
-and old tokens; H11 deletes `legacy.css`, `Card.svelte` and the deprecated props once nothing reads them.
 
 ## Checks
 

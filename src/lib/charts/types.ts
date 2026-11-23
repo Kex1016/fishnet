@@ -1,11 +1,11 @@
-// Chart props, frozen by W0 (PLAN §3.1, §6; reki's chart rules). W3 implements the components in
-// this directory against these props; pages (W4–W7) use them as they are now.
+// Chart props, frozen by W0 (PLAN §3.1, §6). Pages use them as they are; H1 (the haiiro redesign) added
+// only the optional `path` and `level` to the frame.
 //
-// Rules every chart follows: one hue (acc-viz; heatmaps acc-heat-1..4); labels in text/muted/faint,
-// never the series colour; columns ≤ 24px with xs-radius tops on one baseline; lines 2px with ringed
-// end dots; a readout in the card header that follows hover and keyboard focus; a table twin behind
-// the page's one "Charts | Tables" switch (`view`); fewer than two points → the frame, the empty state
-// inside it and "Recording since <date>" when `since` is set; rendered on the server as SVG.
+// Rules every chart follows: one hue (foam; iris for a second measure; the current bucket gold); heat
+// steps differ in lightness; columns ≤ 24px, square, on one hairline base; a step line instead of a
+// polyline; a readout above the plot (Jacquard 24) that follows hover and keyboard focus; a table twin
+// behind `view`; fewer than two points → the window, the empty state inside it and "Recording since
+// <date>" when `since` is set; rendered on the server as HTML (no script needed to see a chart).
 import type { Unit } from "#lib/api/types.ts";
 
 export type View = "charts" | "tables";
@@ -18,9 +18,13 @@ export type CategoryPoint = { key: string; label: string; v: number; href?: stri
 
 export type ChartFrame = {
   title: string;
+  /** the window's label, "~/history/online" (default: the title as a path, "~/online-over-the-week") */
+  path?: string;
+  /** the heading's level (default 2; 3 inside a window that has its own h2) */
+  level?: 2 | 3;
   /** link for the title */
   href?: string;
-  /** a mono line under the title: scope, "last 7 days", ... */
+  /** the quiet line on the right of the heading: scope, "last 7 days", ... */
   sub?: string;
   /** the recorder's start for history-based charts: shown as "Recording since" and in the empty state */
   since?: number | null;
@@ -105,7 +109,7 @@ export type UptimeStripProps = ChartFrame & {
   bucketMs?: number;
 };
 
-/** The table twin of any chart: columns and rows, rendered as an fp-table. */
+/** The table twin of any chart: columns and rows, rendered as an fx-table. */
 export type DataTableProps = {
   columns: { key: string; label: string; num?: boolean }[];
   rows: Record<string, string | number | null | undefined>[];

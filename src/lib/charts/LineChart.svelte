@@ -1,12 +1,13 @@
 <script lang="ts">
-  // A 2px line with a soft area wash and a ringed end dot; an optional muted shadow series behind it
-  // (waiting behind online). Hover and arrow keys move a cursor; the readout follows it.
+  // A step line: each sample holds its value until the next one (haiiro draws charts in squares, not polylines).
+  // A step is as wide as the time it covers, so uneven samples keep their place. An optional dashed second series
+  // sits behind the first (waiting behind online). Hover and arrow keys move the readout.
   import type { LineChartProps } from "./types.ts";
   import ChartCard from "./ChartCard.svelte";
   import DataTable from "./DataTable.svelte";
   import { formatStat } from "#lib/format/stat-display.ts";
-  import { areaPath, axisTop, cleanTime, labelEvery, linePath, maxValue, nearestIndex, niceFloor, niceTicks, tickLabel, timeLabel, timeReadout, xByTime, yOf } from "./scale.ts";
-  import "./charts.css";
+  import { axisIndices, axisTop, cleanTime, labelEvery, maxValue, niceFloor, tickLabel, timeLabel, timeReadout } from "./scale.ts";
+  import { nearestChild } from "./dom.ts";
 
   let { points, unit = "count", format, height = 160, zero = true, shadow, ...frame }: LineChartProps = $props();
   const fmt = $derived(format ?? ((v: number) => formatStat(unit, v)));
@@ -23,43 +24,50 @@
     })
   );
 
-  let width = $state(560);
-  const PAD = { top: 8, right: 10, bottom: 22, left: 0 };
   const max = $derived(Math.max(maxValue(pts), maxValue(sh)));
   const min = $derived(zero ? 0 : Math.min(...pts.map((p) => p.v), ...(sh.length ? sh.map((p) => p.v) : [])));
-  // when the axis does not start at zero, values are offset by the floor and the ticks carry it back
+  // when the axis does not start at zero, values are offset by the floor and the scale line says where it starts
   const floor = $derived(zero || !Number.isFinite(min) ? 0 : niceFloor(min, max));
   const top = $derived(axisTop(Math.max(0, max - floor), 4, unit));
-  const ticks = $derived(niceTicks(Math.max(0, max - floor), 4, unit));
-  const tickTexts = $derived(ticks.map((t) => tickLabel(unit, t + floor)));
-  const axisW = $derived(Math.max(...tickTexts.map((t) => t.length)) * 7 + 8);
-  const left = $derived(PAD.left + axisW);
-  const right = $derived(width - PAD.right);
-  const yTop = $derived(PAD.top);
-  const yBase = $derived(height - PAD.bottom);
-  const xs = $derived(xByTime(pts, left, right));
-  const ys = $derived(pts.map((p) => yOf(p.v - floor, top, yTop, yBase)));
-  const sxs = $derived(xByTime(sh, left, right));
-  const sys = $derived(sh.map((p) => yOf(p.v - floor, top, yTop, yBase)));
+  const pct = (v: number) => (top > 0 ? Math.max(0, Math.min(100, ((v - floor) / top) * 100)) : 0);
+
+  // a step covers the time up to the next sample; the last one is as wide as the mean step
+  type Step = { t: number; v: number; w: number; at: number };
+  function steps(list: { t: number; v: number }[]): Step[] {
+    if (!list.length) return [];
+    const n = list.length;
+    const t0 = list[0].t;
+    const total = list[n - 1].t - t0;
+    const last = n > 1 ? total / (n - 1) : 1;
+    const whole = Math.max(1, total + last);
+    return list.map((p, i) => {
+      const w = i < n - 1 ? list[i + 1].t - p.t : last;
+      return { t: p.t, v: p.v, w: Math.max(w, 0.0001) / whole, at: (p.t - t0) / whole };
+    });
+  }
+  const ss = $derived(steps(pts));
+  const sss = $derived(steps(sh));
+
+  let width = $state(560);
   const xLabel = (p: { t: number; label?: string }) => p.label ?? timeLabel(p.t, span);
-  const labelW = $derived(Math.max(...pts.map((p) => xLabel(p).length), 1) * 7 + 12);
-  const labelAt = $derived(labelEvery(pts.length, pts.length > 1 ? (right - left) / (pts.length - 1) : right - left, labelW));
+  const labelW = $derived(Math.max(...pts.map((p) => xLabel(p).length), 1) * 7.5 + 16);
+  // labels sit at their step's left edge (the moment the value starts), thinned by the narrowest slot
+  const slot = $derived(pts.length > 1 ? width / pts.length : width);
+  const labelAt = $derived(axisIndices(pts.length, labelEvery(pts.length, slot, labelW)));
 
   let hover = $state<number | null>(null);
   const active = $derived(hover ?? pts.length - 1);
   const current = $derived(pts[active]);
   const shadowAt = $derived.by(() => {
     if (!shadow || !current) return undefined;
-    const i = sh.findIndex((p) => p.t === current.t);
-    return i >= 0 ? sh[i] : undefined;
+    return sh.find((p) => p.t === current.t);
   });
   const readoutLabel = $derived(current ? `${labelOf(current.t, current.label)}${shadowAt ? ` · ${shadow!.label} ${fmt(shadowAt.v)}` : ""}` : undefined);
 
-  let svg = $state<SVGSVGElement>();
+  let stepsEl = $state<HTMLElement>();
   function pointAt(e: PointerEvent) {
-    if (!svg || !pts.length) return;
-    const r = svg.getBoundingClientRect();
-    hover = nearestIndex(xs, ((e.clientX - r.left) / r.width) * width);
+    const i = nearestChild(stepsEl, e.clientX);
+    if (i >= 0) hover = i;
   }
   function key(e: KeyboardEvent) {
     if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
@@ -77,54 +85,37 @@
 </script>
 
 <ChartCard {frame} {empty} readoutValue={current ? fmt(current.v) : undefined} {readoutLabel}>
-  <div class="fp-plot__wrap" bind:clientWidth={width}>
-      <!-- the chart is a figure whose readout follows the pointer and the arrow keys; the table twin is the accessible form -->
-      <!-- svelte-ignore a11y_no_noninteractive_tabindex, a11y_no_noninteractive_element_interactions -->
-    <svg
-      bind:this={svg}
-      class="fp-plot"
-      viewBox="0 0 {width} {height}"
-      {height}
-      role="img"
-      aria-label={summary}
-      tabindex="0"
-      onpointermove={pointAt}
-      onpointerdown={pointAt}
-      onpointerleave={() => (hover = null)}
-      onblur={() => (hover = null)}
-      onkeydown={key}
-    >
-      {#each ticks as t, i (t)}
-        {@const y = yOf(t, top, yTop, yBase)}
-        <line class={i === 0 ? "fp-plot__base" : "fp-plot__grid"} x1={left} x2={right} y1={y} y2={y} />
-        <text class="fp-plot__tick" x={left - 6} y={y + 4} text-anchor="end">{tickTexts[i]}</text>
+  <!-- the chart is a figure whose readout follows the pointer and the arrow keys; the table twin is the accessible form -->
+  <!-- svelte-ignore a11y_no_noninteractive_tabindex, a11y_no_noninteractive_element_interactions -->
+  <div
+    class="fx-plot"
+    style="--plot-h: {height}px"
+    bind:clientWidth={width}
+    role="img"
+    aria-label={summary}
+    tabindex="0"
+    onpointermove={pointAt}
+    onpointerdown={pointAt}
+    onpointerleave={() => (hover = null)}
+    onblur={() => (hover = null)}
+    onkeydown={key}
+  >
+    {#if sh.length > 1}
+      <div class="fx-steps shadow{ss.length > 60 ? ' dense' : ''}" aria-hidden="true">
+        {#each sss as s (s.t)}<i style="flex-grow: {s.w.toFixed(5)}; height: {pct(s.v).toFixed(2)}%"></i>{/each}
+      </div>
+    {/if}
+    <div class="fx-steps{ss.length > 60 ? ' dense' : ''}" bind:this={stepsEl}>
+      {#each ss as s, i (s.t)}
+        <i class:now={hover === null && i === ss.length - 1} class:on={i === hover} style="flex-grow: {s.w.toFixed(5)}; height: {pct(s.v).toFixed(2)}%"></i>
       {/each}
-      {#each pts as p, i (p.t)}
-        {#if i % labelAt === 0 && xs[i] <= right - labelW}
-          <text class="fp-plot__tick" x={xs[i]} y={yBase + 15} text-anchor="middle">{xLabel(p)}</text>
-        {/if}
-      {/each}
-      {#if pts.length > 1}
-        <text class="fp-plot__tick" x={right} y={yBase + 15} text-anchor="end">{xLabel(pts[pts.length - 1])}</text>
-      {/if}
-      {#if sh.length > 1}
-        <path class="fp-plot__line fp-plot__line--shadow" d={linePath(sxs, sys)} />
-      {/if}
-      <path class="fp-plot__area" d={areaPath(xs, ys, yBase)} />
-      <path class="fp-plot__line" d={linePath(xs, ys)} />
-      {#if hover !== null}
-        <line class="fp-plot__cursor" x1={xs[hover]} x2={xs[hover]} y1={yTop} y2={yBase} />
-        {#if shadowAt}
-          {@const si = sh.indexOf(shadowAt)}
-          <circle class="fp-plot__dot fp-plot__dot--shadow" cx={sxs[si]} cy={sys[si]} r="3.5" />
-        {/if}
-        <circle class="fp-plot__dot" cx={xs[hover]} cy={ys[hover]} r="4" />
-      {:else if pts.length}
-        <circle class="fp-plot__dot" cx={xs[xs.length - 1]} cy={ys[ys.length - 1]} r="4" />
-      {/if}
-    </svg>
+    </div>
+    <div class="fx-axis at" aria-hidden="true">
+      {#each labelAt as i (i)}<span class:first={i === 0} class:last={i === pts.length - 1} style="--x: {(ss[i].at * 100).toFixed(2)}%">{xLabel(pts[i])}</span>{/each}
+    </div>
+    <p class="cap">scale {tickLabel(unit, floor)} to {tickLabel(unit, top + floor)}</p>
     {#if shadow}
-      <div class="fp-plot__legend"><span><i class="fp-plot__key fp-plot__key--line"></i>{frame.title}</span><span><i class="fp-plot__key fp-plot__key--shadow"></i>{shadow.label}</span></div>
+      <div class="fx-legend"><i class="k-main"></i><span>{frame.title}</span><i class="k-second"></i><span>{shadow.label}</span></div>
     {/if}
   </div>
   {#snippet table()}

@@ -1,22 +1,18 @@
 <script lang="ts">
-  // An inline 2px line with a ringed end dot: no frame, no axes, the tile's note says what it is.
+  // A row of squares (haiiro: charts made of squares, never lines): no frame, no axes, the tile's note says what
+  // it is. Heights run from the lowest to the highest value; the last bar is the current one, in gold.
   import type { SparklineProps } from "./types.ts";
-  import { areaPath, cleanTime, linePath, maxValue, xByTime, yOf } from "./scale.ts";
+  import { cleanTime, resample } from "./scale.ts";
   import "./charts.css";
   let { points, width = 120, height = 28, label }: SparklineProps = $props();
   const pts = $derived(cleanTime(points));
-  const max = $derived(maxValue(pts));
-  const min = $derived(pts.length ? Math.min(...pts.map((p) => p.v)) : 0);
-  const xs = $derived(xByTime(pts, 1, width - 5));
-  const ys = $derived(pts.map((p) => (max > min ? yOf(p.v - min, max - min, 3, height - 3) : height / 2)));
+  // at most one bar per 3px: a 30 day series at 120px keeps every day, a year is averaged down
+  const bars = $derived(resample(pts.map((p) => p.v), Math.floor(width / 3)));
+  const max = $derived(bars.length ? Math.max(...bars) : 0);
+  const min = $derived(bars.length ? Math.min(...bars) : 0);
+  const px = (v: number) => (max > min ? 2 + ((v - min) / (max - min)) * (height - 2) : height / 2);
 </script>
 
-<svg class="fp-spark" {width} {height} viewBox="0 0 {width} {height}" role="img" aria-label="{label}: {pts.length} points{pts.length ? `, latest ${pts[pts.length - 1].v}` : ''}">
-  {#if pts.length >= 2}
-    <path class="fp-spark__area" d={areaPath(xs, ys, height - 1)} />
-    <path class="fp-spark__line" d={linePath(xs, ys)} />
-    <circle class="fp-spark__dot" cx={xs[xs.length - 1]} cy={ys[ys.length - 1]} r="3" />
-  {:else}
-    <line class="fp-spark__flat" x1="0" y1={height / 2} x2={width} y2={height / 2} />
-  {/if}
-</svg>
+<span class="spark sized last{pts.length < 2 ? ' flat' : ''}" style="--sw: {width}px; height: {height}px" role="img" aria-label="{label}: {pts.length} points{pts.length ? `, latest ${pts[pts.length - 1].v}` : ''}">
+  {#if pts.length >= 2}{#each bars as v, i (i)}<i style="height: {px(v).toFixed(1)}px"></i>{/each}{/if}
+</span>

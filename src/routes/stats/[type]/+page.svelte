@@ -37,7 +37,7 @@
   <EmptyState title="Nobody has done this yet" line="{data.label} appears in the catalogue as soon as someone records it." />
 {:else}
   {#if data.total?.ok && !data.total.empty}
-    <Window path="~/leaderboards" args="{data.key}:* --top 5" label="{data.label} total">
+    <Window path="~/leaderboards" args="--top 5" label="{data.label} total">
       <WindowHead title="{data.label} total" href={boardHref({ kind: "stat", type: data.key, subject: "*" })}>
         {#if data.total.stale}<AsOf at={data.total.asOf} stale />{:else}<span class="num">network · top {data.total.data.entries.length} of {group(data.total.data.total)}</span>{/if}
       </WindowHead>
@@ -45,7 +45,7 @@
     </Window>
   {/if}
 
-  <Window path="~/stats/{data.key}" args="| grep" label="Subjects">
+  <Window path="~/stats" args="| grep" label="Subjects">
     <WindowHead title="Subjects" asof={data.subjects?.ok && !data.subjects.empty ? `${group(data.subjects.data.total)} ${data.subjects.data.total === 1 ? "subject" : "subjects"}` : undefined} />
     <form action={page.url.pathname} method="get" role="search" class="fx-filters" style="margin-bottom: 16px">
       <label class="fx-search"><span class="c4">»</span><input type="search" name="q" value={data.q} placeholder="search {data.label.toLowerCase()}" aria-label="Search subjects" maxlength="64" autocomplete="off" /></label>

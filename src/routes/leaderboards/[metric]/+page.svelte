@@ -45,14 +45,14 @@
   {/if}
 
   {#if board.empty}
-    <Window path="~/leaderboards/{data.id}" args="--scope {data.scope}">
+    <Window path="~/leaderboards" args="--stat">
       <EmptyState
         title={data.scope === "network" ? "No one has recorded this yet" : `No one in ${data.scopeName} has recorded this yet`}
         line="The board fills in as people play."
       />
     </Window>
   {:else}
-    <Window path="~/leaderboards/{data.id}" args="--stat">
+    <Window path="~/leaderboards" args="--numbers">
       <WindowHead title="The numbers" asof={data.scopeName} />
       <div class="stat-panel fx-tiles">
         <div><span class="kv_label">Players ranked</span><span class="kv_value num">{group(board.ranked)}</span><span class="note">{data.scopeName}</span></div>
@@ -66,7 +66,7 @@
     </Window>
 
     <div class="fx-grid wide" style="align-items: start">
-      <Window path="~/leaderboards/{data.id}" args="--scope {data.scope}" tag="section" label="All players">
+      <Window path="~/leaderboards" args="--all" tag="section" label="All players">
         <WindowHead title="All players" id="all-players">
           <span class="num">{group(board.total)} ranked</span>{#if board.capped}{" "}· the first 1 000 are loaded{/if}
         </WindowHead>

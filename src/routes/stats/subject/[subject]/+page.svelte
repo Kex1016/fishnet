@@ -41,7 +41,7 @@
   {#if s.types.length === 0}
     <EmptyState title="Nobody has done this yet" line="{data.label} is in the catalogue, but no one has recorded it." />
   {:else}
-    <Window path="~/stats/{data.key}" args="--boards" label="Boards">
+    <Window path="~/stats" args="--boards" label="Boards">
       <WindowHead title="Boards" asof={data.scopeName} />
       <div class="fx-filters" style="margin-bottom: 16px">
         {#if data.network.ok}<ScopeSwitch url={page.url} scope={data.scope} servers={data.network.data.servers} minis={data.minis} />{/if}
@@ -71,7 +71,7 @@
     </Window>
 
     {#if showLadder}
-      <Window path="~/milestones" args="--stat {data.key}" label="Milestones">
+      <Window path="~/milestones" args="--stat" label="Milestones">
         <WindowHead title="Milestones" asof={data.firstTypeName ? `${data.firstTypeName} · ${data.scopeName}` : undefined} />
         {#if s.types.length > 1}
           <div class="fx-filters" style="margin-bottom: 16px"><Segmented label="Milestones for which type" options={typeOptions} /></div>

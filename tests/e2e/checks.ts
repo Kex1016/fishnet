@@ -276,7 +276,7 @@ export const CHECKS: Check[] = [
     on: ["busy"],
     run: async (ctx) => {
       const board = await ctx.html("/leaderboards/playtime");
-      expect((board.match(/<tr/g) ?? []).length >= 11, "the playtime board has fewer than 10 rows");
+      expect((board.match(/<(?:a|div) class="row"/g) ?? []).length >= 10, "the playtime board has fewer than 10 rows");
       const players = await ctx.html("/players");
       const links = [...new Set(players.match(/href="\/players\/[^"]+"/g) ?? [])];
       expect(links.length >= 10, `the directory lists ${links.length} players`);

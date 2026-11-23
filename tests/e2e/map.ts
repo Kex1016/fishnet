@@ -508,7 +508,7 @@ export const MAP_CHECKS: Check[] = [
       expect(profile.includes(`href="/map/survival?follow=${here.uuid}"`), `the profile of ${here.name} has no Show on map link`);
       for (const [who, why] of [["Dace", "is offline"], ["Finnegan_B", "Live positions are off on Creative"], ["Lanternfish", "Lobby has no map"]] as const) {
         const html = await ctx.html(`/players/${who}`);
-        expect(/<button[^>]*disabled[^>]*>(<[^>]+>|[^<])*Show on map/.test(html) && html.includes(why), `${who}: no disabled button with "${why}"`);
+        expect(/<button[^>]*disabled[^>]*>(<[^>]+>|[^<])*Show on map/i.test(html) && html.includes(why), `${who}: no disabled button with "${why}"`);
         expect(!html.includes("?follow="), `${who}: a follow link although the button is disabled`);
       }
       // the link, with JavaScript: the player's world, the chip, the view on them, and the follow in the share link

@@ -19,7 +19,7 @@
 </script>
 
 {#each segments as s, i (i)}<span
-    class="fp-seg-text"
+    class="sg"
     style:color={colorVar(s.color)}
     data-bold={s.bold || undefined}
     data-italic={s.italic || undefined}
@@ -27,3 +27,13 @@
     data-strikethrough={s.strikethrough || undefined}
     data-obfuscated={s.obfuscated || undefined}>{s.text}</span
   >{/each}
+
+<style>
+  .sg { white-space: pre-wrap; }
+  .sg[data-bold] { font-weight: 700; }
+  .sg[data-italic] { font-style: italic; }
+  .sg[data-underlined] { text-decoration: underline; }
+  .sg[data-strikethrough] { text-decoration: line-through; }
+  .sg[data-underlined][data-strikethrough] { text-decoration: underline line-through; }
+  .sg[data-obfuscated] { filter: blur(2px); }
+</style>

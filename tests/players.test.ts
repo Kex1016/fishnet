@@ -177,3 +177,29 @@ test("ranks: diamond ore adds the deepslate ore below the page", () => {
   expect(s.display).toBe("15");
   expect(s.href).toBe("/leaderboards/diamonds");
 });
+
+test("ladders: a threshold is passed by the player's own value, the next one is marked, the rest are locked", async () => {
+  const { statLadder, playtimeLadder } = await import("#lib/players/ladders.ts");
+  const rung = (threshold: number) => ({ threshold, display: String(threshold), uuid: null, name: null, reached_at: null, backfilled: false });
+  const ladder = { metric: "mined:*", scope: "network", unit: "count", tracked: true, milestones: [rung(100), rung(1), rung(10)] };
+  const v = statLadder(ladder, 12, "count")!;
+  expect(v.steps.map((s) => s.state)).toEqual(["reached", "reached", "next"]);
+  expect(v.steps.map((s) => s.label)).toEqual(["1", "10", "100"]);
+  expect(v.reached).toBe(2);
+  expect(v.steps[2].title).toContain("88 to go");
+  expect(statLadder(ladder, 0, null)!.steps.map((s) => s.state)).toEqual(["next", "locked", "locked"]);
+  expect(statLadder(ladder, 500, "count")!.steps.every((s) => s.state === "reached")).toBe(true);
+  // another unit, no figure, an untracked or empty ladder: no ladder
+  expect(statLadder(ladder, 5, "ticks")).toBeNull();
+  expect(statLadder(ladder, null, null)).toBeNull();
+  expect(statLadder({ ...ladder, tracked: false }, 5, "count")).toBeNull();
+  expect(statLadder({ ...ladder, milestones: [] }, 5, "count")).toBeNull();
+  const pt = playtimeLadder([
+    { threshold_ms: 36e6, display: "10 h", reached_at: null, first: false },
+    { threshold_ms: 36e5, display: "1 h", reached_at: Date.UTC(2026, 10, 4), first: true }
+  ])!;
+  expect(pt.steps.map((s) => s.label)).toEqual(["1 h", "10 h"]);
+  expect(pt.steps[0].title).toContain("first on the network");
+  expect(pt.steps[1].title).toContain("before tracking began");
+  expect(playtimeLadder([])).toBeNull();
+});

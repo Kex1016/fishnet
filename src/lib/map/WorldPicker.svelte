@@ -38,6 +38,6 @@
         <span class="mc-pop__grow">{short(g, w)}</span>
       </a>
     {/each}
-    <a class="mc-pop__item" href="/leaderboards?scope={encodeURIComponent(`mini:${server}/${g.mini}`)}"><span class="mc-pop__grow">{g.name} stats</span></a>
+    <a class="mc-pop__item mc-pop__more" href="/leaderboards?scope={encodeURIComponent(`mini:${server}/${g.mini}`)}"><span class="mc-pop__grow">{g.name} stats</span></a>
   </div>
 {/each}

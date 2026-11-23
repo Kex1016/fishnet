@@ -45,7 +45,8 @@ type Entry = { v: MarkerView; layer: Leaflet.Polygon | Leaflet.Marker; el: Eleme
 
 const finePointer = () => typeof matchMedia === "function" && matchMedia("(hover: hover) and (pointer: fine)").matches;
 
-/** The pin: one button with the same glyph for every point, filled with the marker's colour (never an icon per kind). */
+/** The pin: one button with the same glyph for every point (never an icon per kind): haiiro's square flag in the
+ *  marker's colour on a stem whose foot is the block, outlined in the night sky so it reads on any terrain. */
 function pinElement(v: MarkerView): HTMLButtonElement {
   const b = document.createElement("button");
   b.type = "button";
@@ -58,15 +59,23 @@ function pinElement(v: MarkerView): HTMLButtonElement {
   svg.setAttribute("height", "24");
   svg.setAttribute("aria-hidden", "true");
   svg.setAttribute("focusable", "false");
-  const body = document.createElementNS(NS, "path");
-  body.setAttribute("d", "M12 23.2C12 23.2 4.2 15.6 4.2 9.6a7.8 7.8 0 0 1 15.6 0c0 6-7.8 13.6-7.8 13.6Z");
-  body.setAttribute("class", "mc-pin__body");
-  const dot = document.createElementNS(NS, "circle");
-  dot.setAttribute("cx", "12");
-  dot.setAttribute("cy", "9.6");
-  dot.setAttribute("r", "3");
-  dot.setAttribute("class", "mc-pin__dot");
-  svg.append(body, dot);
+  svg.setAttribute("shape-rendering", "crispEdges");
+  const rect = (cls: string, x: number, y: number, w: number, h: number) => {
+    const r = document.createElementNS(NS, "rect");
+    r.setAttribute("x", String(x));
+    r.setAttribute("y", String(y));
+    r.setAttribute("width", String(w));
+    r.setAttribute("height", String(h));
+    r.setAttribute("class", cls);
+    return r;
+  };
+  // the outline first (a 2 px border of the night sky around flag and stem), then the colour on top
+  svg.append(
+    rect("mc-pin__edge", 4, 1, 16, 15),
+    rect("mc-pin__edge", 9, 15, 6, 9),
+    rect("mc-pin__body", 6, 3, 12, 11),
+    rect("mc-pin__body", 11, 14, 2, 10)
+  );
   b.append(svg);
   return b;
 }
@@ -185,6 +194,7 @@ export function createMarkerLayer(L: typeof Leaflet, map: Leaflet.Map, initial: 
       color: v.color,
       weight: 2,
       opacity: 0.9,
+      dashArray: "6 4", // haiiro's dashed area (`fx-area`)
       lineJoin: "miter",
       lineCap: "butt",
       fillColor: v.color,

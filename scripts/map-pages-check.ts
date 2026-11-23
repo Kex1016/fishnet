@@ -65,7 +65,7 @@ console.log(`map pages on ${base}`);
 
 await check("/map lists the servers with a map", async () => {
   const page = await open(base, "/map");
-  const links = await page.$$eval(".fp-panel h2 a", (as: HTMLAnchorElement[]) => as.map((a) => a.getAttribute("href")));
+  const links = await page.$$eval(".maps a.li", (as: HTMLAnchorElement[]) => as.map((a) => a.getAttribute("href")));
   expect(links.includes("/map/survival") && links.includes("/map/creative"), `links: ${links}`);
   expect(!links.some((l: string) => /staff/.test(l)), "a hidden server is listed");
   await page.context().close();

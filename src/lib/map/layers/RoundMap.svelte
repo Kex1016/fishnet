@@ -3,7 +3,6 @@
   // layers are popouts over it (David, 15 Nov 2026). Marks and trails are drawn by MapCanvas at the raw block
   // coordinates the API gave, one dimension at a time (only the world shown). `stage` fills the content area beside
   // the nav; `card` is the same map in a frame of its own inside a page (the round's page).
-  import { Globe, CalendarDays, Table2, Maximize2 } from "@lucide/svelte";
   import MapCanvas from "../MapCanvas.svelte";
   import MapPopout from "../MapPopout.svelte";
   import type { DimMap } from "#lib/onesoul/map.ts";
@@ -40,35 +39,41 @@
   {/key}
   <div class="mc-over">
     <div class="mc-over__row">
-      {#if worlds.length > 1}
-        <MapPopout label="Worlds" value={world.name} icon={Globe}>
-          <div class="mc-pop__list">
-            {#each worlds as w (w.id)}
-              <a class="mc-pop__item" href={w.href} aria-current={w.id === world.id ? "page" : undefined}><span class="mc-pop__grow">{w.label}</span></a>
-            {/each}
-          </div>
-        </MapPopout>
-      {/if}
-      {#if rounds.length > 1}
-        <MapPopout label="Rounds" value="Round {cycle}" icon={CalendarDays}>
-          <div class="mc-pop__list">
-            {#each rounds as r (r.cycle)}
-              <a class="mc-pop__item" href={r.href} aria-current={r.cycle === cycle ? "page" : undefined}><span class="mc-pop__grow">Round {r.cycle}</span></a>
-            {/each}
-          </div>
-        </MapPopout>
-      {/if}
-      <LayersPopout {layers} ontoggle={toggle} hint="Marks sit on the block they were recorded at." />
-      {#if tableHref}<a class="fp-chip rm-chip" href={tableHref}><Table2 class="fp-ico fp-ico--sm" strokeWidth={1.6} /><span>Table view</span></a>{/if}
-      {#if openHref}<a class="fp-chip rm-chip" href={openHref}><Maximize2 class="fp-ico fp-ico--sm" strokeWidth={1.6} /><span>Open the map</span></a>{/if}
+      <section class="mc-bar window" aria-label={label}>
+        <span class="section-header" aria-hidden="true">fish: <b>~/round/{cycle}</b></span>
+        <div class="mc-bar__row">
+          {#if worlds.length > 1}
+            <MapPopout label="Worlds" value={world.name} path="~/round/{cycle}" cmd="ls">
+              <div class="mc-pop__list">
+                {#each worlds as w (w.id)}
+                  <a class="mc-pop__item" href={w.href} aria-current={w.id === world.id ? "page" : undefined}><span class="mc-pop__grow">{w.label}</span></a>
+                {/each}
+              </div>
+            </MapPopout>
+          {/if}
+          {#if rounds.length > 1}
+            <MapPopout label="Rounds" value="round {cycle}" path="~/round/{cycle}" cmd="rounds">
+              <div class="mc-pop__list">
+                {#each rounds as r (r.cycle)}
+                  <a class="mc-pop__item" href={r.href} aria-current={r.cycle === cycle ? "page" : undefined}><span class="mc-pop__grow">Round {r.cycle}</span></a>
+                {/each}
+              </div>
+            </MapPopout>
+          {/if}
+          <LayersPopout {layers} ontoggle={toggle} hint="Marks sit on the block they were recorded at." path="~/round/{cycle}" />
+          {#if tableHref}<a href={tableHref}>table view</a>{/if}
+          {#if openHref}<a href={openHref}>open the map</a>{/if}
+        </div>
+      </section>
     </div>
   </div>
 </div>
 
 <style>
-  .rm-chip { color: var(--text); box-shadow: var(--shadow-float); text-decoration: none; }
   /* under the One Soul header and tabs the stage takes the rest of the content area, down to its edge (the
      One Soul layout makes its frame a column for this; a guessed header height left a strip under the map) */
   .rm-stage { flex: 1 1 0; height: auto; min-height: 420px; }
-  .rm-card { height: clamp(320px, 52vh, 480px); border: 1px solid var(--line); border-radius: var(--radius-xl); }
+  /* in a card the windows must fit the card: the stage's overflow would cut them */
+  .rm-card :global(.mc-pop__panel.window) { max-height: 200px; }
+  .rm-card { height: clamp(320px, 52vh, 480px); border: var(--border-window) double var(--color-pine); }
 </style>

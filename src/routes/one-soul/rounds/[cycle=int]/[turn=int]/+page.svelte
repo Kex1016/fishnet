@@ -1,9 +1,15 @@
 <script lang="ts">
-  import { BookOpen, Tombstone } from "@lucide/svelte";
   import EmptyState from "#lib/design/EmptyState.svelte";
   import Face from "#lib/design/Face.svelte";
-  import { StatTile } from "#lib/charts/index.ts";
+  import KeyValueSheet from "#lib/design/KeyValueSheet.svelte";
+  import KV from "#lib/design/KV.svelte";
+  import PageHead from "#lib/design/PageHead.svelte";
+  import Window from "#lib/design/Window.svelte";
+  import WindowHead from "#lib/design/WindowHead.svelte";
+  import OsTabs from "#lib/onesoul/OsTabs.svelte";
   import Outcome from "#lib/onesoul/Outcome.svelte";
+  import Tiles from "#lib/onesoul/Tiles.svelte";
+  import type { Tile } from "#lib/onesoul/Tiles.svelte";
   import WorldMap from "#lib/onesoul/WorldMap.svelte";
   import { dimLabel, life, titleId } from "#lib/onesoul/format.ts";
   import { osHref } from "#lib/onesoul/links.ts";
@@ -17,147 +23,136 @@
     return [...m.entries()].map(([type, rows]) => ({ type, rows: [...rows].sort((a, b) => b.value - a.value) }));
   });
   const scr = $derived(s.second_chance_result ?? null);
+  const tiles = $derived.by((): Tile[] => {
+    const out: Tile[] = [{ label: data.playing ? "turn started" : "lived", value: data.playing ? day(s.started_at) : life(s.duration_ms), note: data.playing ? undefined : `${day(s.started_at)} to ${s.ended_at ? day(s.ended_at) : "?"}` }];
+    if (s.death && !data.playing) out.push({ label: "died in", value: dimLabel(s.death.dim), note: `x ${s.death.x}, y ${s.death.y}, z ${s.death.z}` });
+    if (s.waited_ms) out.push({ label: "waited for this turn", value: life(s.waited_ms), note: "from sign-up to turn" });
+    if (scr) out.push({ label: "borrowed time", value: life(scr.used_ms), note: `${scr.offerings} offering${scr.offerings === 1 ? "" : "s"}, ${life(scr.added_ms)} bought, ${titleId(scr.outcome).toLowerCase()}` });
+    if (s.waystones) out.push({ label: "waystones found", value: String(s.waystones) });
+    return out;
+  });
 </script>
 
-<div class="fp-page">
-  <section class="fp-section">
-    <div class="os-who">
-      <Face uuid={s.uuid} name={s.name} size="lg" />
-      <div>
-        <span class="t-kicker">Round {data.cycle} · turn {data.turn}</span>
-        <h1 class="t-display os-who__name"><a href={osHref.player(s.uuid)}>{s.name}</a></h1>
-        <div class="os-chips">
-          <Outcome outcome={s.outcome} />
-          {#if s.second_chance}<span class="fp-tag fp-tag--warning">Had a second chance</span>{/if}
-          {#if s.has_journal}<a class="fp-chip" href={osHref.journal(s.cycle, s.turn)}><BookOpen class="fp-ico fp-ico--sm" strokeWidth={1.4} />Read the journal</a>{/if}
-        </div>
-      </div>
-    </div>
-    {#if s.cause}<blockquote class="os-cause">{s.cause}</blockquote>{/if}
-    <div class="fp-tiles os-tiles">
-      <StatTile label={data.playing ? "Turn started" : "Lived"} value={data.playing ? day(s.started_at) : life(s.duration_ms)} note={data.playing ? undefined : `${day(s.started_at)} to ${s.ended_at ? day(s.ended_at) : "?"}`} />
-      {#if s.death && !data.playing}<StatTile label="Died in" value={dimLabel(s.death.dim)} note={`x ${s.death.x}, y ${s.death.y}, z ${s.death.z}`} />{/if}
-      {#if s.waited_ms}<StatTile label="Waited for this turn" value={life(s.waited_ms)} note="from sign-up to turn" />{/if}
-      {#if scr}<StatTile label="Borrowed time" value={life(scr.used_ms)} note={`${scr.offerings} offering${scr.offerings === 1 ? "" : "s"}, ${life(scr.added_ms)} bought, ${titleId(scr.outcome).toLowerCase()}`} />{/if}
-      {#if s.waystones}<StatTile label="Waystones found" value={String(s.waystones)} />{/if}
-    </div>
-  </section>
+<PageHead path="~/one-soul" cmd="cat" args="rounds/{data.cycle}/{data.turn}.md" title={s.name} note="round {data.cycle}, turn {data.turn}">
+  <OsTabs />
+</PageHead>
 
+<Window shell="soul" path={s.name} args="· {data.playing ? 'alive' : 'turn over'}" tone={data.playing ? "gold" : s.outcome === "died" ? "love" : "pine"}>
+  <div class="fx-soul os-soul">
+    <Face uuid={s.uuid} name={s.name} size="lg" frame={data.playing ? "gold" : s.outcome === "died" ? "love" : undefined} />
+    <div class="fx-stack os-who">
+      <span class="lab">round {data.cycle}, turn {data.turn}</span>
+      <p class="os-name"><a class={data.playing ? "c3" : s.outcome === "died" ? "c2" : "c6"} href={osHref.player(s.uuid)}>{s.name}</a></p>
+      <p>
+        <Outcome outcome={s.outcome} />
+        {#if s.second_chance}<span class="c3"> · had a second chance</span>{/if}
+      </p>
+      {#if s.cause}<p><q>{s.cause}</q></p>{/if}
+      {#if s.has_journal}<div class="fx-head row"><a class="ink c7" href={osHref.journal(s.cycle, s.turn)}>read the journal</a></div>{/if}
+    </div>
+  </div>
+</Window>
+
+<Window path="~/one-soul/rounds/{data.cycle}/{data.turn}">
+  <WindowHead title="The turn" />
+  <Tiles items={tiles} />
   {#if s.headline?.length}
-    <section class="fp-section">
-      <h2 class="t-title-3">{data.playing ? "This life so far" : "This life"}</h2>
-      <div class="fp-tiles os-tiles">{#each s.headline as h (h.id)}<StatTile label={h.title} value={h.display} />{/each}</div>
-    </section>
+    <div class="os-sheet">
+      <span class="lab">{data.playing ? "this life so far" : "this life"}</span>
+      <KeyValueSheet>
+        {#each s.headline as h (h.id)}<KV label={h.title} num>{h.display}</KV>{/each}
+      </KeyValueSheet>
+    </div>
   {/if}
+</Window>
 
-  {#if data.maps?.length}
-    <section class="fp-section">
-      <h2 class="t-title-3">Where this life went</h2>
-      <div class="os-maps">
-        {#each data.maps as m (m.dim)}<div class="fp-card os-mapcard"><WorldMap map={m} /></div>{/each}
-      </div>
-    </section>
+{#if data.maps?.length}
+  <div class="os-maps">
+    {#each data.maps as m (m.dim)}
+      <Window path="~/one-soul/rounds/{data.cycle}/{data.turn}" args="--trail {m.label.toLowerCase()}"><WorldMap map={m} /></Window>
+    {/each}
+  </div>
+{/if}
+
+<Window shell="grave" path={data.grave ? (data.grave.claimed_by ? "claimed" : "open") : "none"} tone={data.grave ? (data.grave.claimed_by ? "foam" : "gold") : "off"}>
+  <WindowHead title="Grave" />
+  {#if data.grave}
+    {@const g = data.grave}
+    <KeyValueSheet>
+      <KV label="items" num>{g.items}{g.marked ? `, ${g.marked} with the Mark of Love` : ""}</KV>
+      <KV label="where">{dimLabel(g.dim)} <span class="num">{g.x} {g.y} {g.z}</span></KV>
+      <KV label="state">
+        {#if g.claimed_by}Claimed by <a class="lnk" href={osHref.player(g.claimed_by.uuid)}>{g.claimed_by.name}</a>{#if g.claimed_at}, {life(g.claimed_at - g.created_at)} after the death{/if}{:else}Still open since {dateTime(g.created_at)}{/if}
+      </KV>
+    </KeyValueSheet>
+    {#if g.contents?.length}<p class="c1 os-contents">{g.contents.map((c) => `${c.count} × ${titleId(c.item)}`).join(" · ")}</p>{/if}
+  {:else}
+    <EmptyState title={data.playing ? "Still alive" : "No grave"} line={data.playing ? "A grave appears where a soul dies for good." : "This turn ended without a grave."} />
   {/if}
+</Window>
 
-  <section class="fp-section">
-    <h2 class="t-title-3">Grave</h2>
-    {#if data.grave}
-      {@const g = data.grave}
-      <div class="fp-card os-grave">
-        <Tombstone class="fp-ico" strokeWidth={1.4} aria-hidden="true" />
-        <div>
-          <div>{g.items} item{g.items === 1 ? "" : "s"}{#if g.marked}, {g.marked} with the Mark of Love{/if} · {dimLabel(g.dim)} <span class="t-num">{g.x} {g.y} {g.z}</span></div>
-          <div class="t-small t-muted">{#if g.claimed_by}Claimed by <a href={osHref.player(g.claimed_by.uuid)}>{g.claimed_by.name}</a>{#if g.claimed_at}, {life(g.claimed_at - g.created_at)} after the death{/if}{:else}Still open since {dateTime(g.created_at)}{/if}</div>
-          {#if g.contents?.length}<div class="t-small os-contents">{g.contents.map((c) => `${c.count} × ${titleId(c.item)}`).join(" · ")}</div>{/if}
-        </div>
-      </div>
+{#if data.stats}
+  <Window path="~/one-soul/rounds/{data.cycle}/{data.turn}" args="--stats">
+    <WindowHead title="Run stats" asof={data.stats.final ? "counted over this turn only" : "this turn so far, still counting"} />
+    {#if byType.length === 0}
+      <EmptyState title="Nothing counted for this turn" />
     {:else}
-      <EmptyState title={data.playing ? "Still alive" : "No grave"} line={data.playing ? "A grave appears where a soul dies for good." : "This turn ended without a grave."} />
-    {/if}
-  </section>
-
-  {#if data.stats}
-    <section class="fp-section">
-      <div class="fp-section__head">
-        <h2 class="t-title-3">Run stats</h2>
-        <span class="t-small t-muted">{data.stats.final ? "Counted over this turn only" : "This turn so far, still counting"}</span>
+      <div class="os-statgroups">
+        {#each byType as g (g.type)}
+          <div class="os-statgroup">
+            <h3 class="lab">{typeLabel(g.type)}</h3>
+            <ol class="os-statlist">
+              {#each g.rows.slice(0, 8) as r (r.subject)}<li><span>{subjectLabel(r.name, r.subject)}</span><span class="num">{r.display}</span></li>{/each}
+            </ol>
+            {#if g.rows.length > 8}<span class="cap">and {g.rows.length - 8} more</span>{/if}
+          </div>
+        {/each}
       </div>
-      {#if byType.length === 0}
-        <EmptyState title="Nothing counted for this turn" />
-      {:else}
-        <div class="os-statgroups">
-          {#each byType as g (g.type)}
-            <div class="fp-card os-statgroup">
-              <h3 class="t-title-4">{typeLabel(g.type)}</h3>
-              <ol class="os-statlist">
-                {#each g.rows.slice(0, 8) as r (r.subject)}<li><span>{subjectLabel(r.name, r.subject)}</span><span class="t-num">{r.display}</span></li>{/each}
-              </ol>
-              {#if g.rows.length > 8}<span class="t-caption">and {g.rows.length - 8} more</span>{/if}
-            </div>
-          {/each}
-        </div>
-      {/if}
-    </section>
-  {/if}
-</div>
+    {/if}
+  </Window>
+{/if}
 
 <style>
+  .os-soul {
+    align-items: center;
+  }
   .os-who {
-    display: flex;
-    gap: var(--space-4);
-    align-items: center;
+    min-width: 0;
   }
-  .os-who__name {
-    margin: var(--space-1) 0 var(--space-2);
+  .os-name {
+    font-size: 32px;
     overflow-wrap: anywhere;
   }
-  .os-who__name a {
-    color: var(--text);
-  }
-  .os-chips {
+  .os-sheet {
+    margin-top: 24px;
     display: flex;
-    gap: var(--space-2);
-    flex-wrap: wrap;
-    align-items: center;
-  }
-  .os-cause {
-    margin: 0;
-    padding-left: var(--space-4);
-    border-left: 2px solid var(--line);
-    font-style: italic;
-    color: var(--muted);
-    overflow-wrap: anywhere;
-  }
-  .os-tiles {
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    flex-direction: column;
+    gap: 12px;
   }
   .os-maps {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, 360px), 1fr));
-    gap: var(--space-4);
-  }
-  .os-mapcard {
-    padding: var(--space-4);
-  }
-  .os-grave {
-    display: flex;
-    gap: var(--space-3);
-    padding: var(--space-4);
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 380px), 1fr));
+    gap: 40px 32px;
   }
   .os-contents {
-    margin-top: var(--space-1);
-    color: var(--muted);
+    margin-top: 12px;
+    font-size: 14px;
+    overflow-wrap: anywhere;
   }
   .os-statgroups {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-    gap: var(--space-4);
+    gap: 24px 32px;
   }
   .os-statgroup {
-    padding: var(--space-4);
+    min-width: 0;
     display: flex;
     flex-direction: column;
-    gap: var(--space-2);
+    gap: 8px;
+  }
+  .os-statgroup h3 {
+    margin: 0;
+    font-weight: 400;
   }
   .os-statlist {
     list-style: none;
@@ -165,12 +160,20 @@
     padding: 0;
     display: flex;
     flex-direction: column;
-    gap: 2px;
   }
   .os-statlist li {
     display: flex;
     justify-content: space-between;
-    gap: var(--space-3);
-    font: 400 14px/22px var(--font-text);
+    gap: 12px;
+    padding: 2px 0;
+    border-top: 1px solid var(--ink-hairline);
+    font-size: 14px;
+  }
+  .os-statlist li:first-child {
+    border-top: 0;
+  }
+  .os-statlist li > :first-child {
+    min-width: 0;
+    overflow-wrap: anywhere;
   }
 </style>

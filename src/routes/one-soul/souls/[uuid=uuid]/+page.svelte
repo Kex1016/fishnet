@@ -1,10 +1,14 @@
 <script lang="ts">
-  import { BookOpen } from "@lucide/svelte";
   import AsOf from "#lib/design/AsOf.svelte";
   import EmptyState from "#lib/design/EmptyState.svelte";
   import Face from "#lib/design/Face.svelte";
-  import { StatTile } from "#lib/charts/index.ts";
+  import PageHead from "#lib/design/PageHead.svelte";
+  import Window from "#lib/design/Window.svelte";
+  import WindowHead from "#lib/design/WindowHead.svelte";
+  import OsTabs from "#lib/onesoul/OsTabs.svelte";
   import Outcome from "#lib/onesoul/Outcome.svelte";
+  import Tiles from "#lib/onesoul/Tiles.svelte";
+  import type { Tile } from "#lib/onesoul/Tiles.svelte";
   import { life } from "#lib/onesoul/format.ts";
   import { osHref } from "#lib/onesoul/links.ts";
   import { day } from "#lib/format/dates.ts";
@@ -12,104 +16,59 @@
   const p = $derived(data.p);
   const lived = $derived(p.turns.filter((t) => t.outcome !== "playing" && t.duration_ms !== null).length);
   const rounds = $derived([...new Set([...p.registrations.map((r) => r.round), ...p.turns.map((t) => t.cycle)])].sort((a, b) => a - b));
+  const tiles = $derived.by((): Tile[] => {
+    const out: Tile[] = [
+      { label: "turns", value: String(p.turns.length), note: lived === p.turns.length ? undefined : `${lived} finished` },
+      { label: "longest life", value: p.best ? life(p.best.duration_ms) : "–", note: p.best ? `round ${p.best.cycle}, turn ${p.best.turn}` : "no finished turn yet", href: p.best ? osHref.soul(p.best.cycle, p.best.turn) : undefined },
+      { label: "graves claimed", value: String(p.graves_claimed) },
+      { label: "graves left unclaimed", value: String(p.graves_left_open) },
+      { label: "journals", value: String(p.journals) }
+    ];
+    if (data.full) out.push({ label: "pranks as a ghost", value: String(p.pranks.total), note: "finished rounds only" });
+    return out;
+  });
 </script>
 
-<div class="fp-page">
-  <section class="fp-section">
-    <div class="os-who">
-      <Face uuid={p.uuid} name={p.name} size="lg" />
-      <div>
-        <span class="t-kicker">One Soul</span>
-        <h1 class="t-display os-who__name">{p.name}</h1>
-        <div class="t-small t-muted">
-          {#if rounds.length}Signed up for {rounds.length === 1 ? "round" : "rounds"} {rounds.join(", ")}{" · "}{/if}<a href={`/players/${p.uuid}`}>Network profile</a>
-        </div>
-        {#if data.asOf}<AsOf at={data.asOf} />{/if}
-      </div>
-    </div>
-    <div class="fp-tiles os-tiles">
-      <StatTile label="Turns" value={String(p.turns.length)} note={lived === p.turns.length ? undefined : `${lived} finished`} />
-      <StatTile label="Longest life" value={p.best ? life(p.best.duration_ms) : "–"} note={p.best ? `round ${p.best.cycle}, turn ${p.best.turn}` : "no finished turn yet"} />
-      <StatTile label="Graves claimed" value={String(p.graves_claimed)} />
-      <StatTile label="Graves left unclaimed" value={String(p.graves_left_open)} />
-      <StatTile label="Journals" value={String(p.journals)} />
-      {#if data.full}<StatTile label="Pranks as a ghost" value={String(p.pranks.total)} note="finished rounds only" />{/if}
-    </div>
-  </section>
+<PageHead path="~/one-soul" cmd="cat" args="souls/{p.name}" title={p.name} note={rounds.length ? `signed up for ${rounds.length === 1 ? "round" : "rounds"} ${rounds.join(", ")}` : undefined}>
+  <OsTabs />
+  <div class="fx-head row"><a class="c6" href={`/players/${p.uuid}`}>network profile</a></div>
+</PageHead>
 
-  <section class="fp-section">
-    <h2 class="t-title-3">Turns</h2>
-    {#if p.turns.length === 0}
-      <EmptyState title="No turn yet" line="A turn starts when this player becomes the soul." />
-    {:else}
-      <ol class="fp-card os-turns">
-        {#each p.turns as t (`${t.cycle}/${t.turn}`)}
-          <li class="os-turn">
-            <span class="os-turn__head"><a href={osHref.soul(t.cycle, t.turn)}>Round {t.cycle}, turn {t.turn}</a><span class="t-caption">{day(t.started_at)}</span></span>
-            <span class="t-num os-turn__lived">{t.outcome === "playing" ? "still alive" : life(t.duration_ms)}</span>
-            <span class="os-turn__more">
-              <Outcome outcome={t.outcome} />
-              {#if t.cause}<q class="os-cause">{t.cause}</q>{/if}
-              {#if t.has_journal && t.outcome !== "playing"}<a class="fp-chip" href={osHref.journal(t.cycle, t.turn)}><BookOpen class="fp-ico fp-ico--sm" strokeWidth={1.4} />Journal</a>{/if}
-            </span>
-          </li>
-        {/each}
-      </ol>
-    {/if}
-  </section>
-</div>
+<Window shell="soul" path={p.name}>
+  <div class="fx-soul os-soul">
+    <Face uuid={p.uuid} name={p.name} size="lg" />
+    <div class="os-tiles"><Tiles items={tiles} /></div>
+  </div>
+</Window>
+
+<Window path="~/one-soul/souls/{p.name}" args="--turns">
+  <WindowHead title="Turns">{#if data.asOf}<AsOf at={data.asOf} />{/if}</WindowHead>
+  {#if p.turns.length === 0}
+    <EmptyState title="No turn yet" line="A turn starts when this player becomes the soul." />
+  {:else}
+    <div class="fx-feed">
+      {#each p.turns as t (`${t.cycle}/${t.turn}`)}
+        <a class="li" href={osHref.soul(t.cycle, t.turn)}>
+          <span class="txt">
+            <span>Round {t.cycle}, turn {t.turn} · <Outcome outcome={t.outcome} /></span>
+            <span class="sub">{day(t.started_at)}{#if t.cause} · <q>{t.cause}</q>{/if}{#if t.has_journal && t.outcome !== "playing"} · journal published{/if}</span>
+          </span>
+          <span class="when num">{t.outcome === "playing" ? "still alive" : life(t.duration_ms)}</span>
+        </a>
+      {/each}
+    </div>
+  {/if}
+</Window>
 
 <style>
-  .os-who {
-    display: flex;
-    gap: var(--space-4);
-    align-items: center;
-    flex-wrap: wrap;
-  }
-  .os-who > div {
-    flex: 1;
-    min-width: 0;
-  }
-  .os-who__name {
-    margin: var(--space-1) 0;
-    overflow-wrap: anywhere;
+  .os-soul {
+    align-items: flex-start;
   }
   .os-tiles {
-    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    flex: 1 1 360px;
+    min-width: 0;
   }
-  .os-turns {
-    list-style: none;
-    margin: 0;
-    padding: 0 var(--space-4);
-  }
-  .os-turn {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    gap: var(--space-1) var(--space-3);
-    padding: var(--space-3) 0;
-    border-bottom: 1px solid var(--line-soft);
-  }
-  .os-turn:last-child {
-    border-bottom: 0;
-  }
-  .os-turn__head {
-    display: flex;
-    flex-direction: column;
-  }
-  .os-turn__head a {
-    font-weight: 600;
-    color: var(--text);
-  }
-  .os-turn__more {
-    grid-column: 1 / -1;
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--space-2) var(--space-3);
-    align-items: center;
-  }
-  .os-cause {
-    color: var(--muted);
-    font-style: italic;
+  .txt {
     overflow-wrap: anywhere;
   }
 </style>

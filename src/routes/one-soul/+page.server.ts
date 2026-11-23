@@ -3,22 +3,25 @@
 // last timeline rows. Never coordinates of the living soul, never a queue order (WEBSITE-BRIEF §3.2).
 import type { PageServerLoad } from "./$types";
 import { oneSoul } from "#lib/server/onesoul/index.ts";
-import type { Live, LivePrevious, Longest, Soul } from "#lib/onesoul/types.ts";
+import type { Live, LivePrevious, Longest, RoundRecord, Soul } from "#lib/onesoul/types.ts";
 
 export const load: PageServerLoad = async ({ parent, depends }) => {
   depends("onesoul:live");
   const { os } = await parent();
   const crumbs = [{ label: "One Soul", href: "/one-soul" }];
-  if (!os) return { title: "One Soul", crumbs, card: null, asOf: null, stale: false, source: "none" as const };
+  if (!os) return { title: "One Soul", crumbs, card: null, asOf: null, stale: false, source: "none" as const, records: null };
   const c = oneSoul();
 
+  // the round's records (the same answer the round page shows, cached); a proxy without it shows no records
+  const records = (cycle: number): Promise<RoundRecord[] | null> => c.round(cycle, os.server).then((r) => (r.ok ? (r.data.records ?? null) : null));
+
   const live = await c.live(os.server);
-  if (live.ok) return { title: "One Soul", crumbs, card: live.data, asOf: live.asOf, stale: live.stale, source: "live" as const };
+  if (live.ok) return { title: "One Soul", crumbs, card: live.data, asOf: live.asOf, stale: live.stale, source: "live" as const, records: await records(live.data.cycle) };
 
   // fallback: the built routes (three calls, all cached)
   const [status, souls, events] = await Promise.all([c.status(), c.souls({ server: os.server, cycle: os.cycle, limit: 100 }), c.events({ server: os.server, cycle: os.cycle, limit: 5 })]);
   const s = status.ok ? status.data.servers.find((x) => x.server === os.server) : undefined;
-  if (!s || !status.ok) return { title: "One Soul", crumbs, card: null, asOf: null, stale: false, source: "none" as const };
+  if (!s || !status.ok) return { title: "One Soul", crumbs, card: null, asOf: null, stale: false, source: "none" as const, records: null };
   const rows: Soul[] = souls.ok ? souls.data.souls : [];
   const ended = rows.filter((x) => x.duration_ms !== null);
   const longest = ended.reduce<Soul | null>((a, x) => (!a || (x.duration_ms ?? 0) > (a.duration_ms ?? 0) ? x : a), null);
@@ -59,5 +62,5 @@ export const load: PageServerLoad = async ({ parent, depends }) => {
       : null,
     recent: events.ok ? events.data.events : []
   };
-  return { title: "One Soul", crumbs, card, asOf: status.asOf, stale: status.stale, source: "status" as const };
+  return { title: "One Soul", crumbs, card, asOf: status.asOf, stale: status.stale, source: "status" as const, records: await records(card.cycle) };
 };

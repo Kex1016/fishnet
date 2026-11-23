@@ -2,11 +2,15 @@
   // A soul's journal: the game's book by default, or every page as plain text (?view=text). Every page is
   // raw player text and is rendered as text only.
   import { page } from "$app/state";
-  import { BookOpen, Copy, Check, AlignLeft } from "@lucide/svelte";
   import AsOf from "#lib/design/AsOf.svelte";
   import EmptyState from "#lib/design/EmptyState.svelte";
   import Notice from "#lib/design/Notice.svelte";
+  import PageHead from "#lib/design/PageHead.svelte";
+  import Segmented from "#lib/design/Segmented.svelte";
+  import Window from "#lib/design/Window.svelte";
+  import WindowHead from "#lib/design/WindowHead.svelte";
   import Book from "#lib/onesoul/book/Book.svelte";
+  import OsTabs from "#lib/onesoul/OsTabs.svelte";
   import { osHref } from "#lib/onesoul/links.ts";
   import { dateTime } from "#lib/format/dates.ts";
   import { withParams } from "#lib/url.ts";
@@ -29,88 +33,81 @@
   }
 </script>
 
-<div class="fp-page">
-  {#if !j}
-    <Notice kind="warning">This journal could not be loaded right now.</Notice>
-  {:else}
-    <section class="fp-section">
-      <div class="fp-section__head">
-        <div>
-          <span class="t-kicker">Journal · round {data.cycle}, turn {data.turn}</span>
-          <h1 class="t-display os-title">{caption}</h1>
-          <div class="t-small t-muted">by <a href={osHref.soul(data.cycle, data.turn)}>{j.soul.name}</a> · published {dateTime(j.published_at)} · {j.pages.length} page{j.pages.length === 1 ? "" : "s"}</div>
-        </div>
-        {#if data.asOf}<AsOf at={data.asOf} stale={data.stale} />{/if}
-      </div>
-      <div class="os-actions">
-        <nav class="fp-seg" aria-label="View">
-          <a href={withParams(page.url, { view: null })} aria-current={plain ? undefined : "page"}><BookOpen class="fp-ico fp-ico--sm" strokeWidth={1.4} />Book</a>
-          <a href={withParams(page.url, { view: "text", page: null })} aria-current={plain ? "page" : undefined}><AlignLeft class="fp-ico fp-ico--sm" strokeWidth={1.4} />Plain text</a>
-        </nav>
-        <button type="button" class="fp-btn" onclick={copy}>
-          {#if copied === "yes"}<Check class="fp-ico fp-ico--sm" strokeWidth={1.4} />Copied{:else}<Copy class="fp-ico fp-ico--sm" strokeWidth={1.4} />Copy journal as text{/if}
-        </button>
-        <span class="visually-hidden" role="status">{copied === "yes" ? "Journal copied" : copied === "failed" ? "Copying is not allowed here; use the plain text view" : ""}</span>
-      </div>
-    </section>
+<PageHead path="~/one-soul" cmd="cat" args="rounds/{data.cycle}/{data.turn}/journal" title="journal" note="round {data.cycle}, turn {data.turn}">
+  <OsTabs />
+  {#if j}
+    <div class="fx-filters">
+      <Segmented
+        label="View"
+        options={[
+          { href: withParams(page.url, { view: null }), label: "book", current: !plain },
+          { href: withParams(page.url, { view: "text", page: null }), label: "plain text", current: plain }
+        ]}
+      />
+      <button type="button" class="ink c6" onclick={copy}>{copied === "yes" ? "copied" : "copy journal as text"}</button>
+      <span class="visually-hidden" role="status">{copied === "yes" ? "Journal copied" : copied === "failed" ? "Copying is not allowed here; use the plain text view" : ""}</span>
+    </div>
+  {/if}
+</PageHead>
+
+{#if !j}
+  <Notice kind="warning">This journal could not be loaded right now.</Notice>
+{:else}
+  <Window path="~/one-soul/rounds/{data.cycle}/{data.turn}" args="--journal">
+    <WindowHead title={caption}>
+      by <a class="lnk" href={osHref.soul(data.cycle, data.turn)}>{j.soul.name}</a> · published {dateTime(j.published_at)} · {j.pages.length} page{j.pages.length === 1 ? "" : "s"}{#if data.asOf}{" · "}<AsOf at={data.asOf} stale={data.stale} />{/if}
+    </WindowHead>
+    {#if copied === "failed"}<p class="c3">Copying is not allowed here; use the plain text view.</p>{/if}
     {#if j.pages.length === 0}
-      <EmptyState icon={BookOpen} title="The pages are blank" />
+      <EmptyState title="The pages are blank" />
     {:else if plain}
       <ol class="os-pages">
         {#each j.pages as text, i (i)}
-          <li class="fp-card os-page">
-            <span class="t-caption os-page__no">Page {i + 1} of {j.pages.length}</span>
+          <li>
+            <span class="cap">Page {i + 1} of {j.pages.length}</span>
             <p class="os-page__text">{text}</p>
           </li>
         {/each}
       </ol>
     {:else}
-      <section class="fp-section os-book">
+      <div class="os-book">
         <Book pages={j.pages} label={caption} uni={data.uni} />
-        <p class="t-small t-muted os-hint">Turn pages with the arrows, the arrow keys or a swipe. Text can be selected and copied.</p>
-      </section>
+        <p class="c1 os-hint">Turn pages with the arrows, the arrow keys or a swipe. Text can be selected and copied.</p>
+      </div>
     {/if}
-  {/if}
-</div>
+  </Window>
+{/if}
 
 <style>
-  .os-title {
-    margin: var(--space-1) 0;
-    overflow-wrap: anywhere;
-  }
-  .os-actions {
-    display: flex;
-    gap: var(--space-3);
-    flex-wrap: wrap;
-    align-items: center;
-  }
   .os-book {
+    display: flex;
+    flex-direction: column;
     align-items: center;
+    gap: 12px;
   }
   .os-hint {
     text-align: center;
+    font-size: 14px;
   }
   .os-pages {
     list-style: none;
     margin: 0;
     padding: 0;
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: var(--space-4);
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
+    gap: 24px 32px;
   }
-  .os-page {
-    padding: var(--space-4);
+  .os-pages li {
     display: flex;
     flex-direction: column;
-    gap: var(--space-2);
-  }
-  .os-page__no {
-    color: var(--faint);
+    gap: 6px;
+    padding-top: 8px;
+    border-top: 1px solid var(--ink-hairline);
+    min-width: 0;
   }
   .os-page__text {
     margin: 0;
     white-space: pre-wrap;
     overflow-wrap: anywhere;
-    font: 400 15px/24px var(--font-text);
   }
 </style>

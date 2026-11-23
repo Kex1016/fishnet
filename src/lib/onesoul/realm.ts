@@ -1,6 +1,6 @@
 // The two realms of the site (WEBSITE-BRIEF §4): the regular Fishnet look and the One Soul look. The realm
 // is an attribute on <html> (`data-realm="onesoul"`, empty for the regular site) that switches the design
-// tokens (src/lib/onesoul/realm.css). The server sets it on the first render (hooks.server.ts); client-side
+// tokens (the `realm-*` Gruvbox values in src/lib/design/tokens.css). The server sets it on the first render (hooks.server.ts); client-side
 // navigations switch it through an animated transition (transition.ts).
 
 export type RealmName = "" | "onesoul";

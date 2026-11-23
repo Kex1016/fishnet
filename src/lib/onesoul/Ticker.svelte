@@ -17,4 +17,4 @@
   });
 </script>
 
-<span class="t-num t-tabular">{style === "clock" ? clock(value) : life(value)}</span>
+<span class="num">{style === "clock" ? clock(value) : life(value)}</span>

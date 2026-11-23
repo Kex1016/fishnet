@@ -13,7 +13,6 @@
   //   showMarker(id, {focus})        centre on a map marker (fit its box) and open its popup (FMK-2)
   import { onMount, untrack } from "svelte";
   import type * as Leaflet from "leaflet";
-  import { Home, Minus, Plus, X } from "@lucide/svelte";
   import "./map.css";
   import "./markers/markers.css";
   import { centreLatLng, clampZoom, faceSrc, maxZoom, openingView, readout, stillOffset, stillTiles, toBlock, toLatLng } from "./crs.ts";
@@ -134,7 +133,7 @@
         bounceAtZoomLimits: false,
         inertia: !calm,
         zoomAnimation: !calm,
-        fadeAnimation: !calm,
+        fadeAnimation: false, // haiiro: no fades
         markerZoomAnimation: !calm,
         maxBoundsViscosity: 0
       });
@@ -291,27 +290,26 @@
 
   {#if ready}
     {#if following && followed}
-      <button type="button" class="fp-chip mc__follow" aria-pressed="true" onclick={stopFollowing} title="Stop following">
-        {#if followedFace}<img class="fp-face" src={followedFace} alt="" width="16" height="16" />{/if}
+      <button type="button" class="mc__follow" aria-pressed="true" onclick={stopFollowing} title="Stop following">
+        {#if followedFace}<img src={followedFace} alt="" width="16" height="16" />{/if}
         <span>Following {followed.name}</span>
-        <X class="fp-ico fp-ico--sm" aria-hidden="true" />
+        <b class="mc__x" aria-hidden="true">×</b>
       </button>
     {/if}
     <div class="mc__controls" role="group" aria-label="Map controls">
-      <button type="button" class="fp-ibtn" aria-label="Zoom in" title="Zoom in" disabled={zoom >= top} onclick={() => map?.zoomIn()}><Plus class="fp-ico" aria-hidden="true" /></button>
-      <button type="button" class="fp-ibtn" aria-label="Zoom out" title="Zoom out" disabled={zoom <= world.zoom.min} onclick={() => map?.zoomOut()}><Minus class="fp-ico" aria-hidden="true" /></button>
-      <hr />
-      <button type="button" class="fp-ibtn" aria-label="Back to spawn" title="Back to spawn" onclick={toSpawn}><Home class="fp-ico" aria-hidden="true" /></button>
+      <button type="button" aria-label="Zoom in" title="Zoom in" disabled={zoom >= top} onclick={() => map?.zoomIn()}><span aria-hidden="true">+</span></button>
+      <button type="button" aria-label="Zoom out" title="Zoom out" disabled={zoom <= world.zoom.min} onclick={() => map?.zoomOut()}><span aria-hidden="true">-</span></button>
+      <button type="button" class="mc__spawn" aria-label="Back to spawn" title="Back to spawn" onclick={toSpawn}><span aria-hidden="true">⌂</span></button>
     </div>
     {#if unmapped}
-      <div class="mc__empty fp-rise">
+      <div class="mc__empty">
         <p>This area is not mapped yet</p>
-        <button type="button" class="fp-btn" onclick={toSpawn}>Back to spawn</button>
+        <button type="button" class="ink c3" onclick={toSpawn}>Back to spawn</button>
       </div>
     {/if}
   {/if}
   <div class="mc__foot">
-    <output class="mc__readout" aria-label="Coordinates">{readout(pointer ?? at)}</output>
+    <output class="mc__readout" aria-label="Coordinates">{readout(pointer ?? at)} <span class="c1">·</span> <span class="c1">zoom</span> {zoom}</output>
     <span class="mc__credit">Tiles by squaremap</span>
   </div>
 </div>

@@ -18,6 +18,8 @@
   import EmptyState from "#lib/design/EmptyState.svelte";
   import Face from "#lib/design/Face.svelte";
   import Notice from "#lib/design/Notice.svelte";
+  import PageHead from "#lib/design/PageHead.svelte";
+  import Window from "#lib/design/Window.svelte";
   import MapCanvas from "#lib/map/MapCanvas.svelte";
   import WorldPicker from "#lib/map/WorldPicker.svelte";
   import MapPopout from "#lib/map/MapPopout.svelte";
@@ -33,7 +35,6 @@
   import { groupPlayers } from "#lib/map/pages.ts";
   import type { LiveState, MapView, PlayerDot, TilesEvent } from "#lib/map/types.ts";
   import { asOf } from "#lib/format/dates.ts";
-  import { Check, Copy, Crosshair, Globe, Link2, Map as MapIcon, Radio, TriangleAlert, Users } from "@lucide/svelte";
   let { data } = $props();
 
   let players = $state<PlayerDot[]>(untrack(() => data.players));
@@ -199,22 +200,22 @@
 </script>
 
 {#if !v}
-  <div class="fp-page">
-    <header class="fp-hero">
-      <span class="t-kicker">Map</span>
-      <h1 class="t-display">{data.name}</h1>
-    </header>
-    {#if data.down}
-      <Notice kind="warning"><b>cakeutils could not be reached.</b> The map will be back when it is.</Notice>
-    {:else if data.problem}
-      <EmptyState icon={MapIcon} title={problems[data.problem as keyof typeof problems].title} line={problems[data.problem as keyof typeof problems].line}>
-        {#if data.worlds.length > 1}
-          <p class="fp-chips">{#each data.worlds as w (w.id)}<a class="fp-chip" href={mapHref(data.server, { world: w.id })}>{w.name}</a>{/each}</p>
-        {/if}
-      </EmptyState>
-    {/if}
-    <p class="t-small"><a href="/map">All maps</a></p>
-  </div>
+  <PageHead path="fishplex" cmd="cd" args="~/map/{data.server}" title={data.name} />
+  {#if data.down}
+    <Notice kind="warning">cakeutils could not be reached. The map will be back when it is.</Notice>
+  {:else if data.problem}
+    {@const pr = problems[data.problem as keyof typeof problems]}
+    <Window path="~/map/{data.server}" args="ls">
+      <EmptyState title={pr.title} line={pr.line} />
+      {#if data.worlds.length > 1}
+        <span class="lab">worlds</span>
+        <div class="list">
+          {#each data.worlds as w (w.id)}<a class="li" href={mapHref(data.server, { world: w.id })}><span class="mk">»</span><span class="grow">{w.name}</span></a>{/each}
+        </div>
+      {/if}
+    </Window>
+  {/if}
+  <p><a class="ink c5" href="/map">all maps</a></p>
 {:else}
   <div class="mc-stage">
     <h1 class="visually-hidden">Map of {data.name}: {v.name}</h1>
@@ -234,72 +235,75 @@
     {/key}
     <div class="mc-over">
       <div class="mc-over__row">
-        <MapPopout label="Worlds" value={v.name} icon={Globe}>
-          <WorldPicker server={v.server} worlds={data.worlds} current={v.id} />
-          {#if data.others.length > 1}
-            <span class="mc-pop__title">Servers</span>
-            <div class="mc-pop__list">
-              {#each data.others as s (s.server)}
-                <a class="mc-pop__item" href={mapHref(s.server)} aria-current={s.server === v.server ? "page" : undefined}><span class="mc-pop__grow">{s.name}</span></a>
-              {/each}
-            </div>
-          {/if}
-        </MapPopout>
-        <MapPopout label="Players" count={data.positions === "on" ? players.length : undefined} icon={Users}>
-          {#if data.positions === "off"}
-            <span class="mc-pop__line">Live positions are off on this server.</span>
-          {:else if data.positions === "down"}
-            <span class="mc-pop__line">Positions could not be read right now.</span>
-          {:else if players.length === 0}
-            <span class="mc-pop__line">No one is online.</span>
-          {:else}
-            {#if groups.here.length}
-              <div class="mc-pop__list">
-                {#each groups.here as p (p.uuid)}
-                  <div class="mp-row">
-                    <a class="mc-pop__item" href={mapHref(v.server, { world: v.id, x: p.x, z: p.z, zoom: v.zoom.max })} onclick={(e) => centreOn(e, p)}>
-                      <Face uuid={p.uuid} size="sm" />
-                      <span class="mc-pop__grow">{p.name}</span>
-                      <span class="mc-pop__note">{readout(p)}</span>
-                    </a>
-                    {#if mounted}
-                      <button type="button" class="fp-ibtn" aria-pressed={follow === p.uuid} aria-label="{follow === p.uuid ? 'Stop following' : 'Follow'} {p.name}" title={follow === p.uuid ? "Stop following" : "Follow"} onclick={() => (follow = follow === p.uuid ? null : p.uuid)}>
-                        <Crosshair class="fp-ico" aria-hidden="true" />
-                      </button>
-                    {/if}
+        <section class="mc-bar window" aria-label="Map of {data.name}">
+          <span class="section-header" aria-hidden="true"><span class="hide-phone">fish: <b>~/map/{v.server}</b></span><span class="hide-desk">{v.server}: <b>{v.name.toLowerCase()}</b></span></span>
+          <div class="mc-bar__row">
+            <MapPopout label="Worlds" value={v.name} path="~/map/{v.server}" cmd="ls">
+              <WorldPicker server={v.server} worlds={data.worlds} current={v.id} />
+              {#if data.others.length > 1}
+                <span class="mc-pop__title">Servers</span>
+                <div class="mc-pop__list">
+                  {#each data.others as s (s.server)}
+                    <a class="mc-pop__item" href={mapHref(s.server)} aria-current={s.server === v.server ? "page" : undefined}><span class="mc-pop__grow">{s.name}</span></a>
+                  {/each}
+                </div>
+              {/if}
+            </MapPopout>
+            <MapPopout label="Players" count={data.positions === "on" ? players.length : undefined} path="~/map/{v.server}" cmd="who">
+              {#if data.positions === "off"}
+                <span class="mc-pop__line">Live positions are off on this server.</span>
+              {:else if data.positions === "down"}
+                <span class="mc-pop__line">Positions could not be read right now.</span>
+              {:else if players.length === 0}
+                <span class="mc-pop__line">No one is online.</span>
+              {:else}
+                <span class="mc-pop__title">In {v.name}</span>
+                {#if groups.here.length}
+                  <div class="mc-pop__list">
+                    {#each groups.here as p (p.uuid)}
+                      <div class="mp-row">
+                        <a class="mc-pop__item" href={mapHref(v.server, { world: v.id, x: p.x, z: p.z, zoom: v.zoom.max })} aria-current={follow === p.uuid ? "true" : undefined} onclick={(e) => centreOn(e, p)}>
+                          <Face uuid={p.uuid} size="sm" />
+                          <span class="mc-pop__grow">{p.name}</span>
+                          <span class="mc-pop__note">{readout(p)}</span>
+                        </a>
+                        {#if mounted}
+                          <button type="button" class="ink flat mp-follow" aria-pressed={follow === p.uuid} aria-label="{follow === p.uuid ? 'Stop following' : 'Follow'} {p.name}" title={follow === p.uuid ? "Stop following" : "Follow"} onclick={() => (follow = follow === p.uuid ? null : p.uuid)}>{follow === p.uuid ? "following" : "follow"}</button>
+                        {/if}
+                      </div>
+                    {/each}
                   </div>
-                {/each}
-              </div>
-            {:else}
-              <span class="mc-pop__line">No one is in this world right now.</span>
+                {:else}
+                  <span class="mc-pop__line">No one is in this world right now.</span>
+                {/if}
+                {#if groups.elsewhere.length}
+                  <span class="mc-pop__title">In other worlds</span>
+                  <div class="mc-pop__list">
+                    {#each groups.elsewhere as p (p.uuid)}
+                      <a class="mc-pop__item" href={mapHref(v.server, { world: p.world, x: p.x, z: p.z })}>
+                        <Face uuid={p.uuid} size="sm" />
+                        <span class="mc-pop__grow">{p.name}</span>
+                        <span class="mc-pop__note">{worldName.get(p.world) ?? p.world}</span>
+                      </a>
+                    {/each}
+                  </div>
+                {/if}
+                <span class="mc-pop__foot" aria-hidden="true"><span>{liveState === "live" && data.positions === "on" ? "live" : "not live"}</span></span>
+              {/if}
+            </MapPopout>
+            <PlacesPopout markers={places} state={mk.state} {selected} asOf={mk.asOf} stale={mk.stale} worldName={v.name} onpick={pickPlace} form={{ action: mapHref(v.server), world: v.id }} path="~/map/{v.server}" bind:open={placesOpen} />
+            {#if layerList.length}
+              <LayersPopout layers={layerList} ontoggle={toggleLayer} hint="Pins and named areas that players placed in game." path="~/map/{v.server}" />
             {/if}
-            {#if groups.elsewhere.length}
-              <span class="mc-pop__title">In other worlds</span>
-              <div class="mc-pop__list">
-                {#each groups.elsewhere as p (p.uuid)}
-                  <a class="mc-pop__item" href={mapHref(v.server, { world: p.world, x: p.x, z: p.z })}>
-                    <Face uuid={p.uuid} size="sm" />
-                    <span class="mc-pop__grow">{p.name}</span>
-                    <span class="mc-pop__note">{worldName.get(p.world) ?? p.world}</span>
-                  </a>
-                {/each}
-              </div>
-            {/if}
-          {/if}
-        </MapPopout>
-        <PlacesPopout markers={places} state={mk.state} {selected} asOf={mk.asOf} stale={mk.stale} worldName={v.name} onpick={pickPlace} form={{ action: mapHref(v.server), world: v.id }} bind:open={placesOpen} />
-        {#if layerList.length}
-          <LayersPopout layers={layerList} ontoggle={toggleLayer} hint="Pins and named areas that players placed in game." />
-        {/if}
-        <MapPopout label="Share" icon={Link2}>
-          <span class="mc-pop__line">This link opens the map as you see it now.</span>
-          <input class="fp-field mp-url t-mono" type="text" readonly value={absolute} aria-label="Link to this view" onfocus={(e) => e.currentTarget.select()} />
-          {#if mounted}
-            <button type="button" class="fp-btn" onclick={copy}>
-              {#if copied}<Check class="fp-ico fp-ico--sm" aria-hidden="true" /> Copied{:else}<Copy class="fp-ico fp-ico--sm" aria-hidden="true" /> Copy link{/if}
-            </button>
-          {/if}
-        </MapPopout>
+            <MapPopout label="Share" path="~/map/{v.server}" cmd="share">
+              <span class="mc-pop__line">This link opens the map as you see it now.</span>
+              <input class="mp-url" type="text" readonly value={absolute} aria-label="Link to this view" onfocus={(e) => e.currentTarget.select()} />
+              {#if mounted}
+                <button type="button" class="ink c3 mp-copy" onclick={copy}>{copied ? "copied" : "copy link"}</button>
+              {/if}
+            </MapPopout>
+          </div>
+        </section>
         {#if data.markerMissing}
           <div class="mp-note">
             <Notice kind="info">This marker is not on the map any more.</Notice>
@@ -317,17 +321,17 @@
         {#if data.down || data.stale || liveState !== "live" || data.positions !== "on"}
           <ul class="mp-status" aria-label="Map status">
             {#if data.stale && data.asOf}
-              <li class="fp-tag fp-tag--warning"><TriangleAlert class="fp-ico fp-ico--sm" aria-hidden="true" /> cakeutils could not be reached, {asOf(data.asOf)}</li>
+              <li class="warn"><b>heads up</b> cakeutils could not be reached, {asOf(data.asOf)}</li>
             {/if}
             {#if liveState === "stale"}
-              <li class="fp-tag fp-tag--warning"><TriangleAlert class="fp-ico fp-ico--sm" aria-hidden="true" /> Positions {liveAt ? asOf(liveAt) : "are out of date"}</li>
+              <li class="warn"><b>heads up</b> Positions {liveAt ? asOf(liveAt) : "are out of date"}</li>
             {:else if liveState === "offline"}
-              <li class="fp-tag fp-tag--warning"><TriangleAlert class="fp-ico fp-ico--sm" aria-hidden="true" /> The server's map is offline{liveAt ? `, ${asOf(liveAt)}` : ""}</li>
+              <li class="warn"><b>heads up</b> The server's map is offline{liveAt ? `, ${asOf(liveAt)}` : ""}</li>
             {/if}
             {#if data.positions === "off"}
-              <li class="fp-tag"><Radio class="fp-ico fp-ico--sm" aria-hidden="true" /> Live positions are off</li>
+              <li><b>note</b> Live positions are off</li>
             {:else if data.positions === "down"}
-              <li class="fp-tag fp-tag--warning"><TriangleAlert class="fp-ico fp-ico--sm" aria-hidden="true" /> Positions could not be read</li>
+              <li class="warn"><b>heads up</b> Positions could not be read</li>
             {/if}
           </ul>
         {/if}
@@ -337,13 +341,20 @@
 {/if}
 
 <style>
-  .mp-row { display: flex; align-items: center; gap: var(--space-1); }
+  .mp-row { display: flex; align-items: center; gap: 4px; }
   .mp-row > :global(.mc-pop__item) { flex: 1 1 auto; min-width: 0; }
-  .mp-row > :global(.fp-ibtn) { flex: none; }
-  .mp-row > :global(.fp-ibtn[aria-pressed="true"]) { background: var(--acc-soft); color: var(--acc-ink); }
-  .mp-note { flex: 1 1 100%; max-width: 36rem; box-shadow: var(--shadow-pill); }
-  .mp-url { width: 100%; min-width: 0; font-size: 12px; text-overflow: ellipsis; }
-  .mp-status { align-self: center; display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); margin: 0; padding: 0; list-style: none; }
-  .mp-status > :global(li) { height: 24px; box-shadow: var(--shadow-pill); background: var(--surface); border: 1px solid var(--line); }
-  .mp-status > :global(li.fp-tag--warning) { background: var(--warning-soft); border-color: transparent; }
+  .mp-follow { flex: none; min-height: 28px; font-size: 12px; }
+  .mp-follow[aria-pressed="true"] { background: var(--color-gold); color: var(--color-surface); }
+  .mp-follow:focus-visible, .mp-copy:focus-visible, .mp-url:focus-visible { outline: 2px solid var(--color-foam); outline-offset: 2px; }
+  .mp-note { max-width: 36rem; background: var(--color-surface); box-shadow: 4px 4px 0 var(--color-base); }
+  .mp-url { width: 100%; min-width: 0; padding: 4px 8px; border: 1px solid var(--ink-hairline); background: var(--color-base); color: var(--color-text); font: inherit; font-size: 12px; text-overflow: ellipsis; }
+  .mp-copy { align-self: flex-start; min-height: 28px; }
+  .mp-status { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; margin: 0; padding: 0; list-style: none; }
+  .mp-status > li { padding: 2px 8px; font-size: 12px; line-height: 16px; background: var(--color-surface); border: 1px dashed var(--color-foam); box-shadow: 4px 4px 0 var(--color-base); }
+  .mp-status > li > b { font-weight: 400; color: var(--color-foam); margin-right: 1ch; }
+  .mp-status > li.warn { border-color: var(--color-gold); }
+  .mp-status > li.warn > b { color: var(--color-gold); }
+  @media (pointer: coarse) {
+    .mp-follow, .mp-copy { min-height: var(--touch); }
+  }
 </style>

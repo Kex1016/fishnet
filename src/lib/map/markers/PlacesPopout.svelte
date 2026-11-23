@@ -5,7 +5,6 @@
   // (areas, largest first, then pins: view.ts `drawOrder`). `none` renders nothing at all; `down` says so with a
   // Notice; a stale list says "as of <time> <zone>". Without JavaScript a button is a GET form field, so
   // `?marker=<id>` still opens the marker (the page's load finds its world). Titles are player text: text nodes.
-  import { MapPin } from "@lucide/svelte";
   import EmptyState from "#lib/design/EmptyState.svelte";
   import Notice from "#lib/design/Notice.svelte";
   import { asOf as asOfText } from "#lib/format/dates.ts";
@@ -13,7 +12,7 @@
   import { markerName } from "./text.ts";
   import type { PlacesPopoutProps } from "./types.ts";
 
-  let { markers, state: load, selected, asOf, stale, worldName, onpick, form, open = $bindable(false) }: PlacesPopoutProps & { open?: boolean } = $props();
+  let { markers, state: load, selected, asOf, stale, worldName, onpick, form, path, open = $bindable(false) }: PlacesPopoutProps & { open?: boolean; /** the place in the window's prompt heading */ path?: string } = $props();
 
   let list = $state<HTMLElement>();
   let active = $state<number | null>(null);
@@ -47,7 +46,7 @@
 </script>
 
 {#if load !== "none"}
-  <MapPopout label="Places" count={load === "ok" ? markers.length : undefined} icon={MapPin} bind:open>
+  <MapPopout label="Places" count={load === "ok" ? markers.length : undefined} {path} cmd="places" bind:open>
     {#if load === "down"}
       <Notice kind="warning">Markers could not be read right now.</Notice>
     {:else}
@@ -55,7 +54,7 @@
         <Notice kind="warning">The list of places could not be refreshed, {asOfText(asOf)}.</Notice>
       {/if}
       {#if markers.length === 0}
-        <EmptyState icon={MapPin} title="No markers in this world yet" line="Players add places in game." />
+        <EmptyState title="No markers in this world yet" line="Players add places in game." />
       {:else}
         <span class="mc-pop__line">Places in {worldName}. Arrow keys move, Enter shows one on the map.</span>
         <!-- svelte-ignore a11y_no_noninteractive_element_interactions: the arrow keys move between the buttons inside -->
@@ -90,8 +89,10 @@
 {/if}
 
 <style>
-  /* the entry's own shape beside its name (a pin or a filled square), never colour alone */
-  .pl-shape { flex: none; width: 14px; height: 14px; background: var(--c); box-shadow: 0 0 0 1.5px var(--surface), 0 0 0 2.5px var(--line); }
-  .pl-shape[data-kind="point"] { border-radius: 50% 50% 50% 0; transform: rotate(-45deg) scale(0.85); }
-  .pl-shape[data-kind="area"] { border-radius: 3px; }
+  /* the entry's own shape beside its name, never colour alone: a pin is a square flag on a stem (the map's pin),
+     an area a dashed square (the map's area) */
+  .pl-shape { position: relative; flex: none; width: 14px; height: 14px; }
+  .pl-shape[data-kind="point"]::before { content: ""; position: absolute; left: 2px; top: 0; width: 10px; height: 8px; background: var(--c); outline: 1px solid var(--color-base); }
+  .pl-shape[data-kind="point"]::after { content: ""; position: absolute; left: 6px; top: 8px; width: 2px; height: 6px; background: var(--c); }
+  .pl-shape[data-kind="area"] { border: 2px dashed var(--c); background: color-mix(in srgb, var(--c) 20%, transparent); }
 </style>

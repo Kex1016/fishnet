@@ -232,7 +232,7 @@ await check("a small area above a big one stays clickable; pins are above areas;
   await page.mouse.click(p.x, p.y);
   expect((await popupTitle(page)) === "Spawn", `pin: ${await popupTitle(page)}`);
   // the bare map closes it and the address bar forgets the marker
-  await page.mouse.click(60, 140);
+  await page.mouse.click(60, 260); // under the map's bar window at the top left
   expect(await popupGone(page), "popup still open after clicking the map");
   await page.waitForTimeout(700);
   expect(!page.url().includes("marker="), `address bar ${page.url()}`);

@@ -6,12 +6,32 @@
   import Notice from "#lib/design/Notice.svelte";
   import AsOf from "#lib/design/AsOf.svelte";
   import PlayerName from "#lib/design/PlayerName.svelte";
+  import Feed from "#lib/design/Feed.svelte";
+  import Ladder from "#lib/design/Ladder.svelte";
   import Slot from "#lib/design/Slot.svelte";
   import { problemCode } from "#lib/api/result.ts";
-  import { ago, dateTime, iso } from "#lib/format/dates.ts";
+  import { ago, day } from "#lib/format/dates.ts";
   import { nextRung, whenOf, whoOf } from "./helpers.ts";
+  import When from "./When.svelte";
   let { result, statName, icon, kind }: MilestoneLadderProps = $props();
   const next = $derived(result.ok ? nextRung(result.data.milestones) : -1);
+  // the squares: every rung as reached, the next one, or not reached yet; the title says it in words
+  const steps = $derived(
+    result.ok
+      ? result.data.milestones.map((m, i) => {
+          const w = whenOf(m);
+          const who = whoOf(m);
+          const state: "reached" | "next" | "locked" = w.state === "none" ? (i === next ? "next" : "locked") : "reached";
+          const title =
+            state === "reached"
+              ? `${m.display}: first reached by ${who?.name ?? "an unknown player"}${w.state === "at" ? `, ${day(w.at)}` : ", before tracking began"}`
+              : state === "next"
+                ? `${m.display}: next to reach`
+                : `${m.display}: not reached yet`;
+          return { key: String(m.threshold), label: m.display, state, title };
+        })
+      : []
+  );
 </script>
 
 {#if !result.ok}
@@ -31,44 +51,37 @@
 {:else}
   {#if result.stale}<Notice kind="warning"><b>cakeutils could not be reached.</b> Showing the last good data, <AsOf at={result.asOf} stale />.</Notice>{/if}
   {#if statName || icon}
-    <div class="fp-lad__head">
-      <Slot {icon} kind={kind} name={statName} />
-      <span class="t-title-4">{statName}</span>
+    <div class="head">
+      <Slot {icon} {kind} name={statName} />
+      <b>{statName}</b>
     </div>
   {/if}
   {#if result.data.milestones.length === 0}
     <EmptyState title="No milestones yet" line="The first player to reach a threshold shows up here." />
   {:else}
-    <ol class="fp-lad">
+    <div class="fx-stack">
+    <Ladder {steps} label="Milestone ladder" />
+    <Feed label="Milestones, lowest first">
       {#each result.data.milestones as m, i (m.threshold)}
         {@const who = whoOf(m)}
         {@const when = whenOf(m)}
-        <li class="fp-lad__rung" class:fp-lad__rung--todo={when.state === "none"} class:fp-lad__rung--next={i === next} aria-current={i === next ? "step" : undefined}>
-          <span class="fp-lad__thr">{m.display}</span>
-          <span class="fp-lad__who">
+        <div class="li" aria-current={i === next ? "step" : undefined}>
+          <span class="thr"><b>{m.display}</b></span>
+          <span class="txt">
             {#if who}<PlayerName uuid={who.uuid} name={who.name} />
-            {:else if when.state === "none"}<span class="t-faint">{i === next ? "Next to reach" : "Not reached yet"}</span>
-            {:else}<span class="t-muted">First player unknown</span>{/if}
+            {:else if when.state === "none"}<span class="c1">{i === next ? "Next to reach" : "Not reached yet"}</span>
+            {:else}<span class="c1">First player unknown</span>{/if}
           </span>
-          <span class="fp-lad__when">
-            {#if when.state === "at"}<time datetime={iso(when.at)} title={dateTime(when.at)}>{ago(when.at)}</time>
-            {:else if when.state === "before"}<span class="fp-tag">Reached before tracking began</span>{/if}
-          </span>
-        </li>
+          {#if when.state !== "none"}<When {when} />{/if}
+        </div>
       {/each}
-    </ol>
+    </Feed>
+    </div>
   {/if}
 {/if}
 
 <style>
-  .fp-lad__head { display: flex; align-items: center; gap: var(--space-3); margin-bottom: var(--space-3); }
-  .fp-lad { display: flex; flex-direction: column; gap: 2px; }
-  .fp-lad__rung { display: grid; grid-template-columns: 96px minmax(0, 1fr) auto; align-items: center; gap: var(--space-3); min-height: 44px; padding: 0 var(--space-3); border-radius: var(--radius-lg); }
-  .fp-lad__rung--todo { opacity: 0.8; }
-  .fp-lad__rung--next { background: var(--acc-soft); opacity: 1; }
-  .fp-lad__thr { font: 600 14px/20px var(--font-mono); font-variant-numeric: tabular-nums; }
-  .fp-lad__rung--todo .fp-lad__thr { color: var(--muted); font-weight: 400; }
-  .fp-lad__who { min-width: 0; font: 400 14px/20px var(--font-text); }
-  .fp-lad__when { font: 400 12px/16px var(--font-mono); color: var(--faint); text-align: right; }
-  @media (max-width: 640px) { .fp-lad__rung { grid-template-columns: 72px minmax(0, 1fr) auto; } .fp-lad__when .fp-tag { white-space: normal; height: auto; } }
+  .head { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+  .thr { flex: none; width: 12ch; }
+  .li :global(.when) { margin-left: auto; }
 </style>

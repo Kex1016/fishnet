@@ -3,167 +3,146 @@
   import EmptyState from "#lib/design/EmptyState.svelte";
   import Face from "#lib/design/Face.svelte";
   import Notice from "#lib/design/Notice.svelte";
+  import PageHead from "#lib/design/PageHead.svelte";
+  import Window from "#lib/design/Window.svelte";
+  import WindowHead from "#lib/design/WindowHead.svelte";
   import { BarList, Heatmap, LineChart, StatTile, UptimeStrip } from "#lib/charts/index.ts";
   import { AdvancementFeed, MilestoneFeed } from "#lib/milestones/index.ts";
   import { boardHref, PLAYTIME } from "#lib/api/metric.ts";
   import { group } from "#lib/format/stat-display.ts";
   import { titleCase } from "#lib/players/names.ts";
-  import { ArrowRight, Map as MapIcon } from "@lucide/svelte";
   import { HOURS, meanPlayers } from "../boards.ts";
   let { data } = $props();
   const s = $derived(data.server);
   const linked = $derived(!!s?.mc_version);
   const pt = $derived(data.playtime);
+  const build = $derived(s?.mc_version ? `${s.platform ? titleCase(s.platform) : "Server"} ${s.mc_version}` : undefined);
+  const lede = $derived(!s ? undefined : linked ? `${build}, linked to the network.` : "This server is not connected to the network right now.");
 </script>
 
-<div class="fp-page">
-  <header class="fp-hero">
-    <span class="t-kicker">Server</span>
-    <h1 class="t-display">{data.name}</h1>
+<PageHead path="~/servers" cmd="cd" args={data.id} title={data.name} {lede} />
+
+{#if !data.network.ok}
+  <Notice kind="warning"><b>cakeutils could not be reached.</b> This server's status will be back when it is.</Notice>
+{:else if !linked}
+  <Notice kind="info"><b>Not linked right now.</b> The numbers below are what the network has recorded here so far.</Notice>
+{/if}
+
+<Window shell="server" path={data.id} tone={linked ? "pine" : "off"}>
+  <WindowHead title="Right now">{#if data.network.ok}<AsOf at={data.network.asOf} stale={data.network.stale} />{/if}</WindowHead>
+  <div class="stat-panel fx-tiles">
     {#if s}
-      <p class="fp-lede">
-        {#if linked}<span class="fp-tag fp-tag--success">{s.platform ? titleCase(s.platform) : "Server"} {s.mc_version}</span>{:else}<span class="fp-tag">not linked</span> This server is not connected to the network right now.{/if}
-      </p>
+      <StatTile label="Online now" value={String(s.online)} spark={data.onlineRecent.points.length >= 2 ? data.onlineRecent.points : undefined} sparkLabel="Players online here, recent" />
+      <StatTile label="Waiting" value={String(s.waiting)} note="in the queue for this server" />
     {/if}
-  </header>
-
-  {#if !data.network.ok}
-    <Notice kind="warning"><b>cakeutils could not be reached.</b> This server's status will be back when it is.</Notice>
-  {:else if !linked}
-    <Notice kind="info"><b>Not linked right now.</b> The numbers below are what the network has recorded here so far.</Notice>
-  {/if}
-
-  <section class="fp-section">
-    <div class="fp-section__head">
-      <h2 class="t-title-2">Right now</h2>
-      {#if data.network.ok}<AsOf at={data.network.asOf} stale={data.network.stale} />{/if}
-    </div>
-    <div class="fp-tiles">
-      {#if s}
-        <StatTile label="Online now" value={String(s.online)} spark={data.onlineRecent.points.length >= 2 ? data.onlineRecent.points : undefined} sparkLabel="Players online here, recent" />
-        <StatTile label="Waiting" value={String(s.waiting)} note="in the queue for this server" />
-      {/if}
-      {#if pt.ok && !pt.empty}
-        <StatTile label="Players" value={group(pt.players)} note="have played here" href={boardHref(PLAYTIME, data.scope)} />
-        <StatTile label="Time played" value={pt.time} note="on this server" href={boardHref(PLAYTIME, data.scope)} />
-      {/if}
-    </div>
-    {#if data.faces.length}
-      <div class="fp-faces">
-        {#each data.faces as p (p.uuid)}<a href="/players/{encodeURIComponent(p.name)}" title={p.name}><Face uuid={p.uuid} name={p.name} /></a>{/each}
-      </div>
-    {:else if s}
-      <EmptyState title="Nobody is on right now" line="Players appear here while they are on this server." />
+    {#if pt.ok && !pt.empty}
+      <StatTile label="Players" value={group(pt.players)} note="have played here" href={boardHref(PLAYTIME, data.scope)} />
+      <StatTile label="Time played" value={pt.time} note="on this server" href={boardHref(PLAYTIME, data.scope)} />
     {/if}
-  </section>
-
-  {#if data.map}
-    <a class="fp-panel maplink" href={data.map.href}>
-      <MapIcon class="fp-ico" strokeWidth={1.4} aria-hidden="true" />
-      <span class="maplink__text">
-        <span class="t-title-3">Map</span>
-        <span class="t-small t-muted">{data.map.worlds.join(", ")}{data.map.live ? " · live positions" : ""}{data.map.online ? "" : " · map offline"}</span>
-      </span>
-      <ArrowRight class="fp-ico" strokeWidth={1.4} aria-hidden="true" />
-    </a>
-  {/if}
-
-  <div class="fp-panels">
-    <LineChart
-      title="Online over the week"
-      sub="{data.name} · players online"
-      since={data.onlineWeek.since ?? data.since}
-      points={data.onlineWeek.points}
-      shadow={data.waiting.length ? { label: "Waiting", points: data.waiting } : undefined}
-      emptyTitle="No history yet"
-      emptyLine="Online counts are recorded every minute once the site is live."
-    />
-    <UptimeStrip
-      title="Last 7 days"
-      sub="{data.name} · online and linked"
-      since={data.since}
-      samples={data.samples}
-      emptyTitle="No history yet"
-      emptyLine="Whether the server was linked is recorded every minute once the site is live."
-    />
-    <Heatmap
-      title="Busiest hours"
-      sub="{data.name} · mean players online · last 30 days · UTC"
-      since={data.busiestHours.since ?? data.since}
-      rows={data.busiestHours.rows}
-      columns={HOURS}
-      format={meanPlayers}
-      cellLabel={(r, c) => `${r} ${c}:00`}
-      emptyTitle="No history yet"
-      emptyLine="The busiest hours show up after a few days of recording."
-    />
   </div>
-
-  <section class="fp-section">
-    <div class="fp-section__head"><h2 class="t-title-2">On this server</h2></div>
-    {#if !pt.ok && pt.outage}
-      <Notice kind="warning"><b>cakeutils could not be reached.</b> This server's boards will be back when it is.</Notice>
-    {:else}
-      {#if data.outage}<Notice kind="warning"><b>Some boards could not be loaded.</b> They will be back when cakeutils is.</Notice>{/if}
-      <div class="fp-panels">
-        <BarList
-          title="Playtime here"
-          href={boardHref(PLAYTIME, data.scope)}
-          sub="server · top 5"
-          faces
-          unit="ms"
-          asOf={pt.ok ? pt.asOf : undefined}
-          stale={pt.ok && pt.stale}
-          emptyTitle="No one has played on this server yet"
-          emptyLine="The players with the most time here show up on this board."
-          rows={pt.ok && !pt.empty ? pt.rows : []}
-        />
-        {#each data.boards as b (b.id)}
-          <BarList title={b.label} href={b.href} sub="server · top 5" faces unit={b.unit} asOf={b.asOf} stale={b.stale} emptyTitle="Nobody has done this yet" rows={b.rows} />
-        {/each}
-      </div>
-    {/if}
-  </section>
-
-  {#if data.live.length || data.busiest.length}
-    <section class="fp-section">
-      <div class="fp-section__head"><h2 class="t-title-2">Mini-servers</h2></div>
-      <div class="fp-panels">
-        {#if data.live.length}
-          <section class="fp-card">
-            <header class="fp-card__head">
-              <div><h3 class="fp-card__title">Running now</h3><div class="fp-card__sub">public mini-servers on {data.name}</div></div>
-            </header>
-            <div class="fp-card__body">
-              <ul class="fp-rows">
-                {#each data.live as m (m.id)}
-                  <li class="fp-row" style="grid-template-columns: minmax(0, 1fr) auto">
-                    <span class="fp-row__name">{m.name}</span>
-                    <span class="fp-row__value">{m.count} {m.count === 1 ? "player" : "players"}</span>
-                  </li>
-                  {#if m.players.length}
-                    <li class="fp-faces" style="padding: 0 var(--space-3) var(--space-2)">
-                      {#each m.players as p (p.uuid)}<a href="/players/{encodeURIComponent(p.name)}" title={p.name}><Face uuid={p.uuid} name={p.name} size="sm" /></a>{/each}
-                    </li>
-                  {/if}
-                {/each}
-              </ul>
-            </div>
-          </section>
-        {/if}
-        {#if data.busiest.length}
-          <BarList title="Busiest mini-servers" sub="peak players this week" since={data.since} rows={data.busiest} emptyTitle="No mini-servers yet" />
-        {/if}
-      </div>
-    </section>
+  {#if data.faces.length}
+    <div class="hr"></div>
+    <div class="fx-faces">
+      {#each data.faces as p (p.uuid)}<a href="/players/{encodeURIComponent(p.name)}" title={p.name}><Face uuid={p.uuid} name={p.name} /><span>{p.name}</span></a>{/each}
+    </div>
+  {:else if s}
+    <EmptyState title="Nobody is on right now" line="Players appear here while they are on this server." />
   {/if}
+</Window>
 
+{#if data.map}
+  <Window path="~/servers/{data.id}" args="--map" tone="foam">
+    <div class="list">
+      <a class="li" href={data.map.href}>
+        <span class="mk">»</span>
+        <span class="grow">Map · {data.map.worlds.join(", ")}</span>
+        <span class="meta">{data.map.live ? "live positions" : "no live positions"}{data.map.online ? "" : " · map offline"}</span>
+      </a>
+    </div>
+  </Window>
+{/if}
+
+<div class="fx-grid">
+  <LineChart
+    title="Online over the week"
+    sub="{data.name} · players online"
+    since={data.onlineWeek.since ?? data.since}
+    points={data.onlineWeek.points}
+    shadow={data.waiting.length ? { label: "Waiting", points: data.waiting } : undefined}
+    emptyTitle="No history yet"
+    emptyLine="Online counts are recorded every minute once the site is live."
+  />
+  <UptimeStrip
+    title="Last 7 days"
+    sub="{data.name} · online and linked"
+    since={data.since}
+    samples={data.samples}
+    emptyTitle="No history yet"
+    emptyLine="Whether the server was linked is recorded every minute once the site is live."
+  />
+  <Heatmap
+    title="Busiest hours"
+    sub="{data.name} · mean players online · last 30 days · UTC"
+    since={data.busiestHours.since ?? data.since}
+    rows={data.busiestHours.rows}
+    columns={HOURS}
+    format={meanPlayers}
+    cellLabel={(r, c) => `${r} ${c}:00`}
+    emptyTitle="No history yet"
+    emptyLine="The busiest hours show up after a few days of recording."
+  />
+</div>
+
+{#if !pt.ok && pt.outage}
+  <Window path="~/servers/{data.id}" args="--boards">
+    <WindowHead title="On this server" />
+    <Notice kind="warning"><b>cakeutils could not be reached.</b> This server's boards will be back when it is.</Notice>
+  </Window>
+{:else}
+  {#if data.outage}<Notice kind="warning"><b>Some boards could not be loaded.</b> They will be back when cakeutils is.</Notice>{/if}
+  <div class="fx-grid">
+    <BarList
+      title="Playtime here"
+      href={boardHref(PLAYTIME, data.scope)}
+      sub="server · top 5"
+      faces
+      unit="ms"
+      asOf={pt.ok ? pt.asOf : undefined}
+      stale={pt.ok && pt.stale}
+      emptyTitle="No one has played on this server yet"
+      emptyLine="The players with the most time here show up on this board."
+      rows={pt.ok && !pt.empty ? pt.rows : []}
+    />
+    {#each data.boards as b (b.id)}
+      <BarList title={b.label} href={b.href} sub="server · top 5" faces unit={b.unit} asOf={b.asOf} stale={b.stale} emptyTitle="Nobody has done this yet" rows={b.rows} />
+    {/each}
+  </div>
+{/if}
+
+{#if data.live.length || data.busiest.length}
+  <div class="fx-grid">
+    {#if data.live.length}
+      <Window path="~/servers/{data.id}" args="--minis">
+        <WindowHead title="Running now" level={3} asof="public mini-servers on {data.name}" />
+        <div class="list">
+          {#each data.live as m (m.id)}
+            <div class="li"><span class="mk">»</span><span class="grow">{m.name}</span><span class="meta">{m.count} {m.count === 1 ? "player" : "players"}</span></div>
+            {#if m.players.length}
+              <div class="fx-faces">
+                {#each m.players as p (p.uuid)}<a href="/players/{encodeURIComponent(p.name)}" title={p.name}><Face uuid={p.uuid} name={p.name} size="sm" /><span>{p.name}</span></a>{/each}
+              </div>
+            {/if}
+          {/each}
+        </div>
+      </Window>
+    {/if}
+    {#if data.busiest.length}
+      <BarList title="Busiest mini-servers" sub="peak players this week" since={data.since} rows={data.busiest} emptyTitle="No mini-servers yet" />
+    {/if}
+  </div>
+{/if}
+
+<div class="fx-grid">
   <MilestoneFeed result={data.milestones} title="Latest milestones here" href="/milestones?scope={encodeURIComponent(data.scope)}" />
   <AdvancementFeed result={data.advancements} title="Advancements completed here first" href="/advancements?scope={encodeURIComponent(data.scope)}" showServer={false} />
 </div>
-
-<style>
-  .maplink { display: flex; align-items: center; gap: var(--space-4); color: inherit; text-decoration: none; transition: border-color var(--duration-fast) var(--ease-soft), background-color var(--duration-fast) var(--ease-soft); }
-  .maplink:hover { border-color: var(--line); background: var(--raised); text-decoration: none; }
-  .maplink__text { display: flex; flex-direction: column; flex: 1 1 auto; min-width: 0; }
-</style>

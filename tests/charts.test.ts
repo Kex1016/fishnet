@@ -1,6 +1,6 @@
 // The pure helpers behind the charts (W3): ticks, labels, paths, buckets.
 import { describe, expect, test } from "bun:test";
-import { areaPath, axisTop, columnPath, columnWidth, compact, heatLevel, labelEvery, linePath, linkedShare, nearestIndex, niceFloor, niceStep, niceTicks, tickLabel, timeLabel, timeReadout, uptimeBuckets, xByTime, yOf } from "../src/lib/charts/scale.ts";
+import { areaPath, axisIndices, resample, slug, axisTop, columnPath, columnWidth, compact, heatLevel, labelEvery, linePath, linkedShare, nearestIndex, niceFloor, niceStep, niceTicks, tickLabel, timeLabel, timeReadout, uptimeBuckets, xByTime, yOf } from "../src/lib/charts/scale.ts";
 
 describe("ticks", () => {
   test("nice steps", () => {
@@ -143,5 +143,25 @@ describe("axis floor", () => {
     expect(timeReadout(t, 3_600_000)).toBe("17:44 UTC");
     expect(timeReadout(t, 7 * 86_400_000)).toBe("4 Nov, 17:44 UTC");
     expect(timeReadout(t, 90 * 86_400_000)).toBe("4 Nov 2026");
+  });
+});
+
+describe("haiiro helpers", () => {
+  test("axis labels: every k-th, the last one always", () => {
+    expect(axisIndices(10, 3)).toEqual([0, 3, 6, 9]);
+    expect(axisIndices(11, 3)).toEqual([0, 3, 6, 10]);
+    expect(axisIndices(12, 5)).toEqual([0, 5, 11]);
+    expect(axisIndices(4, 1)).toEqual([0, 1, 2, 3]);
+    expect(axisIndices(0, 3)).toEqual([]);
+  });
+  test("resample averages down and leaves short series alone", () => {
+    expect(resample([1, 2, 3], 10)).toEqual([1, 2, 3]);
+    expect(resample([1, 3, 5, 7], 2)).toEqual([2, 6]);
+    expect(resample([4, 4, 4, 4, 4], 1)).toEqual([4]);
+  });
+  test("a title as a window path part", () => {
+    expect(slug("Online over the week")).toBe("online-over-the-week");
+    expect(slug("  Joins / week! ")).toBe("joins-week");
+    expect(slug("!!!")).toBe("chart");
   });
 });

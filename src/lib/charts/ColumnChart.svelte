@@ -1,12 +1,12 @@
 <script lang="ts">
-  // Columns on one baseline (reki: ≤ 24px wide, xs-radius tops, one hue). The readout in the card
-  // header follows the pointer and the arrow keys; the table twin lists every column.
+  // Square columns on one hairline base (≤ 24px wide, one hue). The readout above the plot follows the pointer and
+  // the arrow keys; the current bucket (the highlight) is gold; the table twin lists every column.
   import type { ColumnChartProps, CategoryPoint, TimePoint } from "./types.ts";
   import ChartCard from "./ChartCard.svelte";
   import DataTable from "./DataTable.svelte";
   import { formatStat } from "#lib/format/stat-display.ts";
-  import { axisTop, columnPath, columnWidth, labelEvery, maxValue, nearestIndex, niceTicks, tickLabel, timeLabel, timeReadout, yOf } from "./scale.ts";
-  import "./charts.css";
+  import { axisIndices, axisTop, labelEvery, maxValue, tickLabel, timeLabel, timeReadout } from "./scale.ts";
+  import { nearestChild } from "./dom.ts";
 
   let { points, unit = "count", format, height = 160, highlight, ...frame }: ColumnChartProps = $props();
   const fmt = $derived(format ?? ((v: number) => formatStat(unit, v)));
@@ -24,22 +24,13 @@
   const empty = $derived(cols.length < 2);
   const rows = $derived(cols.map((c) => ({ label: c.label, value: c.display, key: c.key })));
 
-  // geometry: the SVG is measured after hydration; the server renders it at a default width and the
-  // viewBox scales it until then
+  // the plot is measured after hydration (the server renders at a default width) so the axis labels thin out to fit
   let width = $state(560);
-  const PAD = { top: 8, right: 8, bottom: 22, left: 0 };
   const top = $derived(axisTop(maxValue(cols), 4, unit));
-  const ticks = $derived(niceTicks(maxValue(cols), 4, unit));
-  const tickTexts = $derived(ticks.map((t) => tickLabel(unit, t)));
-  const axisW = $derived(Math.max(...tickTexts.map((t) => t.length)) * 7 + 8);
-  const left = $derived(PAD.left + axisW);
-  const right = $derived(width - PAD.right);
-  const yTop = $derived(PAD.top);
-  const yBase = $derived(height - PAD.bottom);
-  const slot = $derived(cols.length ? (right - left) / cols.length : 0);
-  const colW = $derived(columnWidth(slot));
-  const xs = $derived(cols.map((_, i) => left + slot * i + slot / 2));
-  const every = $derived(labelEvery(cols.length, slot, Math.max(...cols.map((c) => c.short.length), 1) * 6.6 + 8));
+  const slot = $derived(cols.length ? width / cols.length : 0);
+  const every = $derived(labelEvery(cols.length, slot, Math.max(...cols.map((c) => c.short.length), 1) * 7.5 + 16));
+  const labelAt = $derived(axisIndices(cols.length, every));
+  const pct = (v: number) => (top > 0 ? Math.max(0, Math.min(100, (v / top) * 100)) : 0);
 
   // the active column: hover and keyboard move it; it starts on the highlight, else the last column
   const hiIndex = $derived(highlight ? cols.findIndex((c) => c.key === highlight) : -1);
@@ -47,12 +38,10 @@
   const active = $derived(hover ?? (hiIndex >= 0 ? hiIndex : cols.length - 1));
   const current = $derived(cols[active]);
 
-  let svg = $state<SVGSVGElement>();
+  let colsEl = $state<HTMLElement>();
   function pointAt(e: PointerEvent) {
-    if (!svg || !cols.length) return;
-    const r = svg.getBoundingClientRect();
-    const x = ((e.clientX - r.left) / r.width) * width;
-    hover = nearestIndex(xs, x);
+    const i = nearestChild(colsEl, e.clientX);
+    if (i >= 0) hover = i;
   }
   function key(e: KeyboardEvent) {
     if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
@@ -70,40 +59,30 @@
 </script>
 
 <ChartCard {frame} {empty} readoutValue={current?.display} readoutLabel={current?.label}>
-  <div class="fp-plot__wrap" bind:clientWidth={width}>
-      <!-- the chart is a figure whose readout follows the pointer and the arrow keys; the table twin is the accessible form -->
-      <!-- svelte-ignore a11y_no_noninteractive_tabindex, a11y_no_noninteractive_element_interactions -->
-    <svg
-      bind:this={svg}
-      class="fp-plot"
-      viewBox="0 0 {width} {height}"
-      {height}
-      role="img"
-      aria-label={summary}
-      tabindex="0"
-      onpointermove={pointAt}
-      onpointerdown={pointAt}
-      onpointerleave={() => (hover = null)}
-      onblur={() => (hover = null)}
-      onkeydown={key}
-    >
-      {#each ticks as t, i (t)}
-        <line class={i === 0 ? "fp-plot__base" : "fp-plot__grid"} x1={left} x2={right} y1={yOf(t, top, yTop, yBase)} y2={yOf(t, top, yTop, yBase)} />
-        <text class="fp-plot__tick" x={left - 6} y={yOf(t, top, yTop, yBase) + 4} text-anchor="end">{tickTexts[i]}</text>
-      {/each}
+  <!-- the chart is a figure whose readout follows the pointer and the arrow keys; the table twin is the accessible form -->
+  <!-- svelte-ignore a11y_no_noninteractive_tabindex, a11y_no_noninteractive_element_interactions -->
+  <div
+    class="fx-plot"
+    style="--plot-h: {height}px"
+    bind:clientWidth={width}
+    role="img"
+    aria-label={summary}
+    tabindex="0"
+    onpointermove={pointAt}
+    onpointerdown={pointAt}
+    onpointerleave={() => (hover = null)}
+    onblur={() => (hover = null)}
+    onkeydown={key}
+  >
+    <div class="fx-cols" bind:this={colsEl}>
       {#each cols as c, i (c.key)}
-        {@const y = yOf(c.v, top, yTop, yBase)}
-        <path
-          class="fp-plot__col"
-          class:fp-plot__col--hi={i === hiIndex || i === hover}
-          class:fp-plot__col--dim={(hover !== null && i !== hover) || (hover === null && hiIndex >= 0 && i !== hiIndex)}
-          d={columnPath(xs[i] - colW / 2, y, colW, yBase - y, 3)}
-        />
-        {#if i % every === 0}
-          <text class="fp-plot__tick" x={xs[i]} y={yBase + 15} text-anchor="middle">{c.short}</text>
-        {/if}
+        <i class:now={i === hiIndex} class:on={i === hover} style="height: {pct(c.v).toFixed(2)}%{c.v > 0 ? '; min-height: 2px' : ''}"></i>
       {/each}
-    </svg>
+    </div>
+    <div class="fx-axis at" aria-hidden="true">
+      {#each labelAt as i (i)}<span class:first={i === 0} class:last={i === cols.length - 1} style="--x: {(((i + 0.5) / cols.length) * 100).toFixed(2)}%">{cols[i].short}</span>{/each}
+    </div>
+    <p class="cap">scale 0 to {tickLabel(unit, top)}</p>
   </div>
   {#snippet table()}<DataTable columns={[{ key: "label", label: "" }, { key: "value", label: frame.title, num: true }]} {rows} caption={frame.title} />{/snippet}
 </ChartCard>

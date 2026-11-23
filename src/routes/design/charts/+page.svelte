@@ -4,6 +4,7 @@
   // only; no public page uses them.
   import { page } from "$app/state";
   import { BarList, ColumnChart, Heatmap, LineChart, StatTile, UptimeStrip, ViewSwitch, viewParam } from "#lib/charts/index.ts";
+  import { PageHead, Window, WindowHead } from "#lib/design/index.ts";
   const view = $derived(viewParam(page.url));
   const uuid = "346d7245-336d-40b2-a26d-6f1f316d6d8c";
   const now = Date.UTC(2026, 10, 4, 17, 0);
@@ -43,58 +44,42 @@
   ];
 </script>
 
-<div class="fp-page">
-  <header class="fp-hero">
-    <span class="t-kicker">Design system</span>
-    <h1 class="t-hero">Charts</h1>
-    <p class="fp-lede t-body-lg">One hue, columns at most 24 px, 2 px lines, a readout in the header that follows the pointer and the arrow keys, and a table twin behind the switch. Sample data, for this page only.</p>
-  </header>
+<PageHead cmd="cat" args="charts.md" title="charts" lede="Squares, never lines: columns at most 24px wide, a step line, a heat grid in four steps of lightness. The readout above a chart follows the pointer and the arrow keys." note="Sample data, for this page only. Behind the switch every chart has its table.">
+  <ViewSwitch url={page.url} {view} />
+</PageHead>
 
-  <section class="fp-section">
-    <div class="fp-section__head"><h2 class="t-title-2">Tiles</h2><ViewSwitch url={page.url} {view} /></div>
-    <div class="fp-tiles">
-      <StatTile label="Online now" value="8" note="as of 17:00 UTC" spark={day.slice(-60)} sparkLabel="Online over the last ten hours" />
-      <StatTile label="Blocks mined" value="1.2M" unit="blocks" note="since 15 Oct 2026" spark={days.slice(-30)} />
-      <StatTile label="Players seen" value="37" note="one point" spark={[{ t: now, v: 37 }]} />
-      <StatTile label="Network playtime" value="4d 2h 9m" />
-    </div>
-  </section>
+<Window path="~/design/charts/tiles">
+  <WindowHead title="Tiles" asof="a number, a note, a spark of squares" />
+  <div class="stat-panel fx-tiles">
+    <StatTile label="Online now" value="8" note="as of 17:00 UTC" spark={day.slice(-60)} sparkLabel="Online over the last ten hours" />
+    <StatTile label="Blocks mined" value="1.2M" unit="blocks" note="since 15 Oct 2026" spark={days.slice(-30)} />
+    <StatTile label="Players seen" value="37" note="one point" spark={[{ t: now, v: 37 }]} />
+    <StatTile label="Network playtime" value="4d 2h 9m" href="#playtime" note="a link" />
+  </div>
+</Window>
 
-  <section class="fp-section">
-    <h2 class="t-title-2">Columns</h2>
-    <div class="fp-panels">
-      <ColumnChart title="Joins per week" sub="network · players" {view} points={joins} highlight="w8" />
-      <ColumnChart title="Playtime by server" sub="Pebblewick" {view} unit="ms" points={servers} highlight="creative" />
-      <ColumnChart title="Online per day" sub="network · 90 days · mean" {view} points={days} since={since} asOf={now} />
-      <ColumnChart title="Joins per week" sub="network" {view} points={[{ key: "w1", label: "W45", v: 1 }]} emptyTitle="Not enough weeks yet" emptyLine="Joins show once two weeks have passed." />
-    </div>
-  </section>
+<div class="fx-grid">
+  <ColumnChart title="Joins per week" sub="network · players" path="~/design/charts/columns" {view} points={joins} highlight="w8" />
+  <ColumnChart title="Playtime by server" sub="Pebblewick" {view} unit="ms" points={servers} highlight="creative" />
+  <ColumnChart title="Online per day" sub="network · 90 days · mean" {view} points={days} since={since} asOf={now} />
+  <ColumnChart title="Joins per week" sub="network" {view} points={[{ key: "w1", label: "W45", v: 1 }]} emptyTitle="Not enough weeks yet" emptyLine="Joins show once two weeks have passed." />
+</div>
 
-  <section class="fp-section">
-    <h2 class="t-title-2">Lines</h2>
-    <div class="fp-panels">
-      <LineChart title="Online over the day" sub="network · players" {view} points={day} since={since} asOf={now} shadow={{ label: "waiting", points: waiting }} />
-      <LineChart title="Online over the week" sub="survival · players" {view} points={week} since={since} asOf={now - H} stale />
-      <LineChart title="Distance walked" sub="network · total" {view} unit="distance_cm" zero={false} points={days.map((p, i) => ({ t: p.t, v: 2_000_000_000 + i * 15_000_000 + p.v * 100_000 }))} since={since} />
-      <LineChart title="Online over the week" sub="creative" since={null} points={[]} emptyTitle="No history yet" emptyLine="Online counts are recorded every minute once the site is live." />
-    </div>
-  </section>
+<div class="fx-grid">
+  <LineChart title="Online over the day" sub="network · players" path="~/design/charts/steps" {view} points={day} since={since} asOf={now} shadow={{ label: "waiting", points: waiting }} />
+  <LineChart title="Online over the week" sub="survival · players" {view} points={week} since={since} asOf={now - H} stale />
+  <LineChart title="Distance walked" sub="network · total" {view} unit="distance_cm" zero={false} points={days.map((p, i) => ({ t: p.t, v: 2_000_000_000 + i * 15_000_000 + p.v * 100_000 }))} since={since} />
+  <LineChart title="Online over the week" sub="creative" since={null} points={[]} emptyTitle="No history yet" emptyLine="Online counts are recorded every minute once the site is live." />
+</div>
 
-  <section class="fp-section">
-    <h2 class="t-title-2">Heat and uptime</h2>
-    <div class="fp-panels">
-      <Heatmap title="Busiest hours" sub="network · mean online · UTC" {view} rows={heat} columns={hours} since={since} cellLabel={(r, c) => `${r} ${c}:00`} />
-      <Heatmap title="Busiest hours" sub="lobby" rows={[{ label: "Mon", cells: [null, null, null] }]} columns={["00", "06", "12"]} since={since} emptyTitle="No history yet" />
-      <UptimeStrip title="Survival · last 7 days" sub="15 min buckets" {view} {samples} bucketMs={15 * 60_000} since={since} asOf={now} />
-      <UptimeStrip title="Creative · last 7 days" samples={[]} since={null} emptyTitle="No history yet" />
-    </div>
-  </section>
+<div class="fx-grid">
+  <Heatmap title="Busiest hours" sub="network · mean online · UTC" path="~/design/charts/heat" {view} rows={heat} columns={hours} since={since} cellLabel={(r, c) => `${r} ${c}:00`} />
+  <Heatmap title="Busiest hours" sub="lobby" rows={[{ label: "Mon", cells: [null, null, null] }]} columns={["00", "06", "12"]} since={since} emptyTitle="No history yet" />
+  <UptimeStrip title="Survival · last 7 days" sub="15 min buckets" path="~/design/charts/uptime" {view} {samples} bucketMs={15 * 60_000} since={since} asOf={now} />
+  <UptimeStrip title="Creative · last 7 days" samples={[]} since={null} emptyTitle="No history yet" />
+</div>
 
-  <section class="fp-section">
-    <h2 class="t-title-2">Bars</h2>
-    <div class="fp-panels">
-      <BarList title="Playtime" sub="network · top 5" {view} faces unit="ms" rows={board} highlight="c" asOf={now} />
-      <BarList title="Stone mined" sub="survival" {view} rows={[]} emptyTitle="Nobody has done this yet" emptyLine="This board fills in when someone mines stone." />
-    </div>
-  </section>
+<div class="fx-grid">
+  <BarList title="Playtime" sub="network · top 5" path="~/design/charts/bars" {view} faces unit="ms" rows={board} highlight="c" asOf={now} />
+  <BarList title="Stone mined" sub="survival" {view} rows={[]} emptyTitle="Nobody has done this yet" emptyLine="This board fills in when someone mines stone." />
 </div>

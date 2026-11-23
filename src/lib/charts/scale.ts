@@ -233,3 +233,39 @@ export function heatLevel(v: number, max: number): 0 | 1 | 2 | 3 | 4 {
 export function cleanTime(points: TimePoint[]): TimePoint[] {
   return points.filter((p) => Number.isFinite(p.t) && Number.isFinite(p.v)).sort((a, b) => a.t - b.t);
 }
+
+/** The indices that carry an axis label: every k-th from the first, and the last one, which replaces the previous
+    label when the two would touch. */
+export function axisIndices(n: number, every: number): number[] {
+  if (n <= 0) return [];
+  const k = Math.max(1, Math.floor(every));
+  const out: number[] = [];
+  for (let i = 0; i < n; i += k) out.push(i);
+  const last = n - 1;
+  if (out[out.length - 1] !== last) {
+    if (last - out[out.length - 1] >= k) out.push(last);
+    else out[out.length - 1] = last;
+  }
+  return out;
+}
+
+/** `values` reduced to at most `count` buckets, each the mean of its share (in order). Fewer values stay as they are. */
+export function resample(values: number[], count: number): number[] {
+  const n = Math.max(1, Math.floor(count));
+  if (values.length <= n) return values.slice();
+  const out: number[] = [];
+  for (let i = 0; i < n; i++) {
+    const a = Math.floor((i * values.length) / n);
+    const b = Math.max(a + 1, Math.floor(((i + 1) * values.length) / n));
+    let sum = 0;
+    for (let j = a; j < b; j++) sum += values[j];
+    out.push(sum / (b - a));
+  }
+  return out;
+}
+
+/** "online-over-the-week": the words of a title as a path part, for the window's label. */
+export function slug(text: string): string {
+  const s = text.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, "-").replace(/^-+|-+$/g, "");
+  return s || "chart";
+}

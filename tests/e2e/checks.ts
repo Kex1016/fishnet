@@ -64,7 +64,7 @@ export const CHECKS: Check[] = [
         const feed = await ctx.html("/advancements");
         expect(feed.includes("Most firsts") && feed.includes("Most completed"), "the advancements page has no side boards");
         expect(feed.includes("Firsts per day"), "the advancements page has no firsts-per-day heatmap");
-        if (ctx.scenario === "busy") expect(feed.includes("fp-plot__cell--"), "the firsts-per-day heatmap has no cells on the busy fixtures");
+        if (ctx.scenario === "busy") expect(/<i class="h[1-4]\b/.test(feed), "the firsts-per-day heatmap has no cells on the busy fixtures");
         expect(!/Nobody has completed this yet/.test(await ctx.html("/advancements")) || /f[px]-empty/.test(feed), "contradictory empty state");
       }
       return ctx.scenario === "live" ? `advancements ${on ? "on" : "off"}` : undefined;
@@ -306,8 +306,8 @@ export const CHECKS: Check[] = [
       const sub = await ctx.get(subject!);
       expect(sub.status === 200, `${subject} answered ${sub.status}`);
       const server = await ctx.html("/servers/survival");
-      expect(server.includes("Busiest hours") && server.includes("fp-plot__cell--"), "the server page has no heatmap cells");
-      expect(/<svg[^>]*class="fp-plot/.test(server), "the server page has no chart drawn on the server");
+      expect(server.includes("Busiest hours") && /<i class="h[1-4]\b/.test(server), "the server page has no heatmap cells");
+      expect(/class="fx-plot"/.test(server) && /class="fx-(cols|steps|heat|up)\b/.test(server), "the server page has no chart drawn on the server");
       const home = await ctx.html("/");
       expect(/fp-seg-text|fp-faces/.test(home), "the home page shows no faces or segments");
       return `profile ${decodeURIComponent(name)}, subject ${decodeURIComponent(subject!.slice(15))}`;
@@ -321,7 +321,7 @@ export const CHECKS: Check[] = [
       for (const p of ["/", "/servers/survival", "/milestones", "/advancements", "/?view=tables", "/servers/survival?view=tables"]) {
         const html = await ctx.html(p);
         expect(!html.includes('aria-label="Charts or tables"'), `${p} still carries the charts or tables switch`);
-        expect(/<svg[^>]*class="fp-plot\b/.test(html) || html.includes("fp-plot__cell--") || html.includes('class="fp-bar"'), `${p} draws no chart`);
+        expect(html.includes('class="fx-plot"') || html.includes('class="fx-rank'), `${p} draws no chart`);
       }
     }
   },

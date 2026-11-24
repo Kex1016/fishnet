@@ -13,6 +13,7 @@
   import { NAV, SITE, here, pageTitle, type Crumb, type NavItem } from "#lib/nav.ts";
   import Blobs from "#lib/design/Blobs.svelte";
   import Notice from "#lib/design/Notice.svelte";
+  import Peek from "#lib/design/Peek.svelte";
   import { sectionPath } from "#lib/design/shell.ts";
   import { group } from "#lib/format/stat-display.ts";
 
@@ -142,4 +143,5 @@
       {@render children()}
     </main>
   </div>
+  <Peek />
 </div>

@@ -90,7 +90,7 @@ describe("firsts", () => {
     expect(firstSubjects(first("something_new", null))).toEqual([]);
   });
 
-  test("rows get the first choice that has an icon; rows without one are untouched", async () => {
+  test("rows get the first choice that has an icon, else the site's own picture", async () => {
     const c = catalogue({
       "minecraft:zombie": [{ kind: "entity", icon: "zz" }],
       "minecraft:clock": [{ kind: "item", icon: "cc" }],
@@ -104,7 +104,7 @@ describe("firsts", () => {
       first("biome", { biome: "minecraft:plains" })
     ];
     const r = await withFirstPictures(c, feed(rows));
-    expect(r.ok && r.data.firsts.map((f) => [f.icon ?? null, f.iconKind ?? null])).toEqual([["zz", "entity"], ["cc", "item"], ["boots", "item"], [null, null]]);
+    expect(r.ok && r.data.firsts.map((f) => [f.icon ?? null, f.iconKind ?? null])).toEqual([["zz", "entity"], ["cc", "item"], ["boots", "item"], ["/mc/icons/grass_block.png", null]]);
     expect(r.ok && r.data.total).toBe(4);
   });
 
@@ -116,6 +116,9 @@ describe("firsts", () => {
     ];
     const r = await withFirstPictures(c, feed(rows), 2);
     expect(c.asked.sort()).toEqual(["minecraft:apple", "minecraft:elytra"]);
-    expect(r.ok && r.data.firsts).toEqual(rows); // nothing found: the same rows
+    // nothing in the catalogue: the site's own pictures of the apple and the elytra
+    expect(r.ok && r.data.firsts.map((f) => f.icon)).toEqual(["/mc/icons/apple.png", "/mc/icons/elytra.png"]);
+    const none = [first("criterion", { advancement: "somemod:a/b", criterion: "Has Compass" })];
+    expect((await withFirstPictures(c, feed(none))).ok && (await withFirstPictures(c, feed(none)))).toMatchObject({ data: { firsts: none } });
   });
 });

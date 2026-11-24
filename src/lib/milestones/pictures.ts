@@ -5,8 +5,9 @@
 //  - an advancement: the item the game shows as its icon (advancement-icons.ts, vanilla only);
 //  - a criterion: the thing it names when that is a block, item or mob, else its advancement's item;
 //  - a rare item: the item; a dimension: the block it is made of; playtime: a clock.
-// A thing the catalogue has no icon for (nobody has a stat for it yet, a modded advancement, a biome)
-// keeps `icon` unset and the row shows its glyph. One catalogue read per distinct key, the first `max` of
+// A thing the catalogue has no icon for (nobody has a stat for it yet, an item cakeutils cannot draw, a biome
+// or a structure) gets the site's own picture (#lib/icons/fallback.ts); one without that either (a modded
+// advancement) keeps `icon` unset and the row shows an empty frame. One catalogue read per distinct key, the first `max` of
 // a page; they are cached for 30 minutes (policy.ts "catalogue"), a miss for 5.
 //
 // Everything here takes the catalogue reader as its first argument, so it runs under `bun test` with a fake
@@ -16,6 +17,7 @@ import type { AdvancementRow, MilestoneFeedRow, SubjectDetail } from "#lib/api/t
 import type { First, FirstsFeed } from "#lib/network/types.ts";
 import { ADVANCEMENT_ICONS } from "./advancement-icons.ts";
 import { fullAdvId } from "./advancements.ts";
+import { fallbackIcon, kindOfType } from "#lib/icons/fallback.ts";
 
 export type Picture = { icon: string | null; kind: string | null };
 export type SubjectReader = { subject(key: string): Promise<Result<SubjectDetail>> };
@@ -41,7 +43,7 @@ const DIMENSION_BLOCK: Record<string, string> = {
  * cod; `things` prefers the block or item over the mob's spawn egg). Keys without an answer or an icon
  * are left out.
  */
-export async function subjectPictures(c: SubjectReader, keys: Iterable<string>, o: { max?: number; things?: boolean } = {}): Promise<Map<string, Picture>> {
+export async function subjectPictures(c: SubjectReader, keys: Iterable<string>, o: { max?: number; things?: boolean; kind?: string } = {}): Promise<Map<string, Picture>> {
   const wanted = [...new Set([...keys].filter((k) => KEY.test(k)))].slice(0, o.max ?? 48);
   const found = new Map<string, Picture>();
   await Promise.all(
@@ -53,6 +55,12 @@ export async function subjectPictures(c: SubjectReader, keys: Iterable<string>, 
       if (pick) found.set(key, { icon: pick.icon ?? null, kind: pick.kind ?? null });
     })
   );
+  // the site's own picture where the catalogue has none (unknown to it, or no icon)
+  for (const key of wanted) {
+    if (found.get(key)?.icon) continue;
+    const icon = fallbackIcon(key, o.kind ?? (o.things ? "item" : null));
+    if (icon) found.set(key, { icon, kind: found.get(key)?.kind ?? o.kind ?? null });
+  }
   return found;
 }
 
@@ -60,8 +68,15 @@ export async function subjectPictures(c: SubjectReader, keys: Iterable<string>, 
 export async function withIcons<T extends { milestones: MilestoneFeedRow[] }>(c: SubjectReader, r: Result<T>, max = 24): Promise<Result<T>> {
   if (!r.ok || r.data.milestones.length === 0) return r;
   const found = await subjectPictures(c, r.data.milestones.map((m) => m.subject).filter((s) => s && s !== "*"), { max });
-  if (found.size === 0) return r;
-  return { ...r, data: { ...r.data, milestones: r.data.milestones.map((m) => (found.has(m.subject) ? { ...m, ...found.get(m.subject) } : m)) } };
+  const picture = (m: MilestoneFeedRow): Picture | undefined => {
+    const p = found.get(m.subject);
+    if (p?.icon) return p;
+    // not in the catalogue: the site's picture for the kind the row's type counts
+    const icon = m.subject && m.subject !== "*" ? fallbackIcon(m.subject, kindOfType(m.type)) : null;
+    return icon ? { icon, kind: p?.kind ?? kindOfType(m.type) } : p;
+  };
+  if (!r.data.milestones.some((m) => picture(m))) return r;
+  return { ...r, data: { ...r.data, milestones: r.data.milestones.map((m) => ({ ...m, ...(picture(m) ?? {}) })) } };
 }
 
 /** Adds `icon` to advancement rows: the catalogue's icon of the item the game shows for the advancement. */
@@ -105,10 +120,37 @@ export function firstSubjects(f: First): Candidate[] {
     }
     case "dimension":
       return things(DIMENSION_BLOCK[str(d.dimension) ?? ""]);
+    case "biome":
+    case "structure":
+      // never in the catalogue as things: the site's picture (fallback below)
+      return [];
     case "playtime":
       return things("minecraft:clock");
     default:
       return [];
+  }
+}
+
+/** The site's own picture of a first whose candidates the catalogue has none for (a place, a mob without an egg). */
+function firstFallback(f: First): string | null {
+  const d = (f.detail ?? {}) as Record<string, unknown>;
+  switch (f.kind) {
+    case "biome":
+    case "structure":
+    case "dimension":
+      return fallbackIcon(str(d[f.kind]), f.kind);
+    case "stat":
+      return fallbackIcon(str(d.subject), kindOfType(str(d.type) ?? ""));
+    case "item":
+      return fallbackIcon(str(d.item), "item");
+    case "criterion": {
+      const c = str(d.criterion);
+      const named = c && KEY.test(c) ? c : c && /^[a-z0-9_]{1,64}$/.test(c) ? `minecraft:${c}` : null;
+      // a criterion names a biome (adventuring time), a mob or a food; the places table answers biomes only
+      return (named && fallbackIcon(named)) || null;
+    }
+    default:
+      return null;
   }
 }
 
@@ -127,13 +169,13 @@ export async function withFirstPictures(c: SubjectReader, r: Result<FirstsFeed>,
     subjectPictures(c, all.filter((x) => x.thing).map((x) => x.key), { max, things: true }),
     subjectPictures(c, all.filter((x) => !x.thing).map((x) => x.key), { max })
   ]);
-  if (things.size === 0 && any.size === 0) return r;
   const firsts = r.data.firsts.map((f, i) => {
     for (const x of wanted[i]) {
       const p = (x.thing ? things : any).get(x.key);
       if (p?.icon) return { ...f, icon: p.icon, iconKind: p.kind };
     }
-    return f;
+    const icon = firstFallback(f);
+    return icon ? { ...f, icon, iconKind: null } : f;
   });
   return { ...r, data: { ...r.data, firsts } };
 }

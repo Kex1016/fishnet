@@ -206,7 +206,7 @@ const ITEMS: Def[] = [
   { key: "minecraft:bow", kind: "item", name: "Bow", base: 20 },
   { key: "minecraft:arrow", kind: "item", name: "Arrow", base: 2_000 },
   { key: "minecraft:diamond_sword", kind: "item", name: "Diamond Sword", base: 15 },
-  { key: "minecraft:shield", kind: "item", name: "Shield", base: 12 },
+  { key: "minecraft:shield", kind: "item", name: "Shield", icon: false, base: 12 }, // drawn by an entity model: no icon (cakeutils D-39)
   { key: "minecraft:iron_ingot", kind: "item", name: "Iron Ingot", base: 2_500 },
   { key: "minecraft:ender_pearl", kind: "item", name: "Ender Pearl", base: 150 },
   // the items the firsts feed and the vanilla advancements show (rare items, advancement icons, the clock of

@@ -25,6 +25,7 @@ import { mockFetch } from "./mock/index.ts";
 import { createClient, type Priority } from "./create.ts";
 import { createCore, type Core, type CoreStatus } from "./core.ts";
 import { hideServers, type ExclusionStatus } from "./hide.ts";
+import { withFallbackIcons } from "./icons.ts";
 import { createExtras, type Extras } from "./extras.ts";
 import { hiddenServers } from "../hidden-servers.ts";
 import { ServerList } from "../hidden-servers-list.ts";
@@ -115,9 +116,11 @@ export function api(): Client {
   if (instance) return instance;
   // hidden servers (hidden-servers.ts) and the One Soul servers (onesoul/standalone.ts) leave every answer
   // here, and network reads ask cakeutils without them (One Soul only while cakeutils still rolls it up)
-  instance = hideServers(
-    createClient({ baseUrl: "", token: "", core: shared(), priority: () => priorityOf(), exclude: () => [...new Set([...hiddenServers().ids, ...standaloneExclude()])] }),
-    regularList
+  instance = withFallbackIcons(
+    hideServers(
+      createClient({ baseUrl: "", token: "", core: shared(), priority: () => priorityOf(), exclude: () => [...new Set([...hiddenServers().ids, ...standaloneExclude()])] }),
+      regularList
+    )
   );
   return instance;
 }
@@ -138,7 +141,7 @@ function regularList(): ServerList {
  */
 export function sectionApi(): Client {
   if (section) return section;
-  section = hideServers(createClient({ baseUrl: "", token: "", core: shared(), priority: () => priorityOf(), exclude: () => hiddenServers().ids }), hiddenServers);
+  section = withFallbackIcons(hideServers(createClient({ baseUrl: "", token: "", core: shared(), priority: () => priorityOf(), exclude: () => hiddenServers().ids }), hiddenServers));
   return section;
 }
 

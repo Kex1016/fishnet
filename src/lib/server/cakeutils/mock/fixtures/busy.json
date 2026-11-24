@@ -4132,7 +4132,7 @@
    "kind": "item",
    "name": "Shield",
    "unit": "count",
-   "icon": "b39470b8b494724bb59473deb6947571b7947704b8947897b9947a2aba947bbd"
+   "icon": null
   },
   {
    "key": "minecraft:iron_ingot",

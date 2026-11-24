@@ -1,5 +1,5 @@
 // The network routes planned in cakeutils (WEBSITE-BRIEF §3.5, API-EXPANSION §4): firsts, criteria, deaths,
-// activity, playtime milestones and board history. On the shared transport (one cache, one request budget).
+// activity, playtime milestones, board history and who has an advancement. On the shared transport (one cache, one request budget).
 // Each group is probed once and remembered 10 min: a 404 (or 401/403) hides its widgets (`off`), never
 // confused with "nothing yet". Hidden servers and One Soul servers leave every answer: rows naming them are
 // dropped, their scopes answer not_found, and network reads ask cakeutils without them (`exclude=`).
@@ -9,12 +9,12 @@ import { fail, type Result } from "#lib/api/result.ts";
 import type { Scope } from "#lib/api/scope.ts";
 import { shortType, type Metric } from "#lib/api/metric.ts";
 import type {
-  ActivityHeatmap, BoardHistory, CriteriaFeed, DeathFeed, FirstsFeed, OnlineSeries, PlayerActivity, PlayerCriteria, PlaytimeMilestones, PlaytimeSeries
+  ActivityHeatmap, AdvancementEarners, BoardHistory, CriteriaFeed, DeathFeed, FirstsFeed, OnlineSeries, PlayerActivity, PlayerCriteria, PlaytimeMilestones, PlaytimeSeries
 } from "#lib/network/types.ts";
 import type { Core, Priority } from "./core.ts";
 import type { ServerList } from "../hidden-servers-list.ts";
 
-export type Feature = "firsts" | "criteria" | "deaths" | "activity" | "playtimeMilestones" | "history";
+export type Feature = "firsts" | "criteria" | "deaths" | "activity" | "playtimeMilestones" | "history" | "earners";
 
 const PROBES: Record<Feature, string> = {
   firsts: "/v2/firsts?limit=1",
@@ -22,7 +22,9 @@ const PROBES: Record<Feature, string> = {
   deaths: "/v2/deaths?limit=1",
   activity: "/v2/activity/online?bucket=day",
   playtimeMilestones: "/v2/milestones/playtime?limit=1",
-  history: "/v2/leaderboards/history/playtime?limit=1"
+  history: "/v2/leaderboards/history/playtime?limit=1",
+  // no id: a proxy with the route answers 400, one without it 404
+  earners: "/v2/milestones/advancement/earners"
 };
 const CHECK_MS = 10 * 60_000;
 
@@ -34,6 +36,8 @@ export interface Extras {
   firsts(q?: Page & { scope?: Scope; kinds?: string[]; since?: number }): Promise<Result<FirstsFeed>>;
   criteria(q?: Page & { scope?: Scope; advancement?: string }): Promise<Result<CriteriaFeed>>;
   playerCriteria(ref: string, q?: Page & { scope?: Scope; advancement?: string }): Promise<Result<PlayerCriteria>>;
+  /** every player who has one advancement, earliest first; `not_found` = nobody ever reported it */
+  advancementEarners(id: string, q?: Page & { scope?: Scope }): Promise<Result<AdvancementEarners>>;
   deaths(q?: Page & { scope?: Scope; player?: string; since?: number; until?: number }): Promise<Result<DeathFeed>>;
   activityPlaytime(q?: { scope?: Scope; player?: string; since?: number; until?: number; bucket?: "day" | "week" | "month" }): Promise<Result<PlaytimeSeries>>;
   activityHeatmap(q?: { scope?: Scope; player?: string; since?: number; until?: number }): Promise<Result<ActivityHeatmap>>;
@@ -112,6 +116,8 @@ export function createExtras(core: Core, o: ExtrasOptions): Extras {
     firsts: (p = {}) => gated("firsts", p.scope, async () => dropRows(await get<FirstsFeed>(`/v2/firsts${qx({ ...p, kinds: p.kinds?.join(",") })}`), "firsts")),
     criteria: (p = {}) => gated("criteria", p.scope, async () => dropRows(await get<CriteriaFeed>(`/v2/milestones/criteria${qx(p)}`), "criteria")),
     playerCriteria: (ref, p = {}) => gated("criteria", p.scope, () => get<PlayerCriteria>(`/v2/players/${enc(ref)}/advancement-criteria${qx(p)}`)),
+    advancementEarners: (id, p = {}) =>
+      gated("earners", p.scope, async () => dropRows(await get<AdvancementEarners>(`/v2/milestones/advancement/earners${qx({ ...p, id })}`), "earners")),
     deaths: (p = {}) => gated("deaths", p.scope, async () => dropRows(await get<DeathFeed>(`/v2/deaths${qx(p)}`), "deaths")),
     activityPlaytime: (p = {}) => gated("activity", p.scope, () => get<PlaytimeSeries>(`/v2/activity/playtime${qx({ ...p, tz_offset_min: 0 })}`)),
     activityHeatmap: (p = {}) => gated("activity", p.scope, () => get<ActivityHeatmap>(`/v2/activity/heatmap${qx({ ...p, tz_offset_min: 0 })}`)),

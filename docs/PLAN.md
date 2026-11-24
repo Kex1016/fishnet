@@ -139,6 +139,13 @@ profile's "First to complete", and five-row feeds on the home and server pages. 
 `History.advancementsPerDay` feeds the "Firsts per day" heatmap on `/advancements`; imported firsts
 count on their real day, so the grid can reach back before recording began.
 
+Added 24 Nov 2026: `/advancements?q=` searches the scope's advancements by title or id (the site reads up to
+1000 rows and matches them; only advancements someone completed exist), and `/advancements/<id>` lists
+"Who has it" per scope, earliest first, from `GET /v2/milestones/advancement/earners?id=&scope=&limit=&offset=`
+→ `{advancement, title, scope, excluded, total, earners:[{rank, uuid, name, server, earned_at, imported}]}`
+(feature `earners` in `extras.ts`; the section is left out on a proxy without the route). Opted-out players
+leave that list; a search keeps an advancement whose first player opted out and blanks the name.
+
 ## 3. Architecture
 
 ### 3.1 Stack

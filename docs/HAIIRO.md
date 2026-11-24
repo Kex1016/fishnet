@@ -102,9 +102,10 @@ head and the side nav are lower case ("players", "one soul"); a name keeps its o
   <nav class="fx-strip">…</nav>         <!-- under 960px: the pages as a scrolling strip -->
   <div class="fx-body">
     <button class="fx-scrim"></button>  <!-- the drawer's veil: inside .fx-body, so the drawer stacks above it -->
-    <aside class="fx-side" id="site-nav"><nav class="window">…</nav></aside>   <!-- the rail; the drawer under 960px -->
+    <aside class="fx-side" id="site-nav"><nav class="window">…</nav></aside>   <!-- the rail (sticky); the drawer under 960px -->
     <main class="fx-main" id="main">{page}</main>
   </div>
+  <div class="fx-peek"><img/></div>    <!-- Peek.svelte, only while a picture is peeked -->
 </div>
 ```
 
@@ -120,6 +121,16 @@ head and the side nav are lower case ("players", "one soul"); a name keeps its o
   child of `.fx-main`. The shell then becomes the bar plus the stage: no blobs, no strip, no rail (the menu
   button opens the nav as a drawer), the stage fills the window under the bar and the page does not scroll.
   Until H9 rebuilds it, the One Soul round map in its frame (`.fx-main > .os-frame > .rm-stage`) counts too.
+- What stays in view while the page scrolls (David, 24 Nov 2026): the bar always; the rail above 960px
+  (sticky under the bar, scrolling on its own when the window is short); the strip under 960px (sticky
+  under the bar; an open drawer stacks above it).
+- **Picture peek** (`Peek.svelte`, `peek.ts`, `.fx-peek`). A picture in `.fx-main` drawn 48px or smaller
+  (heads, item and advancement icons; not the map's stage) is shown at 128px beside itself after 120 ms of
+  mouse hover, or at once when keyboard focus lands on the link around it. A head shows the player's full
+  skin (`/img/skin/<uuid>.png`, 128x256), falling back to the head. It opens as a dithered circle from the
+  corner nearest the picture, 8px cells, 6 frames at 12 fps; reduced motion or no CSS masks: one frame.
+  Leaves on pointer out, blur, Escape, scroll, resize and navigation. Touch gets no peek. Decorative
+  (`aria-hidden`).
 - The skip link (`.fx-skip`) jumps to `#main`. The drawer closes on navigation, on Escape and on the veil.
 
 ## Classes
@@ -221,7 +232,8 @@ is one still frame under `prefers-reduced-motion: reduce`. The realm transition 
 
 ## Checks
 
-- `tests/design.test.ts`: the dither, the blob tones, the shell helpers.
+- `tests/design.test.ts`: the dither, the blob tones, the shell helpers. `tests/peek.test.ts`: the peek's
+  frames, its placement and the head → skin route.
 - `tests/e2e/checks.ts` "one dark theme": no theme attribute or toggle; `data-realm` is empty on the
   regular site and `onesoul` in the section.
 - The map checks measure the stage against `.fx-main` and the document (stage mode).

@@ -228,6 +228,9 @@ a.fx-player:hover > .who { color: var(--color-foam); }
 .fx-blobs canvas { display: block; width: 100%; height: 100%; image-rendering: pixelated; }
 .fx > .fx-strip, .fx > .fx-body, .fx > .fx-stage { position: relative; z-index: 1; }
 .fx > .fx-bar { position: sticky; top: 0; z-index: 10; } /* site: the bar stays while the page scrolls */
+/* site: the rail stays in view too (David, 24 Nov 2026), scrolling on its own when the window is short */
+.fx-side { position: sticky; top: calc(var(--bar-height) + 30px); max-height: calc(100dvh - var(--bar-height) - 60px); overflow-y: auto; scrollbar-width: thin; scrollbar-color: var(--color-foam) var(--color-muted); }
+html { scroll-padding-top: calc(var(--bar-height) + 16px); }
 /* text that sits straight on the blobs gets a base band behind it, so contrast holds over highlight-med */
 .fx-head > p, .fx-main > p { align-self: flex-start; padding: 0 4px; margin-left: -4px; background: var(--color-base); }
 .fx-head .title { align-self: flex-start; }
@@ -273,7 +276,11 @@ a.fx-player:hover > .who { color: var(--color-foam); }
 .fx-skip:focus { top: 8px; }
 .fx-scrim { display: none; }
 .fx.fx-open .fx-scrim { display: block; position: fixed; inset: var(--bar-height) 0 0 0; z-index: 20; border: 0; padding: 0; cursor: default; background-color: var(--veil-heavy); background-image: conic-gradient(var(--color-base) 25%, transparent 0 50%, var(--color-base) 0 75%, transparent 0); background-size: 4px 4px; }
-.fx.fx-open .fx-side { display: block; position: fixed; top: var(--bar-height); left: 0; bottom: 0; z-index: 21; width: min(300px, calc(100vw - 48px)); padding: 16px 12px 24px; overflow-y: auto; background: var(--color-base); border-right: var(--border-divider) solid var(--color-overlay); }
+.fx.fx-open .fx-side { display: block; position: fixed; top: var(--bar-height); left: 0; bottom: 0; z-index: 21; max-height: none; width: min(300px, calc(100vw - 48px)); padding: 16px 12px 24px; overflow-y: auto; background: var(--color-base); border-right: var(--border-divider) solid var(--color-overlay); }
+
+/* ---- site: the picture peek (Peek.svelte): a small picture shown large beside itself, in a face frame */
+.fx-peek { position: fixed; z-index: 30; pointer-events: none; padding: 4px; border: var(--border-window) double var(--color-pine); background-color: var(--color-base); background-image: conic-gradient(var(--color-highlight-med) 25%, transparent 0 50%, var(--color-highlight-med) 0 75%, transparent 0); background-size: 8px 8px; mask-size: 100% 100%; -webkit-mask-size: 100% 100%; mask-repeat: no-repeat; -webkit-mask-repeat: no-repeat; }
+.fx-peek > img { display: block; image-rendering: pixelated; }
 
 /* ---- site: the stage mode. A page whose content is a stage (the map) gets the bar and nothing else: no
    strip, no rail, no blobs; the stage fills the window under the bar and the menu button opens the nav.
@@ -297,6 +304,10 @@ a.fx-player:hover > .who { color: var(--color-foam); }
   .fx-strip a { display: inline-flex; align-items: center; min-height: var(--touch); padding: 0 1ch; color: var(--color-subtle); text-decoration: none; }
   .fx-strip a.on, .fx-strip a[aria-current] { background: var(--color-pine); color: var(--color-text); }
   .fx-side { display: none; }
+  /* site: the strip stays under the bar while the page scrolls (David, 24 Nov 2026); an open drawer is above it */
+  .fx > .fx-strip { position: sticky; top: var(--bar-height); z-index: 8; }
+  .fx.fx-open > .fx-body { z-index: 9; }
+  html { scroll-padding-top: calc(var(--bar-height) + var(--touch) + 16px); }
 }
 
 /* ---- phone: everything goes to one column */

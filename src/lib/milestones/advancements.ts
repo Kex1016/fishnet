@@ -67,3 +67,22 @@ export function earnersLabel(earners: number): string {
   if (earners <= 1) return "the only one so far";
   return `first of ${earners}`;
 }
+
+const fold = (s: string) => s.toLowerCase().replace(/[_\s/:.-]+/g, " ").trim();
+
+/**
+ * The rows whose title or id contains `q` (any case; `_`, `/`, `:` and spaces count as the same gap, so
+ * "mine diamond" finds `story/mine_diamond`). Titles that start with it come first, then by title.
+ */
+export function matchAdvancements<T extends Pick<AdvancementRow, "advancement" | "title">>(rows: T[], q: string): T[] {
+  const needle = fold(q);
+  if (!needle) return [];
+  const scored: { row: T; title: string; rank: number }[] = [];
+  for (const row of rows) {
+    const title = advTitle(row);
+    const t = fold(title);
+    const rank = t.startsWith(needle) ? 0 : t.includes(needle) ? 1 : fold(row.advancement).includes(needle) ? 2 : -1;
+    if (rank >= 0) scored.push({ row, title, rank });
+  }
+  return scored.sort((a, b) => a.rank - b.rank || a.title.localeCompare(b.title)).map((s) => s.row);
+}

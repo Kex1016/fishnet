@@ -709,6 +709,37 @@ export async function handleMock(world: World, req: Request): Promise<Response> 
     return problem(404, "not_found", "no such route");
   }
 
+  // every player who has one advancement, in the order they got it (cakeutils listAdvancementEarners)
+  if (seg[0] === "milestones" && seg[1] === "advancement" && seg[2] === "earners" && seg.length === 3) {
+    if (!world.advancements) return problem(404, "not_found", "no such route");
+    const raw = url.searchParams.get("id");
+    if (!raw || !raw.trim()) return problem(400, "bad_request", "'id' is required");
+    const id = fullAdvId(raw.trim());
+    if (!advIndex(all).get(id)) return problem(404, "not_found", `no advancement ${id}`);
+    const scope = scopeOf(world, url);
+    if (scope instanceof Response) return scope;
+    if (scope.mini) return problem(400, "bad_request", "advancement milestones are kept per server and for the network, not per mini-server");
+    const pg = paging(url);
+    if (pg instanceof Response) return pg;
+    const rows = !scope.seen ? [] : (advIndex(world).get(id) ?? []).filter((r) => !scope.server || r.server === scope.server);
+    // one row per player: their earliest completion in the scope; then earliest first, ties by uuid
+    const best = new Map<string, AdvEarned>();
+    for (const r of rows) {
+      const b = best.get(r.p.uuid);
+      if (!b || r.ago > b.ago) best.set(r.p.uuid, r);
+    }
+    const ordered = [...best.values()].sort((a, b) => b.ago - a.ago || (a.p.uuid < b.p.uuid ? -1 : 1));
+    const earners = ordered.slice(pg.offset, pg.offset + pg.limit).map((r, i) => ({
+      rank: pg.offset + i + 1,
+      uuid: r.p.uuid,
+      name: r.p.name,
+      server: r.server,
+      earned_at: now() - r.ago,
+      imported: r.ago > world.advancements_since_ago_ms && world.advancements_imported.includes(r.server)
+    }));
+    return json(req, { advancement: id, title: advTitle(all, id) || null, scope: scope.scope, excluded, total: ordered.length, earners });
+  }
+
   if (seg[0] === "milestones" && (seg[1] === "advancements" || seg[1] === "advancement") && seg.length === 2) {
     if (!world.advancements) return problem(404, "not_found", "no such route");
     if (seg[1] === "advancements") {

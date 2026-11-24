@@ -1,4 +1,8 @@
 <script lang="ts">
+  import { page } from "$app/state";
+  import Pager from "#lib/design/Pager.svelte";
+  import ScopeSwitch from "#lib/design/ScopeSwitch.svelte";
+  import { scopeLabel } from "#lib/servers.ts";
   import { critLabel } from "#lib/network/words.ts";
   import AsOf from "#lib/design/AsOf.svelte";
   import EmptyState from "#lib/design/EmptyState.svelte";
@@ -14,6 +18,7 @@
   let { data } = $props();
   const serverName = (id: string) => data.serverNames[id] ?? titleCase(id);
   const players = (n: number) => `${group(n)} player${n === 1 ? "" : "s"}`;
+  const scopeName = $derived(scopeLabel(data.scope, data.servers));
   const imported = "The time comes from the server's world files: this was completed before live tracking began.";
 </script>
 
@@ -53,6 +58,49 @@
       </div>
     {/if}
   </Window>
+
+  {#if data.earners.ok || data.earners.kind !== "off"}
+    <Window path="~/advancements" args="--who">
+      <WindowHead title="Who has it">
+        {scopeName}{" "}· in the order they got it{#if data.earners.ok && data.earners.stale}{" "}· <AsOf at={data.earners.asOf} stale />{/if}
+      </WindowHead>
+      {#if data.servers.length}<div class="scope"><ScopeSwitch url={page.url} scope={data.scope} servers={data.servers} /></div>{/if}
+      {#if data.miniScope}
+        <EmptyState title="Not kept per mini-server" line=" Advancements are kept per server and for the whole network. Pick a server or the network above." />
+      {:else if !data.earners.ok}
+        {#if data.earners.kind === "not_found"}
+          <EmptyState title="Nobody has this here yet" line=" Players show up here once they complete it." />
+        {:else if data.earners.kind === "rate_limited"}
+          <EmptyState title="The site is busy" line=" The list will load again in a moment." />
+        {:else}
+          <EmptyState title="The list is not available" line=" cakeutils could not be reached." />
+        {/if}
+      {:else if data.earners.data.earners.length === 0}
+        <EmptyState title="Nobody has this here yet" line=" Players show up here once they complete it." />
+      {:else}
+        {@const showServer = data.scope === "network"}
+        <div class="fx-scroll">
+          <table class="fx-table">
+            <thead><tr><th class="r">#</th><th>Player</th>{#if showServer}<th>Server</th>{/if}<th>When</th></tr></thead>
+            <tbody>
+              {#each data.earners.data.earners as e (e.uuid)}
+                <tr>
+                  <td class="r c1">{group(e.rank)}</td>
+                  <td><PlayerName uuid={e.uuid} name={e.name} /></td>
+                  {#if showServer}<td><a href="/servers/{encodeURIComponent(e.server)}">{serverName(e.server)}</a></td>{/if}
+                  <td>
+                    <time datetime={iso(e.earned_at)} title={dateTime(e.earned_at)}>{ago(e.earned_at)}</time>
+                    {#if e.imported}{" "}<span class="chip" title={imported}>imported</span>{/if}
+                  </td>
+                </tr>
+              {/each}
+            </tbody>
+          </table>
+        </div>
+        <Pager url={page.url} total={data.earners.data.total} limit={data.limit} offset={data.offset} what="players" prev="earlier" next="later" />
+      {/if}
+    </Window>
+  {/if}
 
   <Window path="~/advancements" args="--by-server">
     <WindowHead title="By server" asof="each server on its own; a player with it on two servers counts on both" />
@@ -104,4 +152,5 @@
 
 <style>
   .first { display: flex; gap: 16px; align-items: flex-start; }
+  .scope { margin-bottom: 12px; }
 </style>

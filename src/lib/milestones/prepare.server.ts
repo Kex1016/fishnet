@@ -25,6 +25,12 @@ export function hideFromFeed<T extends AnyRows>(r: Result<T>): Result<T> {
   return { ...r, data: { ...r.data, milestones: r.data.milestones.filter((m) => !hidden(m)) } };
 }
 
+/** Blanks the first player of rows whose first player opted out, keeping the row (a search finds the advancement, not the player). */
+export function blankHidden<T extends AnyRows>(r: Result<T>): Result<T> {
+  if (!r.ok) return r;
+  return { ...r, data: { ...r.data, milestones: r.data.milestones.map((m) => (hidden(m) ? { ...m, uuid: null, name: null } : m)) } };
+}
+
 /** Blanks the player of a rung whose first player opted out. */
 export function hideFromLadder(r: Result<MilestoneLadder>): Result<MilestoneLadder> {
   if (!r.ok) return r;

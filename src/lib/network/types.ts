@@ -30,6 +30,11 @@ export type FirstsFeed = { scope: Scope; total: number; firsts: First[] };
 export type CriterionFirst = Who & { advancement: string; title: string; criterion: string; server: string | null; earned_at: number | null; imported?: boolean; earners?: number };
 export type CriteriaFeed = { scope: Scope; total: number; criteria: CriterionFirst[] };
 
+/** One player who has an advancement (cakeutils listAdvancementEarners): `rank` 1 = the first earner in the scope; in the network, `server` is where this player first completed it. */
+export type AdvancementEarner = { rank: number; uuid: string; name: string; server: string; earned_at: number; imported: boolean };
+/** GET /v2/milestones/advancement/earners?id=: every player who has one advancement, in the order they got it. */
+export type AdvancementEarners = { advancement: string; title: string | null; scope: Scope; excluded?: string[]; total: number; earners: AdvancementEarner[] };
+
 /** GET /v2/players/{ref}/advancement-criteria */
 export type PlayerCriterion = { advancement: string; title: string; criterion: string; earned_at: number | null; imported?: boolean; first?: boolean };
 export type PlayerCriteria = { total: number; criteria: PlayerCriterion[] };

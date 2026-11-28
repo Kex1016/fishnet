@@ -84,7 +84,7 @@ export function createOneSoulClient(core: Core, priority: () => Priority = () =>
     return on;
   }
 
-  /** Is that soul the one playing now (from the status, cached)? A journal or trail of theirs is never shown. */
+  /** Is that soul the one playing now (from the status, cached)? A journal of theirs is never shown. */
   async function stillPlaying(cycle: number, turn: number, server: string): Promise<boolean> {
     const st = await core.get<Status>({ path: "/v2/onesoul" }, priority());
     if (!st.ok) return false;
@@ -113,10 +113,8 @@ export function createOneSoulClient(core: Core, priority: () => Priority = () =>
     },
     soul: (turn, w = {}) => gated("tracking", () => get<SoulDetail>(`/v2/onesoul/souls/${turn}${query(w)}`)),
     soulStats: (turn, w = {}) => gated("tracking", () => get<SoulStats>(`/v2/onesoul/souls/${turn}/stats${query(w)}`)),
-    trail: async (turn, w = {}) => {
-      const r = await gated("map", () => get<Trail>(`/v2/onesoul/souls/${turn}/trail${query({ ...w, format: "points" })}`));
-      return refuseLiving(r, r.ok && (await stillPlaying(r.data.cycle, turn, r.data.server)));
-    },
+    // the living soul's trail is served live since TH-31 (design §8.1 [David], cakeutils OSD-73): not refused here
+    trail: (turn, w = {}) => gated("map", () => get<Trail>(`/v2/onesoul/souls/${turn}/trail${query({ ...w, format: "points" })}`)),
     graves: async (q = {}) => {
       const { claimed_by, soul, ...base } = q;
       if ((claimed_by || soul) && !(await enabled("tracking"))) return fail("off");

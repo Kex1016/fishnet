@@ -212,7 +212,7 @@ export function handleOneSoul(os: OneSoulWorld | undefined, req: Request, url: U
         headline: headline(s),
         grave: g ? graveRow(os, g, now) : null,
         waystones: os.waystones.filter((w) => w.cycle === s.cycle && w.first_turn === s.turn).length,
-        has_trail: s.outcome !== "playing" && s.trail.length > 0 && os.features.map
+        has_trail: s.trail.length > 0 && os.features.map
       };
       return json(req, data);
     }
@@ -227,8 +227,8 @@ export function handleOneSoul(os: OneSoulWorld | undefined, req: Request, url: U
     }
     if (seg[3] === "trail" && seg.length === 4) {
       if (!os.features.map) return off();
-      // a living soul's trail answers exactly like an unknown turn (API-EXPANSION §7.2)
-      if (!s || s.outcome === "playing" || !s.trail.length) return problem(404, "not_found", "no such trail");
+      // the living soul's trail is served live (cakeutils OSD-73, TH-31); a turn without one answers like an unknown turn
+      if (!s || !s.trail.length) return problem(404, "not_found", "no such trail");
       const data: Trail = {
         server: os.server,
         cycle: s.cycle,
@@ -520,6 +520,33 @@ export function events(os: OneSoulWorld, now: number): OsEvent[] {
     ev(w.first_ago, w.cycle, "waystone_activated", s ? { uuid: s.uuid, name: s.name } : null, { waystone: w.id, label: w.label, origin: w.origin, dim: w.dim, x: w.x, y: w.y, z: w.z });
     if (w.removed_ago !== null) ev(w.removed_ago, w.cycle, "waystone_removed", null, { waystone: w.id });
   }
+  // TH-31 / CONTRACTS §11.2: stable portals and open End portals; their positions only once the round is over
+  for (const r of os.rounds) {
+    if (r.started_ago === null) continue;
+    const souls = os.souls.filter((x) => x.cycle === r.cycle);
+    const over = r.ended_ago !== null;
+    const where = (dim: string, x: number, y: number, z: number) => (over ? { dim, x, y, z } : {});
+    const nether = souls.find((x) => x.trail.some((t) => t.dim === "minecraft:the_nether"));
+    if (nether) {
+      const seg = nether.trail.find((t) => t.dim === "minecraft:overworld") ?? nether.trail[0];
+      const [ago, x, y, z] = seg.points.at(-1)!;
+      const who = { uuid: nether.uuid, name: nether.name };
+      ev(ago + 60_000, r.cycle, "rift_stable", who, { ...where("minecraft:overworld", x, y, z), turn: nether.turn, first: true });
+      const ne = nether.trail.find((t) => t.dim === "minecraft:the_nether");
+      if (ne) ev(ne.points[0][0] - 60_000, r.cycle, "rift_stable", who, { ...where("minecraft:the_nether", ne.points[0][1], ne.points[0][2], ne.points[0][3]), turn: nether.turn });
+      ev(ago, r.cycle, "nether_entered", who, { turn: nether.turn });
+    }
+    // an End portal opened by whoever reached the End, or (a finished round where nobody jumped) by the last soul
+    const end = souls.find((x) => x.trail.some((t) => t.dim === "minecraft:the_end"));
+    const opener = end ?? (over ? souls.filter((x) => x.trail.length).at(-1) : undefined);
+    if (opener) {
+      const ow = opener.trail.find((t) => t.dim === "minecraft:overworld") ?? opener.trail[0];
+      const [ago, x, , z] = ow.points.at(-1)!;
+      const who = { uuid: opener.uuid, name: opener.name };
+      ev(ago + 30_000, r.cycle, "end_opened", who, { ...where("minecraft:overworld", x + 40, 30, z - 25), turn: opener.turn, first: true });
+      if (end) ev(ago, r.cycle, "end_entered", who, { turn: end.turn });
+    }
+  }
   if (os.spawn) {
     const s = os.souls.find((x) => x.cycle === os.cycle && x.turn === os.spawn!.set_turn);
     ev(os.spawn.set_ago, os.cycle, "spawn_moved", s ? { uuid: s.uuid, name: s.name } : null, { dim: os.spawn.dim, x: os.spawn.x, y: os.spawn.y, z: os.spawn.z });
@@ -567,9 +594,8 @@ function mapLayers(os: OneSoulWorld, c: number, now: number): Record<string, Fea
     waystones: os.waystones
       .filter((w) => w.cycle === c)
       .map((w) => ({ type: "Feature" as const, id: w.id, geometry: pt(w.x, w.z, w.y), properties: { kind: "waystone", ...waystoneRow(os, w, now) } })),
-    // a living soul's trail is never served (API-EXPANSION §7.2)
+    // the living soul's trail is served live (OSD-73); every other trail once its turn is over
     trails: souls
-      .filter((s) => s.outcome !== "playing")
       .flatMap((s) =>
         s.trail.map((t, i) => ({
           type: "Feature" as const,

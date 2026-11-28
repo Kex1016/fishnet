@@ -1,4 +1,4 @@
-// The mock's web map (FM-0): /v2/map* and a finished round's map routes, answered the way cakeutils
+// The mock's web map (FM-0): /v2/map* and a One Soul round's map routes (finished, or in play: TH-31), answered the way cakeutils
 // v2/MAP.md §5 says (shapes §5.2, headers §5.3, errors §5.4). Mock only: never loaded in production.
 //
 // fresh: no server has a map (`{servers: []}`), every per-server route is 404.
@@ -385,32 +385,69 @@ export async function handleMap(world: World, url: URL, seg: string[], req: Requ
   return notFound("no such route");
 }
 
-/** A finished One Soul round's archived map: its trail dimensions, as web names; 404 while it runs. */
+/**
+ * A One Soul round's map: a finished round's archive (tiles a day in cache), or the round in play (TH-31, cakeutils
+ * MAPD-77..79): its worlds' tiles with seconds of cache, only around where the round's souls have walked (the explored
+ * area), and `players` with the living soul alone while connected. 404 in prep and for a round that never started.
+ */
 async function roundRoutes(world: World, url: URL, seg: string[], req: Request): Promise<Response> {
   const os = world.onesoul;
   const cycle = /^[1-9][0-9]{0,5}$/.test(seg[2]) ? Number(seg[2]) : NaN;
   const server = url.searchParams.get("server");
   if (!os || (server !== null && server !== os.server)) return notFound("no such round");
   const round = os.rounds.find((r) => r.cycle === cycle);
-  if (!round || round.ended_ago === null) return notFound("the round is not over, or has no archived tiles");
-  const dims = new Set(os.souls.filter((s) => s.cycle === cycle).flatMap((s) => s.trail.map((t) => t.dim)));
+  const running = !!round && round.ended_ago === null && round.started_ago !== null && os.state !== "prep";
+  if (!round || (round.ended_ago === null && !running)) return notFound("the round has not started, or has no tiles");
+  const souls = os.souls.filter((s) => s.cycle === cycle);
+
+  // /rounds/{cycle}/map/players: the living soul or nobody, whole blocks (never a ghost, a spectator or the queue)
+  if (seg[4] === "players" && seg.length === 5) {
+    if (!running) return notFound("positions are served for the round in play only");
+    const soul = souls.find((s) => s.outcome === "playing");
+    const players = soul && os.current?.online ? [soulAt(soul, Date.now())] : [];
+    return jsonCc(req, { server: os.server, cycle, players }, "private, max-age=1");
+  }
+
+  const dims = new Set(souls.flatMap((s) => s.trail.map((t) => t.dim)));
   const worlds = [...dims].map((d) => d.replace(":", "_"));
   const id = seg[5];
-  if (!id || !worlds.includes(id)) return notFound(`world '${id}' has no archived tiles`);
+  if (!id || !worlds.includes(id)) return notFound(`world '${id}' has no tiles`);
   const zoom = { max: 3, default: 2, extra: 2 };
   const spawn = { x: 120, z: -48 };
   if (seg[4] === "worlds" && seg.length === 6) {
-    const data: RoundMapWorld = { server: os.server, cycle, world: id, tile_size: 512, zoom: { min: 0, ...zoom }, spawn, updated_at: Math.floor((Date.now() - round.ended_ago) / 1000) * 1000 };
-    return jsonCc(req, data, "private, max-age=300");
+    const at = running ? Date.now() - 60_000 : Date.now() - round.ended_ago!;
+    const data: RoundMapWorld = { server: os.server, cycle, world: id, tile_size: 512, zoom: { min: 0, ...zoom }, spawn, updated_at: Math.floor(at / 1000) * 1000 };
+    return jsonCc(req, data, running ? "private, max-age=15" : "private, max-age=300");
   }
   if (seg[4] === "tiles" && seg.length === 8) {
     const tk = parseTile(seg[6], seg[7]);
     if (!tk || !rendered(zoom.max, tk.z, tk.x, tk.y)) return notFound("tile not rendered");
+    // the round in play: squaremap has rendered only what somebody has been near
+    if (running && !explored(souls, id, tk.z, tk.x, tk.y, zoom.max)) return notFound("tile not rendered");
     const key = `${os.server}/round-${cycle}/${id}/${tk.z}/${tk.x}_${tk.y}`;
     const palette: MockMapPalette = id === "minecraft_the_nether" ? "nether" : id === "minecraft_the_end" ? "end" : "overworld";
-    return tileAnswer(req, key, "public, max-age=86400", () => tilePng(key, palette, fnv1a(`${os.server}:round-${cycle}:${id}`), spawn, zoom.max, tk.z, tk.x, tk.y));
+    return tileAnswer(req, key, running ? "private, max-age=30" : "public, max-age=86400", () =>
+      tilePng(key, palette, fnv1a(`${os.server}:round-${cycle}:${id}`), spawn, zoom.max, tk.z, tk.x, tk.y)
+    );
   }
   return notFound("no such route");
+}
+
+/** Does this tile cover a block within 256 of a trail point of that world (the mock's "explored")? */
+function explored(souls: { trail: { dim: string; points: [number, number, number, number][] }[] }[], id: string, z: number, x: number, y: number, max: number): boolean {
+  const S = 512 * 2 ** (max - z);
+  const R = 256;
+  return souls.some((s) =>
+    s.trail.some((t) => t.dim.replace(":", "_") === id && t.points.some(([, bx, , bz]) => bx + R >= x * S && bx - R < (x + 1) * S && bz + R >= y * S && bz - R < (y + 1) * S))
+  );
+}
+
+/** The living soul now: walking a small circle around the last point of their trail, so the dot moves. */
+export function soulAt(soul: { uuid: string; name: string; trail: { dim: string; points: [number, number, number, number][] }[] }, t: number) {
+  const seg = soul.trail.at(-1)!;
+  const [, x, , z] = seg.points.at(-1)!;
+  const p = moverAt({ cx: x, cz: z, r: 12, phase: 0, period_ms: 90_000 } as MockMover, t);
+  return { uuid: soul.uuid, name: soul.name, world: seg.dim.replace(":", "_"), ...p };
 }
 
 /** The fixture's hidden examples (mock mode merges them into the hide lists). */

@@ -10,7 +10,7 @@ import { oneSoul, sectionApi } from "#lib/server/onesoul/index.ts";
 import { allGraves, allSouls, roundSummaries } from "#lib/server/onesoul/section.ts";
 import { prepareAdvancements, prepareFeed } from "#lib/milestones/prepare.server.ts";
 import { PLAYTIME } from "#lib/api/metric.ts";
-import { roundShapes, roundTiles } from "#lib/map/layers/round.server.ts";
+import { inPlay, roundShapes, roundTiles } from "#lib/map/layers/round.server.ts";
 
 export const load: PageServerLoad = async ({ parent, params, url }) => {
   const { os } = await parent();
@@ -32,11 +32,15 @@ export const load: PageServerLoad = async ({ parent, params, url }) => {
         summary.ended_at ? oneSoul().pranks({ server: os.server, cycle }) : Promise.resolve(null)
       ])
     : [null, null, null, null, null, summary.ended_at ? await oneSoul().pranks({ server: os.server, cycle }) : null];
-  // a finished round shows its map on the archived tiles (FM-5); a running round has none and makes no tile request
+  // every round's map is on its tiles (design §8.1): the archive, or the round in play with the living soul (TH-31)
+  const over = !!summary.ended_at;
+  const running = !over && inPlay(os, cycle);
   let map: { tile: NonNullable<Awaited<ReturnType<typeof roundTiles>>>; layers: Awaited<ReturnType<typeof roundShapes>>["maps"] } | null = null;
-  if (summary.ended_at) {
-    const shapes = await roundShapes(oneSoul(), os.server, cycle, null);
-    const tile = shapes.ok ? await roundTiles(os.server, cycle, shapes.maps, true, url.searchParams.get("world")) : null;
+  if (over || running) {
+    const st = running ? await oneSoul().status() : null;
+    const soul = st?.ok ? st.data.servers.find((x) => x.server === os.server)?.soul : null;
+    const shapes = await roundShapes(oneSoul(), os.server, cycle, running && soul ? { uuid: soul.uuid } : null, over);
+    const tile = shapes.ok ? await roundTiles(os.server, cycle, shapes.maps, running, url.searchParams.get("world")) : null;
     if (tile) map = { tile, layers: shapes.maps };
   }
   return {

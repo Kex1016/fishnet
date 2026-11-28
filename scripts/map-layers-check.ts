@@ -1,8 +1,8 @@
 // Browser checks of the round map's layers (FM-5 acceptance, brief §7) on a running mock site (busy).
 //   FISHNET_MOCK=busy FISHNET_ALLOW_MOCK=1 PORT=3101 node build/index.js &
 //   bun scripts/map-layers-check.ts --base http://127.0.0.1:3101
-// A finished round (1) is drawn on tiles with its marks and trails; the running round (2) keeps the SVG map and asks
-// for no tile; the layers popout is reachable and operable by keyboard. Prints one line per check; exit 1 on failure.
+// A finished round (1) is drawn on tiles with its marks, trails and landmarks; the round in play (2) too (TH-31), with
+// the living soul's dot; the layers popout is reachable and operable by keyboard. Prints one line per check; exit 1 on failure.
 const args = process.argv.slice(2);
 const base = args[args.indexOf("--base") + 1] ?? "http://127.0.0.1:3101";
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -73,16 +73,19 @@ await check("worlds: only the world shown has marks", async () => {
   return `overworld ${na}, nether ${nb}`;
 });
 
-await check("running round: SVG map, not one tile requested", async () => {
-  const ctx = await browser.newContext();
-  const page = await ctx.newPage();
-  const tiles: string[] = [];
-  page.on("request", (r: any) => /\/map\/t\//.test(r.url()) && tiles.push(r.url()));
-  await page.goto(`${base}/one-soul/map?round=2`, { waitUntil: "networkidle" });
-  must((await page.locator("svg[aria-label^='Map of']").count()) > 0, "no SVG map");
-  must(tiles.length === 0, `tile requests: ${tiles.join(", ")}`);
-  await page.goto(`${base}/one-soul/rounds/2`, { waitUntil: "networkidle" });
-  must(tiles.length === 0 && (await page.locator(".mc").count()) === 0, "round page asked for tiles while running");
+await check("round in play: on its tiles, the living soul's dot and nobody else", async () => {
+  const { page, tiles, errors } = await open("/one-soul/map?round=2&world=minecraft_the_nether");
+  must(tiles.some((u) => u.includes("/map/t/onesoul/round/2/")), "no tile of the round in play requested");
+  await page.waitForFunction(() => document.querySelectorAll(".mc-dot-icon .mc-dot").length === 1, null, { timeout: 8000 });
+  must((await page.locator("svg[aria-label^='Map of']").count()) === 0, "an SVG map is drawn");
+  must(errors.length === 0, errors.join("; "));
+  return `${tiles.length} tiles`;
+});
+
+await check("finished round: stable portal and End portal marks", async () => {
+  const { page } = await open("/one-soul/map?round=1&world=minecraft_overworld");
+  const n = await page.evaluate(() => ({ p: document.querySelectorAll(".mc-mark[data-layer='portals']").length, e: document.querySelectorAll(".mc-mark[data-layer='end-portals']").length }));
+  must(n.p > 0 && n.e > 0, `portals ${n.p}, End portals ${n.e}`);
 });
 
 await check("round page card: finished round shows the map card", async () => {

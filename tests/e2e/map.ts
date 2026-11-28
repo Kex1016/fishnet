@@ -564,7 +564,7 @@ export const MAP_CHECKS: Check[] = [
     }
   },
   {
-    name: "map: a finished One Soul round is drawn on its tiles; a running round asks for none",
+    name: "map: every One Soul round is on its tiles; the round in play shows the living soul alone (TH-31)",
     on: BUSY,
     run: async (ctx) => {
       const done = await ctx.open("/one-soul/map?round=1");
@@ -572,7 +572,7 @@ export const MAP_CHECKS: Check[] = [
         await ready(done.page);
         await sleep(400);
         expect(done.requests.some((r) => r.startsWith("/map/t/onesoul/round/1/")), "the finished round asked for no round tile");
-        expect(!done.requests.some((r) => /^\/map\/[^/]+\/(live|players\.json)/.test(r)), "a finished round opened a live feed");
+        expect(!done.requests.some((r) => /^\/map\/[^/]+\/(live|players\.json)/.test(r) || r.startsWith("/one-soul/map/live.json")), "a finished round opened a live feed");
         for (const width of [1440, 390]) {
           await done.page.setViewportSize({ width, height: width < 600 ? 844 : 900 });
           await sleep(150);
@@ -604,18 +604,33 @@ export const MAP_CHECKS: Check[] = [
       const tile = done.requests.find((r) => r.startsWith("/map/t/onesoul/round/1/"))!;
       const t = await ctx.get(tile);
       if (t.status === 200) expect(/immutable/.test(t.headers.get("cache-control") ?? ""), `a finished round's tile is not immutable (${t.headers.get("cache-control")})`);
-      // the running round (2): today's SVG map, and the tile route refuses it
+      // the round in play (2): on its tiles (explored area only), the living soul's dot polled, never anybody else
       const running = await ctx.open("/one-soul/map?round=2");
       try {
-        expect((await running.page.locator("svg[aria-label^='Map of']").count()) > 0, "the running round has no SVG map");
-        expect(!running.requests.some((r) => r.startsWith("/map/t/")), "the running round asked for tiles");
+        await ready(running.page);
+        expect((await running.page.locator("svg[aria-label^='Map of']").count()) === 0, "the round in play is still drawn on the SVG map");
+        expect(running.requests.some((r) => r.startsWith("/map/t/onesoul/round/2/")), "the round in play asked for no tile");
+        await running.page.waitForFunction(() => /is (here|in)/.test(document.querySelector(".rm-live")?.textContent ?? ""), null, { timeout: 8_000 });
+        expect(running.requests.some((r) => r.startsWith("/one-soul/map/live.json")), "the round in play does not poll the living soul");
+        const live = (await (await ctx.get("/one-soul/map/live.json")).json()) as { cycle: number; players: { uuid: string; name: string; world: string }[] };
+        expect(live.cycle === 2 && live.players.length === 1, `live.json: ${JSON.stringify(live)}`);
+        // the soul is in the Nether: the dot is drawn there, the overworld says where they are
+        const where = await running.page.locator(".rm-live a").getAttribute("href");
+        expect(!!where && where.includes(`world=${live.players[0].world}`), `no link to the soul's world (${where})`);
+        await running.page.goto(`${ctx.base}${where}`, { waitUntil: "networkidle" });
+        await ready(running.page);
+        await running.page.waitForFunction(() => document.querySelectorAll(".mc-dot-icon .mc-dot").length === 1 && /is here/.test(document.querySelector(".rm-live")?.textContent ?? ""), null, { timeout: 8_000 });
         await running.page.goto(`${ctx.base}/one-soul/rounds/2`, { waitUntil: "networkidle" });
-        expect(!running.requests.some((r) => r.startsWith("/map/t/")) && (await running.page.locator(".mc").count()) === 0, "the running round's page draws a tile map");
-        quiet(running, "the running round");
+        await ready(running.page);
+        expect((await running.page.locator(".rm-card").count()) === 1, "the round in play's page has no map card");
+        quiet(running, "the round in play");
       } finally {
         await running.close();
       }
-      expect((await ctx.get("/map/t/onesoul/round/2/minecraft_overworld/3/0_0.png")).status === 404, "a running round's tile is served");
+      // the site's tile route: an explored tile of the round in play is served, never immutable; a tile nobody has been near is not
+      const t2 = await ctx.get("/map/t/onesoul/round/2/minecraft_the_nether/3/0_0.png");
+      expect(t2.status === 200 && !/immutable/.test(t2.headers.get("cache-control") ?? ""), `the round in play's explored tile: ${t2.status} ${t2.headers.get("cache-control")}`);
+      expect((await ctx.get("/map/t/onesoul/round/2/minecraft_the_nether/3/1_1.png")).status === 404, "an unexplored tile of the round in play is served");
       expect((await ctx.get("/map/t/onesoul/round/99/minecraft_overworld/3/0_0.png")).status === 404, "a round that never was has tiles");
       const card = await ctx.open("/one-soul/rounds/1");
       try {

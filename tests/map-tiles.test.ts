@@ -11,7 +11,7 @@ import { createMapClient, type MapTile, type TileOptions } from "#lib/server/cak
 import { mockFetch } from "#lib/server/cakeutils/mock/index.ts";
 import { ServerList } from "#lib/server/hidden-servers-list.ts";
 import { HiddenList } from "#lib/server/hidden-list.ts";
-import { createTileService, etagMatches, tileHeaders, FRESH_MS, MISS_MS, type TileRef } from "#lib/server/map/tiles.ts";
+import { createTileService, etagMatches, finalRoundTile, tileHeaders, FRESH_MS, MISS_MS, type TileRef } from "#lib/server/map/tiles.ts";
 import { tileResponse, versionParam } from "#lib/server/map/respond.ts";
 import { parseTile } from "#lib/map/links.ts";
 
@@ -36,7 +36,9 @@ function fake() {
     calls: [] as { ref: TileRef; etag: string | null; priority: string }[],
     delayMs: 0,
     concurrent: 0,
-    maxConcurrent: 0
+    maxConcurrent: 0,
+    /** what cakeutils says about a round tile: a day for a finished round, seconds for the round in play (TH-31) */
+    roundCc: "public, max-age=86400" as string | null
   };
   const source = async (ref: TileRef, o: TileOptions): Promise<Result<MapTile>> => {
     s.calls.push({ ref, etag: o.etag ?? null, priority: o.priority ?? "page" });
@@ -50,8 +52,9 @@ function fake() {
     if (s.mode === "off") return fail("off", { status: 501 });
     if (s.mode === "junk") return ok({ notModified: false, png: new Uint8Array([1, 2, 3]), etag: '"x"', cacheControl: null, lastModified: null });
     const etag = `"v${s.version}"`;
-    if (o.etag === etag) return ok({ notModified: true, png: null, etag, cacheControl: null, lastModified: null });
-    return ok({ notModified: false, png: PNG(s.version), etag, cacheControl: null, lastModified: null });
+    const cacheControl = ref.round !== undefined ? s.roundCc : null;
+    if (o.etag === etag) return ok({ notModified: true, png: null, etag, cacheControl, lastModified: null });
+    return ok({ notModified: false, png: PNG(s.version), etag, cacheControl, lastModified: null });
   };
   return { s, source };
 }
@@ -302,6 +305,43 @@ describe("finished rounds", () => {
     const t = service({ one: ["onesoul"] });
     expect((await t.svc.get(R, "e1.9")).kind).toBe("tile");
     expect((await t.svc.get({ ...REF, server: "onesoul" })).kind).toBe("missing");
+  });
+
+  test("the round in play (TH-31): kept like a live tile, fresh a minute, then revalidated, never immutable", async () => {
+    const t = service();
+    t.s.roundCc = "private, max-age=30";
+    const a = await t.svc.get(R);
+    expect(a).toMatchObject({ kind: "tile", immutable: false, source: "miss" });
+    t.clock.t += 30_000;
+    expect(await t.svc.get(R)).toMatchObject({ kind: "tile", immutable: false, source: "fresh" });
+    expect(t.s.calls).toHaveLength(1);
+    // squaremap rendered more of the explored area: the next visitor past the minute gets the copy, the new one is fetched behind it
+    t.s.version = 2;
+    t.clock.t += 61_000;
+    expect(await t.svc.get(R)).toMatchObject({ kind: "tile", immutable: false, source: "stale-revalidating" });
+    await tick();
+    expect(t.s.calls).toHaveLength(2);
+    expect(t.s.calls[1].etag).toBe('"v1"');
+    const c = await t.svc.get(R);
+    expect(c).toMatchObject({ kind: "tile", immutable: false, source: "fresh" });
+    expect((c as { png: Uint8Array }).png[8]).toBe(2);
+    // the round ended: the next answer has a day of max-age, and from then on the copy is final
+    t.s.roundCc = "public, max-age=86400";
+    t.clock.t += 61_000;
+    await t.svc.get(R);
+    await tick();
+    t.clock.t += 400 * 24 * 3600_000;
+    expect(await t.svc.get(R)).toMatchObject({ kind: "tile", immutable: true, source: "fresh" });
+    expect(t.s.calls).toHaveLength(3);
+  });
+
+  test("a round tile without a cache header is not taken as final", async () => {
+    const t = service();
+    t.s.roundCc = null;
+    expect(await t.svc.get(R)).toMatchObject({ kind: "tile", immutable: false });
+    expect(finalRoundTile(null)).toBe(false);
+    expect(finalRoundTile("public, max-age=86400")).toBe(true);
+    expect(finalRoundTile("private, max-age=30")).toBe(false);
   });
 
   test("round numbers are checked", async () => {

@@ -70,6 +70,7 @@
       worlds={data.map.tile.worlds.map((w) => ({ id: w.id, label: w.label, href: withParams(page.url, { world: w.id }) }))}
       openHref="/one-soul/map?round={data.cycle}&world={data.map.tile.view.id}"
       tableHref="/one-soul/map?round={data.cycle}&view=tables"
+      liveHref={data.map.tile.running ? "/one-soul/map/live.json" : null}
     />
   </Window>
 {/if}

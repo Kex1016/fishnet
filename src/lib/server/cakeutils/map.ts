@@ -18,7 +18,7 @@
 //   read or a route not built yet (status 501: "map_format_unsupported", "not_implemented"); and from
 //   mapServers / mapEnabled, a proxy without the map or a token without read:map;
 // - down: cakeutils unreachable, or status 503 "map_offline" / "map_busy" for that server (retryAfter set).
-import type { MapChanges, MapIndex, MapMarkers, MapPlayers, MapWorld, RoundMapWorld } from "#lib/api/types.ts";
+import type { MapChanges, MapIndex, MapMarkers, MapPlayer, MapPlayers, MapWorld, RoundMapWorld } from "#lib/api/types.ts";
 import { fail, ok, type Result } from "#lib/api/result.ts";
 import { validCycle, validServerId, validTile, validWorldId, type TileKey } from "#lib/map/links.ts";
 import type { Core, Priority } from "./core.ts";
@@ -73,11 +73,27 @@ export interface MapClient {
   mapChanges(server: string, world: string, o?: LiveOptions): Promise<Result<MapChanges>>;
   /** GET /v2/map/{server}/players, past the LRU, hidden players left out; `off` when positions are off. */
   mapPlayers(server: string, o?: LiveOptions): Promise<Result<MapPlayers>>;
-  /** GET /v2/onesoul/rounds/{cycle}/map/worlds/{world}?server= (catalogue tier): not_found while the round runs. */
+  /**
+   * GET /v2/onesoul/rounds/{cycle}/map/worlds/{world}?server= (catalogue tier): a finished round's archived world, or
+   * the round in play's (TH-31, cakeutils MAPD-77: explored area only); not_found in prep, for a world nobody reached
+   * and while cakeutils has `onesoul.api.live-map` off.
+   */
   roundMapWorld(cycle: number, world: string, server: string): Promise<Result<RoundMapWorld>>;
-  /** GET /v2/onesoul/rounds/{cycle}/map/tiles/{world}/{z}/{x}_{y}.png?server=, past the LRU (never changes). */
+  /**
+   * GET /v2/onesoul/rounds/{cycle}/map/tiles/{world}/{z}/{x}_{y}.png?server=, past the LRU. A finished round's tile never
+   * changes (a day of max-age); the round in play's comes with seconds (the disk cache tells them apart).
+   */
   roundMapTile(cycle: number, world: string, tile: TileKey, server: string, o?: TileOptions): Promise<Result<MapTile>>;
+  /**
+   * GET /v2/onesoul/rounds/{cycle}/map/players?server=, past the LRU (TH-31, MAPD-78): the living soul of the round in
+   * play while connected, or nobody. cakeutils keeps everyone else out; the answer is checked here again (at most one
+   * entry, the round asked for, a valid world, whole finite blocks). not_found for a finished round or with live-map off.
+   */
+  roundMapPlayers(cycle: number, server: string, o?: LiveOptions): Promise<Result<RoundMapPlayers>>;
 }
+
+/** GET /v2/onesoul/rounds/{cycle}/map/players: the living soul or nobody (cakeutils MAPD-78). Not in the frozen api/types.ts. */
+export type RoundMapPlayers = { server: string; cycle: number; players: MapPlayer[] };
 
 export type MapClientOptions = {
   core: Core;
@@ -181,6 +197,25 @@ export function createMapClient(o: MapClientOptions): MapClient {
     roundMapTile: (cycle, world, t, server, opt = {}) => {
       if (!roundOk(server, cycle) || !validWorldId(world)) return notFound();
       return tile(`/v2/onesoul/rounds/${cycle}/map/tiles/${world}/${t.z}/${t.x}_${t.y}.png?server=${enc(server)}`, t, opt);
+    },
+
+    roundMapPlayers: async (cycle, server, opt = {}) => {
+      if (!roundOk(server, cycle)) return notFound();
+      const r = await live<RoundMapPlayers>(`/v2/onesoul/rounds/${cycle}/map/players?server=${enc(server)}`, opt);
+      if (!r.ok) return r;
+      // the soul or nobody: anything else in the answer is not drawn (the site's own check behind cakeutils')
+      const list = r.data?.cycle === cycle && Array.isArray(r.data.players) ? r.data.players : [];
+      const one = list.length === 1 ? list[0] : null;
+      const good =
+        one &&
+        typeof one.uuid === "string" &&
+        typeof one.name === "string" &&
+        validWorldId(one.world) &&
+        [one.x, one.z].every((v) => typeof v === "number" && Number.isFinite(v)) &&
+        typeof one.yaw === "number" &&
+        Number.isFinite(one.yaw);
+      const players = good ? [{ uuid: one.uuid.toLowerCase(), name: one.name.slice(0, 64), world: one.world, x: Math.round(one.x), z: Math.round(one.z), yaw: Math.round(one.yaw) }] : [];
+      return { ...r, data: { server, cycle, players } };
     }
   };
   return client;

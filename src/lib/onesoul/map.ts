@@ -3,11 +3,11 @@
 // the game, one map per dimension. Every label carries player text as text only.
 import { dimLabel, life } from "./format.ts";
 import { osHref } from "./links.ts";
-import type { Feature, FeatureCollection, Trail } from "./types.ts";
+import type { Feature, FeatureCollection, OsEvent, Trail } from "./types.ts";
 
 export type Mark = {
   id: string;
-  kind: "spawn" | "death" | "grave" | "waystone" | "other";
+  kind: "spawn" | "death" | "grave" | "waystone" | "portal" | "end_portal" | "other";
   dim: string;
   x: number;
   z: number;
@@ -146,8 +146,10 @@ export function byDimension(shapes: (Mark | Path)[]): DimMap[] {
 }
 
 /**
- * The site's own guard over map layers: nothing of the soul who is playing (no trail, no death position),
- * and a waystone they found does not name them while they play (it would hint where they are).
+ * The site's own guard over map layers. The living soul's trail is drawn live (TH-31, design §8.1 [David]; cakeutils
+ * serves it as OSD-73 says); any other trail of a turn that has not ended is not (a stale open turn, a soul skipped who
+ * may play again). The living soul's death positions stay off the map, and a waystone they found does not name them
+ * while they play.
  */
 export function withoutLiving(fc: FeatureCollection, living: { uuid: string } | null): FeatureCollection {
   return {
@@ -158,11 +160,49 @@ export function withoutLiving(fc: FeatureCollection, living: { uuid: string } | 
         return living && f.properties?.kind === "waystone" && by?.uuid === living.uuid ? { ...f, properties: { ...f.properties, first_by: null } } : f;
       })
       .filter((f) => {
-      const p = f.properties ?? {};
-      if (p.kind === "trail" && (p.outcome === "playing" || p.outcome === null || p.outcome === undefined)) return false;
-      if (!living) return true;
-      const uuid = p.uuid ?? (p.soul as { uuid?: string } | undefined)?.uuid;
-      return !((p.kind === "trail" || p.kind === "death") && uuid === living.uuid);
-    })
+        const p = f.properties ?? {};
+        const uuid = p.uuid ?? (p.soul as { uuid?: string } | undefined)?.uuid;
+        const mine = !!living && typeof uuid === "string" && uuid.toLowerCase() === living.uuid.toLowerCase();
+        if (p.kind === "trail" && (p.outcome === "playing" || p.outcome === null || p.outcome === undefined)) return mine;
+        return !(mine && p.kind === "death");
+      })
   };
+}
+
+/**
+ * The landmarks of a finished round (design §8.1): every Nether portal that became stable and every End portal that
+ * opened (its light pillar), from the timeline (`rift_stable`, `end_opened`). cakeutils serves their positions only
+ * once the round is over (CONTRACTS §11.2); `over` false gives nothing whatever the events carry.
+ */
+export function landmarkMarks(events: readonly OsEvent[], cycle: number, over: boolean): Mark[] {
+  if (!over) return [];
+  const out: Mark[] = [];
+  const seen = new Set<string>();
+  for (const e of events) {
+    if (e.cycle !== cycle || (e.kind !== "rift_stable" && e.kind !== "end_opened")) continue;
+    const d = e.data ?? {};
+    const dim = s(d.dim);
+    const x = n(d.x);
+    const z = n(d.z);
+    if (!dim || x === null || z === null) continue;
+    const key = `${e.kind}|${dim}|${x}|${z}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    const who = s(e.name);
+    const turn = n(d.turn);
+    const first = d.first === true;
+    const portal = e.kind === "rift_stable";
+    out.push({
+      id: `${portal ? "portal" : "end-portal"}-${dim}-${x}-${z}`,
+      kind: portal ? "portal" : "end_portal",
+      dim,
+      x,
+      z,
+      y: n(d.y),
+      title: portal ? (first ? "First stable portal" : "Stable portal") : first ? "First End portal" : "End portal",
+      detail: portal ? (who ? `stable while ${who} played` : null) : who ? `opened by ${who}` : null,
+      href: turn !== null ? osHref.soul(cycle, turn) : null
+    });
+  }
+  return out;
 }

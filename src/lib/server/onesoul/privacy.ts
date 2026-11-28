@@ -2,7 +2,8 @@
 // every answer before a page sees it, so a proxy bug cannot leak through the site:
 // - nothing that looks like the queue order or a "next up" (any key named so, anywhere) survives;
 // - the living soul carries no position (only realm and online);
-// - a journal or trail of a soul that is still playing is refused (the caller gets not_found).
+// - a journal of a soul that is still playing is refused (the caller gets not_found). Their trail is not: the
+//   living soul's trail and position are on the map since TH-31 (design §8.1 [David]).
 import { fail, type Result } from "#lib/api/result.ts";
 
 const QUEUE_KEY = /^(queue|queue_.+|.+_queue|next|next_up|next_soul|up_next|position|queue_position|order_in_queue|rank_in_queue)$/i;
@@ -32,7 +33,7 @@ export function mapOk<T>(r: Result<T>, f: (d: T) => T): Result<T> {
   return r.ok ? { ...r, data: f(r.data) } : r;
 }
 
-/** A journal or trail answer for a soul that still plays: refused like an unknown turn. */
+/** A journal answer for a soul that still plays: refused like an unknown turn. */
 export function refuseLiving<T>(r: Result<T>, playing: boolean): Result<T> {
   return r.ok && playing ? fail("not_found", { status: 404 }) : r;
 }

@@ -1,4 +1,4 @@
-// The One Soul layers of a finished round's map (FM-5, brief §6): the existing GeoJSON, already turned into
+// The One Soul layers of a round's map (FM-5, brief §6; the round in play too since TH-31): the existing GeoJSON, already turned into
 // marks and paths by #lib/onesoul/map.ts (raw block coordinates, x east, z south), sorted into one layer per
 // kind for the world shown. Nothing is projected here: MapCanvas puts a block where the tiles put it (crs.ts).
 // Each layer has its own shape, so the toggles and the marks never rely on colour alone (brief §5).
@@ -14,6 +14,9 @@ export const ROUND_LAYERS: readonly RoundLayerDef[] = [
   { id: "graves", label: "Graves", shape: "square", kind: "grave" },
   { id: "waystones", label: "Waystones", shape: "diamond", kind: "waystone" },
   { id: "spawn", label: "Spawn", shape: "circle", kind: "spawn" },
+  // design §8.1, finished rounds only: their own glyphs on top of the shape (RoundMap.svelte, by data-layer)
+  { id: "portals", label: "Stable portals", shape: "square", kind: "portal" },
+  { id: "end-portals", label: "End portals", shape: "triangle", kind: "end_portal" },
   { id: "other", label: "Other points", shape: "triangle", kind: "other" }
 ];
 
@@ -43,4 +46,9 @@ export function roundLayers(map: DimMap | undefined, on: Record<string, boolean>
 /** How many things a layer draws, for its toggle ("3"). */
 export function layerCount(l: MapLayer): number {
   return l.count ?? l.data.marks.length + l.data.paths.length;
+}
+
+/** Is this round the one in play (started, not over)? The status' state is the section's (layout) view of it (TH-31). */
+export function inPlay(os: { cycle: number; state: string }, cycle: number): boolean {
+  return cycle === os.cycle && os.state !== "prep" && os.state !== "ended";
 }

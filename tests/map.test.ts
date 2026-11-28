@@ -134,14 +134,83 @@ describe("mock answers match MAP.md §5", () => {
     }
   });
 
-  test("finished rounds: world settings and immutable-ish tiles; 404 while the round runs", async () => {
+  test("finished rounds: world settings and immutable-ish tiles", async () => {
     const w = await raw("/v2/onesoul/rounds/1/map/worlds/minecraft_overworld?server=onesoul");
     expect(w.status).toBe(200);
     expect(keys((await w.json()) as object)).toEqual(["cycle", "server", "spawn", "tile_size", "updated_at", "world", "zoom"]);
     const t = await raw("/v2/onesoul/rounds/1/map/tiles/minecraft_overworld/3/0_-1.png?server=onesoul");
     expect(t.status).toBe(200);
     expect(t.headers.get("cache-control")).toBe("public, max-age=86400");
-    expect((await raw("/v2/onesoul/rounds/2/map/worlds/minecraft_overworld?server=onesoul")).status).toBe(404);
+    // a finished round has no live positions
+    expect((await raw("/v2/onesoul/rounds/1/map/players?server=onesoul")).status).toBe(404);
+  });
+
+  test("the round in play (TH-31): explored tiles only, short caching, the living soul alone", async () => {
+    const os = worldOf("busy").onesoul!;
+    const souls = os.souls.filter((s) => s.cycle === 2);
+    const playing = souls.find((s) => s.outcome === "playing")!;
+    const w = await raw("/v2/onesoul/rounds/2/map/worlds/minecraft_overworld?server=onesoul");
+    expect(w.status).toBe(200);
+    expect(w.headers.get("cache-control")).toBe("private, max-age=15");
+    // tiles: only near where a soul of the round has been; the same rendered area elsewhere is 404 (an unfound stronghold never shows)
+    const near = (x: number, y: number) =>
+      souls.some((s) => s.trail.some((t) => t.dim === "minecraft:overworld" && t.points.some(([, bx, , bz]) => bx + 256 >= x * 512 && bx - 256 < (x + 1) * 512 && bz + 256 >= y * 512 && bz - 256 < (y + 1) * 512)));
+    let served = 0;
+    for (const x of [-1, 0, 1]) {
+      for (const y of [-1, 0, 1]) {
+        const t = await raw(`/v2/onesoul/rounds/2/map/tiles/minecraft_overworld/3/${x}_${y}.png?server=onesoul`);
+        expect(t.status).toBe(near(x, y) ? 200 : 404);
+        if (t.status === 200) {
+          served++;
+          expect(t.headers.get("cache-control")).toBe("private, max-age=30");
+        }
+      }
+    }
+    expect(served).toBeGreaterThan(0);
+    // players: the living soul only, whole blocks, in their world; nobody when they are offline
+    const p = await raw("/v2/onesoul/rounds/2/map/players?server=onesoul");
+    expect(p.status).toBe(200);
+    expect(p.headers.get("cache-control")).toBe("private, max-age=1");
+    const body = (await p.json()) as { cycle: number; players: { uuid: string; world: string; x: number; z: number }[] };
+    expect(body.cycle).toBe(2);
+    expect(body.players.map((x) => x.uuid)).toEqual([playing.uuid]);
+    expect(body.players[0].world).toBe("minecraft_the_nether");
+    expect(Number.isInteger(body.players[0].x) && Number.isInteger(body.players[0].z)).toBe(true);
+    const was = os.current!.online;
+    os.current!.online = false;
+    try {
+      expect(((await (await raw("/v2/onesoul/rounds/2/map/players?server=onesoul")).json()) as { players: unknown[] }).players).toEqual([]);
+    } finally {
+      os.current!.online = was;
+    }
+  });
+
+  test("the round in play through the client: one well-formed soul or nobody, map-direct, in the map bucket", async () => {
+    expect(policyFor("/v2/onesoul/rounds/2/map/players?server=onesoul").cls).toBe("map-direct");
+    expect(isMapPath("/v2/onesoul/rounds/2/map/players?server=onesoul")).toBe(true);
+    const { m } = client();
+    const r = await m.roundMapPlayers(2, "onesoul");
+    expect(r.ok && r.data.players.length === 1 && r.data.cycle === 2).toBe(true);
+    // a hidden server, a bad cycle: not asked
+    const hidden = client({ owner: ["onesoul"] });
+    expect((await hidden.m.roundMapPlayers(2, "onesoul")).ok).toBe(false);
+    expect(hidden.paths).toHaveLength(0);
+    expect((await m.roundMapPlayers(0, "onesoul")).ok).toBe(false);
+    // an answer with more than one entry or a bad one (a proxy bug): nobody is drawn
+    const bad = (players: unknown[]) =>
+      createMapClient({
+        core: createCore({ baseUrl: MOCK, token: TOKEN, log: () => {}, fetchImpl: async () => new Response(JSON.stringify({ server: "onesoul", cycle: 2, players }), { headers: { "content-type": "application/json" } }) }),
+        hiddenLive: () => new ServerList(),
+        hiddenServers: () => new ServerList(),
+        hiddenPlayers: () => new HiddenList()
+      }).roundMapPlayers(2, "onesoul");
+    const dot = { uuid: "11111111-1111-1111-1111-111111111111", name: "Alex", world: "minecraft_overworld", x: 1.4, z: -2.6, yaw: 90 };
+    const one = await bad([dot]);
+    expect(one.ok && one.data.players).toEqual([{ ...dot, x: 1, z: -3 }]);
+    for (const list of [[dot, { ...dot, uuid: "22222222-2222-2222-2222-222222222222" }], [{ ...dot, world: "../x" }], [{ ...dot, x: "1" }], [{ ...dot, z: null }], [null]]) {
+      const r2 = await bad(list);
+      expect(r2.ok && r2.data.players).toEqual([]);
+    }
   });
 
   test("fresh: no server has a map", async () => {

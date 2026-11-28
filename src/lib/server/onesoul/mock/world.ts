@@ -370,15 +370,8 @@ export function generateOneSoulBusy(people: Who[]): OneSoulWorld {
     pranks,
     waystones,
     thresholds: [
-      // round 1: the Nether in the first days, an End portal opened by the third soul, one soul in the End
-      { cycle: 1, kind: "rift_stable", turn: 1, ago: 22 * DAY + 6 * HOUR, first: true, pos: { dim: OW, x: 182, y: 68, z: -77 } },
-      { cycle: 1, kind: "nether_entered", turn: 1, ago: 22 * DAY + 4 * HOUR },
-      { cycle: 1, kind: "rift_stable", turn: 2, ago: 20 * DAY, pos: { dim: NE, x: 31, y: 72, z: 9 } },
-      { cycle: 1, kind: "end_opened", turn: 3, ago: 16 * DAY, first: true, pos: { dim: OW, x: 4210, y: 22, z: -3180 } },
-      { cycle: 1, kind: "end_entered", turn: 3, ago: 16 * DAY - 9 * MIN },
-      // round 2 (running): the first portal is stable, one soul passed the torch when their turn ended
-      { cycle: 2, kind: "rift_stable", turn: 4, ago: 21 * HOUR, first: true, pos: { dim: OW, x: 96, y: 70, z: -60 } },
-      { cycle: 2, kind: "nether_entered", turn: 4, ago: 20 * HOUR + 30 * MIN },
+      // the portals and the first steps into the Nether and the End come from the souls' trails (handler.ts events(), TH-31);
+      // round 2 (running): one soul passed the torch when their turn ended
       { cycle: 2, kind: "torch_passed", turn: 3, ago: souls.find((x) => x.cycle === 2 && x.turn === 3)!.ended_ago! + 2 }
     ]
   };

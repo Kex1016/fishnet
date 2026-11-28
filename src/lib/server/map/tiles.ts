@@ -11,7 +11,9 @@
 //   is served as immutable. Any other copy is checked with cakeutils first (a 304 usually), because an
 //   immutable URL must never pin an older picture. If cakeutils cannot be asked, the old copy is served
 //   without `immutable` so the browser asks again soon;
-// - a finished One Soul round's tiles never change: served from disk whatever their age;
+// - a finished One Soul round's tiles never change: served from disk whatever their age. The round in play (TH-31)
+//   is on tiles too and they change as squaremap renders what the soul explores: cakeutils marks them with a short
+//   max-age, so they are kept like live tiles (fresh 60 s, then revalidated) until an answer says the round is over;
 // - one upstream request per tile at a time (single-flight), at most MAX_PER_SERVER per server at once;
 // - the cache is capped (MAP_CACHE_MAX_MB), evicted by last access, oldest first, by a sweep every 10 minutes
 //   (and early when writes overshoot the cap).
@@ -79,9 +81,16 @@ export type TileServiceOptions = {
   log?: (line: string) => void;
 };
 
-type Sidecar = { etag: string | null; fetchedAt: number; ver: string | null };
+/** `final`: a round tile cakeutils called unchanging (finished round); false while the round is in play; absent on old copies (finished). */
+type Sidecar = { etag: string | null; fetchedAt: number; ver: string | null; final?: boolean };
 type Disk = { png: Uint8Array; meta: Sidecar | null };
-type Fetched = { kind: "ok"; png: Uint8Array; etag: string | null } | { kind: "same" } | { kind: "missing" } | { kind: "failed"; retryAfter: number | null };
+type Fetched = { kind: "ok"; png: Uint8Array; etag: string | null; final: boolean } | { kind: "same"; final: boolean } | { kind: "missing" } | { kind: "failed"; retryAfter: number | null };
+
+/** A finished round's tile is sent with a day or more of max-age; the round in play's with seconds (cakeutils MAP.md §7). */
+export function finalRoundTile(cacheControl: string | null): boolean {
+  const m = /(?:^|[\s,])max-age=(\d+)/i.exec(cacheControl ?? "");
+  return !!m && Number(m[1]) >= 86_400;
+}
 
 export type SweepResult = { files: number; bytes: number; removed: number; freed: number };
 
@@ -135,7 +144,8 @@ export function createTileService(o: TileServiceOptions) {
     let meta: Sidecar | null = null;
     try {
       const m = JSON.parse(await readFile(metaPath(r), "utf8"));
-      if (m && typeof m.fetchedAt === "number") meta = { etag: typeof m.etag === "string" ? m.etag : null, fetchedAt: m.fetchedAt, ver: typeof m.ver === "string" ? m.ver : null };
+      if (m && typeof m.fetchedAt === "number")
+        meta = { etag: typeof m.etag === "string" ? m.etag : null, fetchedAt: m.fetchedAt, ver: typeof m.ver === "string" ? m.ver : null, ...(typeof m.final === "boolean" ? { final: m.final } : {}) };
     } catch {
       // a missing or torn sidecar: the picture is kept, treated as old and without an ETag
     }
@@ -208,12 +218,13 @@ export function createTileService(o: TileServiceOptions) {
         if (res.kind === "not_found" || res.kind === "off" || res.kind === "bad_request") return { kind: "missing" };
         return { kind: "failed", retryAfter: res.retryAfter ?? null };
       }
+      const final = finalRoundTile(res.data.cacheControl);
       if (res.data.notModified) {
         // still the copy we hold: remember when we checked, and for which version
-        return { kind: "same" };
+        return { kind: "same", final };
       }
       if (!isPng(res.data.png)) return { kind: "failed", retryAfter: null };
-      return { kind: "ok", png: res.data.png, etag: res.data.etag };
+      return { kind: "ok", png: res.data.png, etag: res.data.etag, final };
     })
       .catch((): Fetched => ({ kind: "failed", retryAfter: null }))
       .finally(() => flights.delete(key));
@@ -224,13 +235,14 @@ export function createTileService(o: TileServiceOptions) {
   /** Apply an upstream answer to the disk and the memory; returns the picture to serve, if any. */
   async function settle(r: TileRef, f: Fetched, held: Disk | null, ver: string | null): Promise<Disk | "missing" | "failed"> {
     const t = now();
+    const round = r.round !== undefined;
     if (f.kind === "ok") {
-      const meta = { etag: f.etag, fetchedAt: t, ver };
+      const meta: Sidecar = { etag: f.etag, fetchedAt: t, ver, ...(round ? { final: f.final } : {}) };
       await writeDisk(r, f.png, meta);
       return { png: f.png, meta };
     }
     if (f.kind === "same" && held) {
-      const meta = { etag: held.meta?.etag ?? null, fetchedAt: t, ver: ver ?? held.meta?.ver ?? null };
+      const meta: Sidecar = { etag: held.meta?.etag ?? null, fetchedAt: t, ver: ver ?? held.meta?.ver ?? null, ...(round ? { final: f.final } : {}) };
       await writeMeta(r, meta);
       return { png: held.png, meta };
     }
@@ -280,8 +292,13 @@ export function createTileService(o: TileServiceOptions) {
 
     if (held) {
       stats.hits++;
-      // a finished round never changes
-      if (round) return serve(held, "fresh", true);
+      // a finished round never changes; the round in play is kept like a live tile (TH-31)
+      if (round && held.meta?.final !== false) return serve(held, "fresh", true);
+      if (round) {
+        if (age < freshMs) return serve(held, "fresh", false);
+        revalidateBehind(ref, held);
+        return serve(held, "stale-revalidating", false);
+      }
       // the copy was fetched for this version or a later one
       if (want && verSatisfied(held.meta?.ver ?? null, want) && age < Infinity) {
         if (age >= freshMs) revalidateBehind(ref, held);
@@ -304,7 +321,7 @@ export function createTileService(o: TileServiceOptions) {
       if (held) return serve(held, "stale", false, true);
       return { kind: "unavailable", retryAfter: f.kind === "failed" ? f.retryAfter : null };
     }
-    return serve(s, held ? "revalidated" : "miss", round || !!want);
+    return serve(s, held ? "revalidated" : "miss", round ? s.meta?.final !== false : !!want);
   }
 
   /** the picture is already on its way to the visitor: check it with cakeutils behind it (never twice at once, not again soon after a failure) */

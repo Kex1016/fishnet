@@ -1,13 +1,15 @@
 // One life: a soul's turn in a round. GET /v2/onesoul/souls/{turn} and its run stats where the proxy has
-// them; otherwise the row from the souls list. The living soul's page shows no position, journal or trail.
+// them; otherwise the row from the souls list. The living soul's page shows no journal and no death position; their
+// trail and live position are on the round's tiles like everyone's (TH-31, design §8.1).
 import { error } from "@sveltejs/kit";
 import type { PageServerLoad } from "./$types";
 import type { Grave, SoulDetail } from "#lib/onesoul/types.ts";
 import { oneSoul } from "#lib/server/onesoul/index.ts";
 import { allGraves, allSouls } from "#lib/server/onesoul/section.ts";
 import { byDimension, trailPaths, type Mark } from "#lib/onesoul/map.ts";
+import { inPlay, roundTiles } from "#lib/map/layers/round.server.ts";
 
-export const load: PageServerLoad = async ({ parent, params }) => {
+export const load: PageServerLoad = async ({ parent, params, url }) => {
   const { os, osFeatures } = await parent();
   if (!os) error(404, "Not found");
   const cycle = params.cycle as unknown as number;
@@ -25,20 +27,26 @@ export const load: PageServerLoad = async ({ parent, params }) => {
   }
   if (!grave && soul.grave_id) grave = (await allGraves(os.server, cycle)).rows.find((g) => g.id === soul!.grave_id) ?? null;
   const playing = soul.outcome === "playing";
-  // the route of a life, only once it is over (the client refuses a living soul's trail as well)
+  // the route of a life on the round's tiles; the living soul's so far, with their dot (design §8.1)
   let maps = null;
-  if (!playing && osFeatures.map && (soul as SoulDetail).has_trail !== false) {
+  let tile = null;
+  if (osFeatures.map && (soul as SoulDetail).has_trail !== false) {
     const t = await c.trail(turn, w);
     if (t.ok && t.data.segments.length) {
       const marks: Mark[] = [];
-      if (soul.death) marks.push({ id: "death", kind: "death", dim: soul.death.dim, x: soul.death.x, z: soul.death.z, y: soul.death.y, title: soul.name, detail: soul.cause, href: null });
+      if (soul.death && !playing) marks.push({ id: "death", kind: "death", dim: soul.death.dim, x: soul.death.x, z: soul.death.z, y: soul.death.y, title: soul.name, detail: soul.cause, href: null });
       if (grave && !(soul.death && grave.dim === soul.death.dim && grave.x === soul.death.x && grave.z === soul.death.z))
         marks.push({ id: "grave", kind: "grave", dim: grave.dim, x: grave.x, z: grave.z, y: grave.y, title: `Grave of ${soul.name}`, detail: `${grave.items} items`, href: null, muted: !!grave.claimed_by });
       maps = byDimension([...trailPaths(t.data), ...marks]);
     }
   }
+  const running = inPlay(os, cycle);
+  if (osFeatures.map && (maps || (playing && running))) tile = await roundTiles(os.server, cycle, maps ?? [], running, url.searchParams.get("world"), playing && running ? undefined : []);
   return {
     maps,
+    tile,
+    // the living soul's dot on their own page only
+    running: playing && !!tile?.running,
     title: `${soul.name}, round ${cycle} turn ${turn}`,
     crumbs: [
       { label: "One Soul", href: "/one-soul" },

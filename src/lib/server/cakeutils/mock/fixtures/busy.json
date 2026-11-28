@@ -7,7 +7,8 @@
    "live": true,
    "tracking": true,
    "map": true,
-   "rounds_scope": true
+   "rounds_scope": true,
+   "guide": true
   },
   "cycle": 2,
   "state": "running",
@@ -2828,6 +2829,14 @@
     "first_ago": 1900800000,
     "visits": 9,
     "removed_ago": 1036800000
+   }
+  ],
+  "thresholds": [
+   {
+    "cycle": 2,
+    "kind": "torch_passed",
+    "turn": 3,
+    "ago": 329292881
    }
   ]
  },

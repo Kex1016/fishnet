@@ -11,6 +11,7 @@
   import { AdvancementFeed, MilestoneFeed } from "#lib/milestones/index.ts";
   import OsTabs from "#lib/onesoul/OsTabs.svelte";
   import Outcome from "#lib/onesoul/Outcome.svelte";
+  import ThresholdsWindow from "#lib/onesoul/ThresholdsWindow.svelte";
   import Tiles from "#lib/onesoul/Tiles.svelte";
   import type { Tile } from "#lib/onesoul/Tiles.svelte";
   import { life, outcomeLabel, titleId } from "#lib/onesoul/format.ts";
@@ -70,6 +71,7 @@
       worlds={data.map.tile.worlds.map((w) => ({ id: w.id, label: w.label, href: withParams(page.url, { world: w.id }) }))}
       openHref="/one-soul/map?round={data.cycle}&world={data.map.tile.view.id}"
       tableHref="/one-soul/map?round={data.cycle}&view=tables"
+      liveHref={data.map.tile.running ? "/one-soul/map/live.json" : null}
     />
   </Window>
 {/if}
@@ -99,6 +101,8 @@
     </div>
   {/if}
 </Window>
+
+{#if data.thresholds}<ThresholdsWindow cycle={data.cycle} events={data.thresholds.events} asOf={data.thresholds.asOf} stale={data.thresholds.stale} />{/if}
 
 {#if data.scoped}
   <div class="fx-grid three os-boards">

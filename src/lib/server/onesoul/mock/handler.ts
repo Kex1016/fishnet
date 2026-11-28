@@ -7,6 +7,7 @@ import type {
   EventList, Feature, FeatureCollection, Grave, GraveList, Journal, Live, MapIndex, OsEvent, PlayerOneSoul, Pranks, Registrations, Round,
   RoundDetail, RoundList, Soul, SoulDetail, SoulList, SoulStats, Status, Trail, Waystone, Waystones
 } from "#lib/onesoul/types.ts";
+import { buildGuide } from "./guide.ts";
 import type { OneSoulWorld, OsMockGrave, OsMockSoul } from "./world.ts";
 import { DAY } from "./world.ts";
 
@@ -102,6 +103,12 @@ export function handleOneSoul(os: OneSoulWorld | undefined, req: Request, url: U
 
   const route = seg[1];
   const off = () => problem(404, "not_found", "no such route");
+
+  // TH-26: the mod's guide snapshot. Nothing in it depends on the round.
+  if (route === "guide" && seg.length === 2) {
+    if (!os.features.guide) return off();
+    return json(req, buildGuide(os.server, now));
+  }
 
   if (route === "live" && seg.length === 2) {
     if (!os.features.live) return off();
@@ -212,7 +219,7 @@ export function handleOneSoul(os: OneSoulWorld | undefined, req: Request, url: U
         headline: headline(s),
         grave: g ? graveRow(os, g, now) : null,
         waystones: os.waystones.filter((w) => w.cycle === s.cycle && w.first_turn === s.turn).length,
-        has_trail: s.outcome !== "playing" && s.trail.length > 0 && os.features.map
+        has_trail: s.trail.length > 0 && os.features.map
       };
       return json(req, data);
     }
@@ -227,8 +234,8 @@ export function handleOneSoul(os: OneSoulWorld | undefined, req: Request, url: U
     }
     if (seg[3] === "trail" && seg.length === 4) {
       if (!os.features.map) return off();
-      // a living soul's trail answers exactly like an unknown turn (API-EXPANSION §7.2)
-      if (!s || s.outcome === "playing" || !s.trail.length) return problem(404, "not_found", "no such trail");
+      // the living soul's trail is served live (cakeutils OSD-73, TH-31); a turn without one answers like an unknown turn
+      if (!s || !s.trail.length) return problem(404, "not_found", "no such trail");
       const data: Trail = {
         server: os.server,
         cycle: s.cycle,
@@ -283,7 +290,7 @@ export function handleOneSoul(os: OneSoulWorld | undefined, req: Request, url: U
     const pg = kit.paging(url);
     if (pg instanceof Response) return pg;
     let rows = events(os, now);
-    if (!os.features.tracking) rows = rows.filter((e) => !["offering", "second_chance_ended", "waystone_activated", "waystone_removed"].includes(e.kind));
+    if (!os.features.tracking) rows = rows.filter((e) => !["offering", "second_chance_ended", "waystone_activated", "waystone_removed", "rift_stable", "nether_entered", "end_opened", "end_entered", "torch_passed"].includes(e.kind));
     if (cycleParam !== null) rows = rows.filter((e) => e.cycle === cycleParam);
     const since = sp.get("since");
     if (since) rows = rows.filter((e) => e.at >= Number(since));
@@ -497,8 +504,8 @@ export function events(os: OneSoulWorld, now: number): OsEvent[] {
       // the non-final death that opened Borrowed Time: its position stays masked while the soul plays
       const masked = s.outcome === "playing";
       ev(scAt + 1, s.cycle, "death", who, { cause: `${s.name} was slain by Piglin`, final: false, duration_ms: s.started_ago - scAt, ...(masked ? {} : { dim: "minecraft:the_nether", x: -12, y: 70, z: 33 }) });
-      ev(scAt, s.cycle, "second_chance", who, { variant: s.second_chance, deadline: now - scAt + 3_600_000 });
-      ev(scAt - 600_000, s.cycle, "offering", who, { item: "minecraft:diamond_pickaxe", added_ms: 840_000 });
+      ev(scAt, s.cycle, "second_chance", who, { variant: s.second_chance, deadline: now - scAt + 3_600_000, choice: "borrowed" });
+      ev(scAt - 600_000, s.cycle, "offering", who, { item: "minecraft:diamond_pickaxe", added_ms: 840_000, source: "grave" });
       if (s.sc_result) ev(s.ended_ago! + 1, s.cycle, "second_chance_ended", who, { ...s.sc_result });
     }
     if (s.outcome === "skipped") {
@@ -508,6 +515,14 @@ export function events(os: OneSoulWorld, now: number): OsEvent[] {
     if (s.outcome === "died" && s.death) {
       ev(s.ended_ago!, s.cycle, "death", who, { cause: s.cause, ...s.death, duration_ms: dur(s), final: true, damage_type: s.damage_type, killer: s.killer, reason: s.reason });
     }
+  }
+  // TH-26: the Nether and End firsts and the torch. A portal's position is served only once the round is over
+  // (the proxy's rule, CONTRACTS §11.2); a running round's rows carry none.
+  for (const t of os.thresholds ?? []) {
+    const s = t.turn === null ? undefined : os.souls.find((x) => x.cycle === t.cycle && x.turn === t.turn);
+    const over = os.rounds.some((r) => r.cycle === t.cycle && r.ended_ago !== null);
+    const where = t.pos && over && (t.kind === "rift_stable" || t.kind === "end_opened") ? t.pos : {};
+    ev(t.ago, t.cycle, t.kind, s ? { uuid: s.uuid, name: s.name } : null, { ...(s ? { turn: s.turn } : {}), ...where, ...(t.first ? { first: true } : {}) });
   }
   for (const g of os.graves) {
     const s = soulOf(os, g);
@@ -519,6 +534,33 @@ export function events(os: OneSoulWorld, now: number): OsEvent[] {
     const s = os.souls.find((x) => x.cycle === w.cycle && x.turn === w.first_turn);
     ev(w.first_ago, w.cycle, "waystone_activated", s ? { uuid: s.uuid, name: s.name } : null, { waystone: w.id, label: w.label, origin: w.origin, dim: w.dim, x: w.x, y: w.y, z: w.z });
     if (w.removed_ago !== null) ev(w.removed_ago, w.cycle, "waystone_removed", null, { waystone: w.id });
+  }
+  // TH-31 / CONTRACTS §11.2: stable portals and open End portals; their positions only once the round is over
+  for (const r of os.rounds) {
+    if (r.started_ago === null) continue;
+    const souls = os.souls.filter((x) => x.cycle === r.cycle);
+    const over = r.ended_ago !== null;
+    const where = (dim: string, x: number, y: number, z: number) => (over ? { dim, x, y, z } : {});
+    const nether = souls.find((x) => x.trail.some((t) => t.dim === "minecraft:the_nether"));
+    if (nether) {
+      const seg = nether.trail.find((t) => t.dim === "minecraft:overworld") ?? nether.trail[0];
+      const [ago, x, y, z] = seg.points.at(-1)!;
+      const who = { uuid: nether.uuid, name: nether.name };
+      ev(ago + 60_000, r.cycle, "rift_stable", who, { ...where("minecraft:overworld", x, y, z), turn: nether.turn, first: true });
+      const ne = nether.trail.find((t) => t.dim === "minecraft:the_nether");
+      if (ne) ev(ne.points[0][0] - 60_000, r.cycle, "rift_stable", who, { ...where("minecraft:the_nether", ne.points[0][1], ne.points[0][2], ne.points[0][3]), turn: nether.turn });
+      ev(ago, r.cycle, "nether_entered", who, { turn: nether.turn });
+    }
+    // an End portal opened by whoever reached the End, or (a finished round where nobody jumped) by the last soul
+    const end = souls.find((x) => x.trail.some((t) => t.dim === "minecraft:the_end"));
+    const opener = end ?? (over ? souls.filter((x) => x.trail.length).at(-1) : undefined);
+    if (opener) {
+      const ow = opener.trail.find((t) => t.dim === "minecraft:overworld") ?? opener.trail[0];
+      const [ago, x, , z] = ow.points.at(-1)!;
+      const who = { uuid: opener.uuid, name: opener.name };
+      ev(ago + 30_000, r.cycle, "end_opened", who, { ...where("minecraft:overworld", x + 40, 30, z - 25), turn: opener.turn, first: true });
+      if (end) ev(ago, r.cycle, "end_entered", who, { turn: end.turn });
+    }
   }
   if (os.spawn) {
     const s = os.souls.find((x) => x.cycle === os.cycle && x.turn === os.spawn!.set_turn);
@@ -567,9 +609,8 @@ function mapLayers(os: OneSoulWorld, c: number, now: number): Record<string, Fea
     waystones: os.waystones
       .filter((w) => w.cycle === c)
       .map((w) => ({ type: "Feature" as const, id: w.id, geometry: pt(w.x, w.z, w.y), properties: { kind: "waystone", ...waystoneRow(os, w, now) } })),
-    // a living soul's trail is never served (API-EXPANSION §7.2)
+    // the living soul's trail is served live (OSD-73); every other trail once its turn is over
     trails: souls
-      .filter((s) => s.outcome !== "playing")
       .flatMap((s) =>
         s.trail.map((t, i) => ({
           type: "Feature" as const,

@@ -10,7 +10,9 @@
   import Outcome from "#lib/onesoul/Outcome.svelte";
   import Tiles from "#lib/onesoul/Tiles.svelte";
   import type { Tile } from "#lib/onesoul/Tiles.svelte";
-  import WorldMap from "#lib/onesoul/WorldMap.svelte";
+  import RoundMap from "#lib/map/layers/RoundMap.svelte";
+  import { page } from "$app/state";
+  import { withParams } from "#lib/url.ts";
   import { dimLabel, life, titleId } from "#lib/onesoul/format.ts";
   import { osHref } from "#lib/onesoul/links.ts";
   import { dateTime, day } from "#lib/format/dates.ts";
@@ -66,12 +68,19 @@
   {/if}
 </Window>
 
-{#if data.maps?.length}
-  <div class="os-maps">
-    {#each data.maps as m (m.dim)}
-      <Window path="~/one-soul/rounds/{data.cycle}/{data.turn}" args="--trail {m.label.toLowerCase()}"><WorldMap map={m} /></Window>
-    {/each}
-  </div>
+{#if data.tile}
+  <Window path="~/one-soul/rounds/{data.cycle}/{data.turn}" args="--trail">
+    <WindowHead title={data.playing ? "Where this life has gone so far" : "Where this life went"} />
+    <RoundMap
+      mode="card"
+      world={data.tile.view}
+      map={data.maps?.find((m) => m.dim === data.tile!.dim)}
+      cycle={data.cycle}
+      worlds={data.tile.worlds.map((w) => ({ id: w.id, label: w.label, href: withParams(page.url, { world: w.id }) }))}
+      openHref="/one-soul/map?round={data.cycle}&world={data.tile.view.id}"
+      liveHref={data.running ? "/one-soul/map/live.json" : null}
+    />
+  </Window>
 {/if}
 
 <Window shell="grave" path={data.grave ? (data.grave.claimed_by ? "claimed" : "open") : "none"} tone={data.grave ? (data.grave.claimed_by ? "foam" : "gold") : "off"}>
@@ -128,11 +137,6 @@
     display: flex;
     flex-direction: column;
     gap: 12px;
-  }
-  .os-maps {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, 380px), 1fr));
-    gap: 40px 32px;
   }
   .os-contents {
     margin-top: 12px;

@@ -75,14 +75,14 @@ describe("privacy (WEBSITE-BRIEF §3.2, API-EXPANSION §7)", () => {
     const s = withoutPosition({ uuid: "u", name: "A", x: 1, y: 2, z: 3, dim: "minecraft:the_nether", realm: "nether" } as Record<string, unknown>);
     expect(Object.keys(s).sort()).toEqual(["name", "realm", "uuid"]);
   });
-  test("a living soul's journal and trail are refused", async () => {
+  test("a living soul's journal is refused; their trail is served live (TH-31, design §8.1)", async () => {
     const w = busy();
     const c = createOneSoulClient(coreOf(w));
     const playing = w.onesoul!.souls.find((s) => s.outcome === "playing")!;
     const j = await c.journal(playing.turn, { cycle: playing.cycle });
     expect(j.ok).toBe(false);
     const t = await c.trail(playing.turn, { cycle: playing.cycle });
-    expect(t.ok).toBe(false);
+    expect(t.ok && t.data.soul.uuid === playing.uuid && t.data.segments.length > 0).toBe(true);
     // the guard holds even if the proxy served it by mistake: the status still names that soul as playing
     const souls = w.onesoul!.souls;
     const journal = playing.journal;

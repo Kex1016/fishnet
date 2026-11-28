@@ -52,7 +52,8 @@
    "live": true,
    "tracking": true,
    "map": true,
-   "rounds_scope": true
+   "rounds_scope": true,
+   "guide": true
   },
   "cycle": 1,
   "state": "prep",

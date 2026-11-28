@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { boxOf, byDimension, gridStep, toShape, trailPaths, withoutLiving } from "#lib/onesoul/map.ts";
+import { boxOf, byDimension, gridStep, landmarkMarks, toShape, trailPaths, withoutLiving } from "#lib/onesoul/map.ts";
 import { causeGroup, causes, deathsPerDay, perRound, signupsOverTime, survivalPerSoul, timeToClaim } from "#lib/onesoul/charts.ts";
 import type { Feature, Soul } from "#lib/onesoul/types.ts";
 
@@ -28,22 +28,51 @@ describe("One Soul map data", () => {
     expect(gridStep(1000)).toBe(200);
     expect(gridStep(80)).toBe(20);
   });
-  test("nothing of the living soul: no trail, no death, a waystone does not name them", () => {
+  test("the living soul: their open trail is drawn (TH-31), no death of theirs, a waystone does not name them", () => {
+    const line = (props: Record<string, unknown>) => ({ type: "Feature" as const, geometry: { type: "LineString", coordinates: [[0, 0], [1, 1]] }, properties: { kind: "trail", dim: "d", ...props } });
     const fc = {
       type: "FeatureCollection" as const,
       features: [
-        { type: "Feature" as const, geometry: { type: "LineString", coordinates: [[0, 0], [1, 1]] }, properties: { kind: "trail", dim: "d", uuid: "u1", outcome: "playing" } },
-        { type: "Feature" as const, geometry: { type: "LineString", coordinates: [[0, 0], [1, 1]] }, properties: { kind: "trail", dim: "d", uuid: "u2", outcome: "died" } },
-        { type: "Feature" as const, geometry: { type: "LineString", coordinates: [[0, 0], [1, 1]] }, properties: { kind: "trail", dim: "d", uuid: "u1", outcome: "died" } },
+        line({ uuid: "u1", outcome: "playing" }),
+        line({ uuid: "u2", outcome: "died" }),
+        line({ uuid: "u1", outcome: "died" }),
+        // another open turn (a skipped soul who may play again, a stale row): never drawn
+        line({ uuid: "u3", outcome: null }),
+        line({ uuid: "u3" }),
+        line({ outcome: "playing" }),
         pt("death", 1, 1, "d", { uuid: "u1", final: false }),
+        pt("death", 1, 1, "d", { uuid: "U1", final: false }),
         pt("waystone", 2, 2, "d", { first_by: { uuid: "u1", name: "Living" } })
       ]
     };
     const out = withoutLiving(fc, { uuid: "u1" }).features;
-    expect(out.map((f) => f.properties.kind)).toEqual(["trail", "waystone"]);
-    expect(out[0].properties.uuid).toBe("u2");
-    expect(out[1].properties.first_by).toBeNull();
-    expect(withoutLiving(fc, null).features.length).toBe(4);
+    expect(out.map((f) => `${f.properties.kind}:${f.properties.uuid ?? ""}`)).toEqual(["trail:u1", "trail:u2", "trail:u1", "waystone:"]);
+    expect(out[3].properties.first_by).toBeNull();
+    // the case of a uuid does not let the living soul's trail through as someone else's, nor their death
+    expect(withoutLiving(fc, { uuid: "U1" }).features.filter((f) => f.properties.kind === "death")).toHaveLength(0);
+    // no living soul (a finished round, or the status unreadable): no open trail at all
+    const none = withoutLiving(fc, null).features;
+    expect(none.filter((f) => f.properties.kind === "trail").map((f) => f.properties.outcome)).toEqual(["died", "died"]);
+  });
+
+  test("landmarks: stable portals and End portals of a finished round only, never without a position", () => {
+    const ev = (kind: string, data: Record<string, unknown>, cycle = 1, name: string | null = "Alex") => ({ at: 1, cycle, kind, uuid: name ? "u" : null, name, data });
+    const events = [
+      ev("rift_stable", { dim: "minecraft:overworld", x: 10, y: 64, z: -3, turn: 2, first: true }),
+      ev("rift_stable", { dim: "minecraft:overworld", x: 10, y: 64, z: -3, turn: 2, first: true }),
+      ev("rift_stable", { dim: "minecraft:the_nether", x: 1, y: 70, z: 0 }, 1, null),
+      ev("end_opened", { dim: "minecraft:overworld", x: 400, y: 30, z: 90, turn: 3, first: true }),
+      ev("end_opened", { turn: 3 }),
+      ev("rift_stable", { dim: "minecraft:overworld", x: "1", z: 2 }),
+      ev("rift_stable", { dim: "minecraft:overworld", x: 5, z: 5 }, 2),
+      ev("death", { dim: "minecraft:overworld", x: 5, z: 5 })
+    ];
+    const marks = landmarkMarks(events, 1, true);
+    expect(marks.map((m) => `${m.kind} ${m.dim} ${m.x},${m.z}`)).toEqual(["portal minecraft:overworld 10,-3", "portal minecraft:the_nether 1,0", "end_portal minecraft:overworld 400,90"]);
+    expect(marks.map((m) => m.title)).toEqual(["First stable portal", "Stable portal", "First End portal"]);
+    expect(marks[0].href).toBe("/one-soul/rounds/1/2");
+    expect(marks[1].detail).toBeNull();
+    expect(landmarkMarks(events, 1, false)).toEqual([]);
   });
   test("a trail in points form becomes one path per segment, from [at, x, y, z]", () => {
     const p = trailPaths({ server: "s", cycle: 1, soul: { uuid: "u", name: "n", turn: 3 }, interval_ms: 1, segments: [{ dim: "d", started_at: 0, ended_at: 60_000, points: [[0, 1, 70, 2], [1, 3, 70, 4]] }] });

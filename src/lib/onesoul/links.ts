@@ -10,6 +10,7 @@ export const osHref = {
   timeline: "/one-soul/timeline",
   signups: "/one-soul/sign-ups",
   records: "/one-soul/records",
+  guide: "/one-soul/guide",
   player: (uuid: string) => `/one-soul/souls/${uuid}`
 };
 

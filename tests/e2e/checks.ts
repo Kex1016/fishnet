@@ -133,9 +133,13 @@ export const CHECKS: Check[] = [
         expect(!/Died in|Waited for this turn/.test(turn), "the living soul's page shows a position or a waiting time");
         const j = await ctx.get(`/one-soul/rounds/${m[1]}/${m[2]}/journal`);
         expect(j.status === 404, `the living soul's journal answered ${j.status}`);
+        // TH-31: the living soul's trail and dot are on the map on purpose; the live answer has them or nobody, never anyone else
         const name = />([^<]+)<\/a>/.exec(row.slice(m.index))?.[1];
-        const map = await ctx.get(`/one-soul/map?round=${m[1]}`);
-        if (map.status === 200 && name) expect(!(await map.text()).includes(name), "the map names the living soul (a trail, a death or a waystone they found)");
+        const live = await ctx.get("/one-soul/map/live.json");
+        if (live.status === 200 && name) {
+          const l = (await live.json()) as { players: { name: string }[] };
+          expect(l.players.length <= 1 && l.players.every((p) => p.name === name.trim()), `live.json shows somebody other than the living soul: ${JSON.stringify(l.players)}`);
+        }
       }
       return m ? `living soul at round ${m[1]} turn ${m[2]}` : "nobody playing";
     }
@@ -473,6 +477,70 @@ export const CHECKS: Check[] = [
       const dflt = await ctx.get("/img/face-default.png");
       expect(dflt.status === 200, `the default head answered ${dflt.status}`);
       return `${face ? "face" : "no face"}, ${icon ? "icon" : "no icon yet"}`;
+    }
+  },
+  {
+    name: "the One Soul guide: live numbers, recipes drawn on the game's screens, every entry linked",
+    on: ALL,
+    run: async (ctx) => {
+      if ((await ctx.get("/one-soul")).status !== 200) return "One Soul off";
+      const r = await ctx.get("/one-soul/guide");
+      if (r.status === 404 && ctx.scenario === "live") return "no guide published yet";
+      expect(r.status === 200, `/one-soul/guide answered ${r.status}`);
+      expect(/href="\/one-soul\/guide"/.test(await ctx.html("/one-soul")), "the section's tabs have no guide");
+      const toc = (await r.text()).replace(/<script[\s\S]*?<\/script>/g, "");
+      const sections = [...new Set([...toc.matchAll(/href="\/one-soul\/guide\/([a-z0-9_-]+)(?:#[^"]*)?"/g)].map((m) => m[1]))];
+      expect(sections.length >= (ctx.scenario === "live" ? 1 : 8), `the contents lists ${sections.length} sections`);
+      let entries = 0;
+      let screens = 0;
+      let text = "";
+      for (const sec of sections) {
+        const res = await ctx.get(`/one-soul/guide/${sec}`);
+        expect(res.status === 200, `/one-soul/guide/${sec} answered ${res.status}`);
+        // the page data in the HTML still holds the unresolved texts: look at what is shown
+        const h = (await res.text()).replace(/<script[\s\S]*?<\/script>/g, "");
+        text += h;
+        entries += (h.match(/class="gd-entry[ "]/g) ?? []).length;
+        screens += (h.match(/class="rg-box[ "]/g) ?? []).length;
+        expect(!/\{[a-z0-9_-]+(\.[a-z0-9_-]+)+\}/.test(h), `${sec}: a placeholder of a live number was left in the text`);
+        // every entry the contents links to is on its section page
+        const ids = new Set([...h.matchAll(/\sid="([^"]+)"/g)].map((m) => m[1]));
+        for (const m of toc.matchAll(new RegExp(`href="/one-soul/guide/${sec}#([^"]+)"`, "g"))) expect(ids.has(m[1]), `the contents links to ${sec}#${m[1]}, which is not on the page`);
+        for (const m of h.matchAll(/href="#([^"]+)"/g)) expect(ids.has(m[1]), `${sec} links to #${m[1]}, which is not on the page`);
+      }
+      expect((await ctx.get("/one-soul/guide/no-such-section")).status === 404, "an unknown guide section is not a 404");
+      expect(entries >= (ctx.scenario === "live" ? 1 : 30), `only ${entries} entries in the guide`);
+      if (ctx.scenario !== "live") {
+        expect(/1 hour \(3 in-game days\)/.test(text) && /300 blocks/.test(text), "the guide does not show the server's own numbers");
+        expect(screens >= 3, "the recipes are not drawn on the game's screens");
+        for (const a of ["/mc/gui/crafting_table.png", "/mc/gui/anvil.png", "/mc/gui/anvil_text_field.png", "/mc/gui/smithing.png", "/mc/onesoul/void_anchor.png", "/mc/onesoul/void_shard.png"]) {
+          const f = await ctx.get(a);
+          expect(f.status === 200 && (f.headers.get("content-type") ?? "").startsWith("image/png"), `${a} answered ${f.status}`);
+        }
+        expect(/aria-label="Crafting table: 4 × Obsidian, 4 × Void Shard, Eye of Ender gives Void Anchor"/.test(text), "the Void Anchor recipe is not described for a screen reader");
+      }
+      return `${sections.length} sections, ${entries} entries`;
+    }
+  },
+  {
+    name: "the Nether and End events show on the timeline and the round page, and a running round names no place",
+    on: MOCK,
+    run: async (ctx) => {
+      if ((await ctx.get("/one-soul")).status !== 200) return "One Soul off";
+      const tl = await ctx.html("/one-soul/timeline?round=1&show=thresholds");
+      if (ctx.scenario === "fresh") {
+        expect(/Nothing has happened yet|Nobody has/.test(tl), "the empty timeline has no empty state");
+        return "empty states";
+      }
+      expect(/opened the round&#39;s first End portal|opened the round's first End portal/.test(tl), "round 1's End portal is not on the timeline");
+      expect(/was the first into the Nether this round/.test(tl), "round 1's first Nether entry is not on the timeline");
+      const run = await ctx.html("/one-soul/timeline?round=2&show=thresholds");
+      expect(/passed the torch/.test(run), "the torch is not on the timeline");
+      expect(!/minecraft:|\b-?\d{2,5}\s*,\s*-?\d{1,3}\s*,\s*-?\d{2,5}\b/.test(run), "a running round's portal has a place on the timeline");
+      const round = await ctx.html("/one-soul/rounds/2");
+      expect(/Nether and End/.test(round) && /passed the torch/.test(round), "round 2's page has no Nether and End window");
+      const done = await ctx.html("/one-soul/rounds/1");
+      expect(/Nether and End/.test(done), "round 1's page has no Nether and End window");
     }
   },
   {

@@ -16,6 +16,8 @@
 // | map-markers| /v2/map/<server>/worlds/<world>/markers | 30 s   | 10 min                       |
 // | map-direct| map tiles, positions, change logs        | never cached here (tile disk cache, live hub) |
 //
+// The round in play's soul position (/v2/onesoul/rounds/<cycle>/map/players, TH-31) is map-direct too.
+//
 // The map index (/v2/map) is `live`; a finished round's map settings
 // (/v2/onesoul/rounds/<cycle>/map/worlds/<world>) are `catalogue`: a round that is over never changes.
 // The map routes are counted in their own bucket (map.ts), whatever their tier.
@@ -60,7 +62,7 @@ const POLICIES: Record<RouteClass, Policy> = {
   "map-direct": { cls: "map-direct", floorMs: 0, swrMs: 0, negativeMs: 0, staleOk: false }
 };
 
-const MAP_DIRECT = /^\/v2\/(map\/[^/]+\/(tiles\/|players$|worlds\/[^/]+\/changes$)|onesoul\/rounds\/[^/]+\/map\/tiles\/)/;
+const MAP_DIRECT = /^\/v2\/(map\/[^/]+\/(tiles\/|players$|worlds\/[^/]+\/changes$)|onesoul\/rounds\/[^/]+\/map\/(tiles\/|players$))/;
 const MAP_MARKERS = /^\/v2\/map\/[^/]+\/worlds\/[^/]+\/markers$/;
 const MAP_WORLD = /^\/v2\/map\/[^/]+\/worlds\/[^/]+$/;
 const ROUND_MAP_WORLD = /^\/v2\/onesoul\/rounds\/[^/]+\/map\/worlds\/[^/]+$/;

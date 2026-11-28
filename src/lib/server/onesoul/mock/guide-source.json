@@ -1,0 +1,738 @@
+{
+  "sections": [
+    {
+      "id": "run",
+      "title": "The run"
+    },
+    {
+      "id": "death",
+      "title": "Death and graves"
+    },
+    {
+      "id": "gear",
+      "title": "Items and marks"
+    },
+    {
+      "id": "ghosts",
+      "title": "Ghosts"
+    },
+    {
+      "id": "borrowed",
+      "title": "Borrowed Time"
+    },
+    {
+      "id": "rounds",
+      "title": "Rounds"
+    },
+    {
+      "id": "world",
+      "title": "The world"
+    },
+    {
+      "id": "nether",
+      "title": "The Nether"
+    },
+    {
+      "id": "end",
+      "title": "The End"
+    }
+  ],
+  "entries": [
+    {
+      "id": "one-soul",
+      "section": "run",
+      "title": "One Soul at a Time",
+      "body": [
+        "One Soul at a Time is a server where one person plays at a time. Each registered player is a soul. Only the living soul can build, mine and fight. Everyone else spectates, and the dead of this round are ghosts.",
+        "When a soul dies for good, the next one in the queue takes over the same world, with whatever the dead left behind. The world is shared and only grows. Progress is never taken back from a later soul."
+      ]
+    },
+    {
+      "id": "turns",
+      "section": "run",
+      "title": "Turns and the queue",
+      "body": [
+        "When the world comes up after prep, everyone who registered is shuffled once into a secret order. Nobody can see the order, only how many souls wait and who plays now. Someone who registers during a round is placed at a random spot after the current soul.",
+        "A soul who has not been on the server for a long time loses the turn. With the default setting the turn is skipped: the soul goes to the end of the queue and their inventory waits in a sealed grave that only they can open. The alternative setting treats the absence as a death.",
+        "The soul can leave the queue before their first turn. A soul who has played cannot leave the history."
+      ],
+      "facts": [
+        {
+          "label": "Absent for",
+          "text": "{absence-timeout}"
+        },
+        {
+          "label": "When absent",
+          "text": "{on-absence}"
+        }
+      ]
+    },
+    {
+      "id": "spectators",
+      "section": "run",
+      "title": "Spectators",
+      "body": [
+        "Everyone who is not the living soul is a spectator in this world. Spectators fly around and talk to each other. What they say never reaches the soul, and neither do private messages or voice chat from them. Spectators never load new terrain, so the map only grows where the soul has walked."
+      ]
+    },
+    {
+      "id": "isolation",
+      "section": "run",
+      "title": "A soul walks alone",
+      "body": [
+        "While a soul plays, direct messages and party chat to or from them are refused on the network. Chat from the soul reaches everyone. Network announcements still reach the soul.",
+        "Discord does not mirror this server's chat and does not show its advancement alerts, so a run is never spoiled from outside."
+      ]
+    },
+    {
+      "id": "spawn-point",
+      "section": "run",
+      "title": "The spawn point",
+      "body": [
+        "The next soul begins at a shared spawn point. Only the living soul can move it with the spawn command, from a safe spot: solid ground, room to stand, no fire or portal, not in a grave and inside the world border. The change is announced to everyone.",
+        "A spawn that is no longer safe when a soul arrives sends that soul to the world spawn instead."
+      ],
+      "facts": [
+        {
+          "label": "Between changes",
+          "text": "{spawn.cooldown}"
+        },
+        {
+          "label": "Allowed dimensions",
+          "text": "{spawn.allowed-dimensions}"
+        }
+      ]
+    },
+    {
+      "id": "journal",
+      "section": "run",
+      "title": "The journal",
+      "body": [
+        "Every soul carries a journal for the whole turn. It cannot be dropped, stored, sold or signed. The soul can only write in it. If it is ever lost, a copy with the same pages is put back.",
+        "When the soul dies the journal goes into the grave, and the next soul can read it. The pages are published on the website only after the death."
+      ]
+    },
+    {
+      "id": "elytra",
+      "section": "run",
+      "title": "Elytra and fireworks",
+      "body": [
+        "Fireworks do nothing for a gliding player outside the dimensions listed here, and the rocket is not used up. Gliding itself works everywhere."
+      ],
+      "facts": [
+        {
+          "label": "Boost allowed in",
+          "text": "{elytra.boost-dimensions}"
+        }
+      ]
+    },
+    {
+      "id": "permissions",
+      "section": "run",
+      "title": "Commands for players",
+      "body": [
+        "Everyone can see the state of the run and the spawn point. Only the living soul can set the spawn, and only a ghost can open the haunt menu. Operators can do more, and the commands that start and end rounds can only be run from the server console."
+      ]
+    },
+    {
+      "id": "death",
+      "section": "death",
+      "title": "Death and the drop filter",
+      "body": [
+        "When a soul dies for good, every item they carry is sorted. Tools, weapons, armour, shields, elytra, bows and similar gear are destroyed unless they carry the Mark of Love. Everything else goes into the grave: food, blocks, books, the journal, containers and what they hold.",
+        "Experience drops as usual. Anything with the curse of vanishing still vanishes."
+      ]
+    },
+    {
+      "id": "graves",
+      "section": "death",
+      "title": "Graves",
+      "body": [
+        "A grave stands where the soul died, or at the last safe spot they stood on when that was lava or the void. It is a gravestone with the soul's name. The next soul can break it with one click and takes everything out, which also gives them a gravestone item.",
+        "Graves cannot be duplicated and are not part of the world's blocks: they are saved with the round."
+      ],
+      "item": "onesoul:gravestone"
+    },
+    {
+      "id": "gravestone",
+      "section": "death",
+      "title": "Gravestone item",
+      "body": [
+        "Breaking a grave gives the soul one gravestone. Right-click the top of a block to place it as a decoration. The placer can pick it up again with one click."
+      ],
+      "item": "onesoul:gravestone"
+    },
+    {
+      "id": "compass",
+      "section": "death",
+      "title": "Grave compass",
+      "body": [
+        "From the second soul on, a new soul is given a compass that points to the last grave without needing a lodestone. It spins in another dimension. It is an ordinary item: it can be dropped and lost. A grave left by a soul who passed the torch is named as a blessed grave."
+      ]
+    },
+    {
+      "id": "mark-of-love",
+      "section": "gear",
+      "title": "Mark of Love",
+      "body": [
+        "An enchantment that makes gear survive its owner. A marked item is not destroyed by the drop filter and goes into the grave. A dropped item with the mark cannot burn, blow up or despawn.",
+        "It can be found in loot chests of bigger structures, from the enchanting table and from villager trades, like most enchantments. It fits the same kinds of gear that the drop filter destroys.",
+        "In the Borrowed Time burn, a marked item is worth more."
+      ],
+      "facts": [
+        {
+          "label": "Burn value multiplier",
+          "text": "{second-chance.borrowed-time.offerings.mark-of-love-multiplier}"
+        }
+      ]
+    },
+    {
+      "id": "void-weighted",
+      "section": "gear",
+      "title": "Void-weighted",
+      "body": [
+        "A mark you put on a piece of armour with void shards on an anvil. It is not a trim, so it works with any trim and with the Mark of Love. The piece shows a violet shimmer in the inventory.",
+        "Each marked piece reduces the knockback of the End shockwaves. With enough marked pieces the shockwaves do nothing to you. Void shards are found only in the End loop."
+      ],
+      "facts": [
+        {
+          "label": "Shards to apply",
+          "text": "{thresholds.end.void-weighted.shards}"
+        },
+        {
+          "label": "Shockwave resisted per piece",
+          "text": "{thresholds.end.void-weighted.share}"
+        }
+      ],
+      "item": "onesoul:void_shard",
+      "recipes": [
+        "void-weighted"
+      ]
+    },
+    {
+      "id": "ghosts",
+      "section": "ghosts",
+      "title": "Ghosts and pranks",
+      "body": [
+        "A soul who died becomes a ghost and can haunt the living soul from the haunt menu. Pranks are harmless and cosmetic: footsteps behind you, a door that swings, a candle that goes out, a cold spot, a drawing in soul flames, a fake treasure that vanishes, and swapped hotbar slots.",
+        "No prank starts when the soul is in danger: hurt recently, hunted, falling, gliding, burning, drowning or low on health. Pranks share a budget that refills over time, so many ghosts cannot stack them. Pranks never carry text.",
+        "The soul sees a short note after a prank and can mute pranks for a while."
+      ],
+      "facts": [
+        {
+          "label": "Ghosts' budget",
+          "text": "{pranks.budget.capacity}"
+        },
+        {
+          "label": "Mute for",
+          "text": "{pranks.mute.minutes}"
+        },
+        {
+          "label": "Mute once every",
+          "text": "{pranks.mute.once-per-hours}"
+        },
+        {
+          "label": "No pranks at or below",
+          "text": "{pranks.safety.low-health-hearts}"
+        },
+        {
+          "label": "Hurt window",
+          "text": "{pranks.safety.hurt-window-seconds}"
+        },
+        {
+          "label": "No pranks while falling more than",
+          "text": "{pranks.safety.fall-blocks}"
+        }
+      ]
+    },
+    {
+      "id": "haunt",
+      "section": "ghosts",
+      "title": "Haunting",
+      "body": [
+        "A ghost can build for a short time in an invisible creative mode. They can place decorative blocks only: no fluids, fire, containers or valuables. Everything they place drops nothing and disappears when the haunt ends. They cannot touch items, mobs or commands, and the soul never sees them."
+      ],
+      "facts": [
+        {
+          "label": "Lasts",
+          "text": "{pranks.haunt.duration-seconds}"
+        },
+        {
+          "label": "Stays within",
+          "text": "{pranks.haunt.max-distance}"
+        }
+      ]
+    },
+    {
+      "id": "ghost-particles",
+      "section": "ghosts",
+      "title": "Seeing the dead",
+      "body": [
+        "The soul sees past souls as a small swarm of glowing motes. Ghosts do not see themselves this way. Souls who never had a turn show nothing."
+      ]
+    },
+    {
+      "id": "borrowed-time",
+      "section": "borrowed",
+      "title": "Borrowed Time",
+      "body": [
+        "The first time a soul would die in a turn, and no totem stops it, a choice opens: live on borrowed time or pass the torch. While it is open the soul cannot be hurt or move. Closing it reopens it. If the soul leaves, the choice waits until they return.",
+        "Live on borrowed time: everything the soul carried goes into their grave at the spot they fell. They wake beside it with almost no health, and the clock starts. Time only runs while they are online. At the end of it, or when they die again, the death is final."
+      ],
+      "facts": [
+        {
+          "label": "Clock",
+          "text": "{second-chance.borrowed-time.duration}"
+        },
+        {
+          "label": "Health",
+          "text": "{second-chance.borrowed-time.max-hearts}"
+        },
+        {
+          "label": "Heartbeat below",
+          "text": "{second-chance.borrowed-time.heartbeat-below}"
+        },
+        {
+          "label": "At most",
+          "text": "{second-chance.borrowed-time.max-added} added"
+        }
+      ]
+    },
+    {
+      "id": "burn",
+      "section": "borrowed",
+      "title": "Burning your grave",
+      "body": [
+        "While on borrowed time the soul can open their own grave and burn what is in it. Each item becomes minutes on the clock, and the item is gone. Nothing can be taken out again: the choice is between a legacy for the next soul and time for yourself.",
+        "Gear is worth by material, remaining durability and enchantments, and worth more with the Mark of Love. Echo shards, totems of undying and void shards have fixed values. Burning the same kind of item again is worth less each time. Time bought can never go past the cap."
+      ],
+      "facts": [
+        {
+          "label": "Echo shard",
+          "text": "{second-chance.borrowed-time.offerings.echo-shard}"
+        },
+        {
+          "label": "Totem of undying",
+          "text": "{second-chance.borrowed-time.offerings.totem}"
+        },
+        {
+          "label": "Void shard",
+          "text": "{onesoul.offerings.void-shard}"
+        },
+        {
+          "label": "Per enchantment level",
+          "text": "{second-chance.borrowed-time.offerings.per-enchantment-level}"
+        },
+        {
+          "label": "Mark of Love multiplier",
+          "text": "{second-chance.borrowed-time.offerings.mark-of-love-multiplier}"
+        },
+        {
+          "label": "Each repeat of the same item",
+          "text": "{second-chance.borrowed-time.offerings.repeat-factor}"
+        }
+      ]
+    },
+    {
+      "id": "pass-torch",
+      "section": "borrowed",
+      "title": "Pass the torch",
+      "body": [
+        "Choosing to pass the torch ends the turn at once. The grave is blessed: nothing is destroyed by the drop filter, and every piece of gear that can take the Mark of Love gets it. The journal and the announcement say the soul passed the torch, and the next soul's compass calls it a blessed grave."
+      ]
+    },
+    {
+      "id": "rounds",
+      "section": "rounds",
+      "title": "Rounds",
+      "body": [
+        "A round is one world. When the last soul has died the round enters a grace period during which anyone can sign up for the next round, including people who have played. After that the world stays as it is and everyone spectates until the console starts a new round.",
+        "A new round archives the old world and generates a fresh one. Only the server console can start it."
+      ],
+      "facts": [
+        {
+          "label": "Grace period",
+          "text": "{grace.duration}"
+        }
+      ]
+    },
+    {
+      "id": "prep",
+      "section": "rounds",
+      "title": "Prep",
+      "body": [
+        "Every round begins with a preparation period before the world exists. Everyone waits in an empty void and registered players appear to each other as soul flames. The world is generated when it ends. If nobody has registered, prep is extended."
+      ],
+      "facts": [
+        {
+          "label": "Prep lasts",
+          "text": "{prep.duration}"
+        },
+        {
+          "label": "Extended by",
+          "text": "{prep.extend-when-empty}"
+        },
+        {
+          "label": "Souls needed",
+          "text": "{prep.min-souls}"
+        }
+      ]
+    },
+    {
+      "id": "freeze",
+      "section": "world",
+      "title": "The frozen world",
+      "body": [
+        "While the living soul is not on the server, the world stands still: mobs, crops, furnaces, weather and the clock stop. Spectators can still fly around and talk. It starts again the moment the soul returns.",
+        "Every wait described for the Nether and the End counts in the world's own time, so a frozen world does not make a portal age."
+      ]
+    },
+    {
+      "id": "waystones",
+      "section": "world",
+      "title": "Waystone beams",
+      "body": [
+        "Waystones show a coloured beam to the living soul. Spectators do not see the beams unless the server allows it."
+      ],
+      "facts": [
+        {
+          "label": "Visible up to",
+          "text": "{waystones.beams.max-distance}"
+        }
+      ]
+    },
+    {
+      "id": "young-rifts",
+      "section": "nether",
+      "title": "Young rifts",
+      "body": [
+        "Anyone can build and light a Nether portal. A newly lit portal is a young rift and settles over time. A fragile one flickers and hums unevenly, and it steadies as it ages. It is stable after a fixed time, counted in the world's own time.",
+        "Walking through an unstable portal takes you to the Nether, but no portal appears on the other side. Coming back means lighting a portal there, which is a young rift of its own. A stable portal works both ways like in the base game.",
+        "Looking at a portal tells you how settled it is. Only the living soul can age, set back or break a portal. Mobs, items, vehicles and ghosts cannot pass a young one, and it spawns no zombified piglins."
+      ],
+      "facts": [
+        {
+          "label": "Stable after",
+          "text": "{thresholds.nether.rift.stable-after}"
+        },
+        {
+          "label": "Fragile until",
+          "text": "{thresholds.nether.rift.fragile-until}"
+        },
+        {
+          "label": "Steadying from",
+          "text": "{thresholds.nether.rift.steadying-from}"
+        }
+      ]
+    },
+    {
+      "id": "crossing-hurts",
+      "section": "nether",
+      "title": "Crossing a young rift",
+      "body": [
+        "Each crossing of an unstable portal costs it. A steadying portal stops ageing for a while. A settling one loses part of its age. A fragile one breaks: the portal blocks vanish, the frame stays, and you are pulled back and thrown away from it. Lighting the same frame starts a new young rift."
+      ],
+      "facts": [
+        {
+          "label": "Pause while steadying",
+          "text": "{thresholds.nether.rift.slow}"
+        },
+        {
+          "label": "Set back while settling",
+          "text": "{thresholds.nether.rift.setback}"
+        }
+      ]
+    },
+    {
+      "id": "sucked-back",
+      "section": "nether",
+      "title": "Sucked back",
+      "body": [
+        "A broken portal throws you to a random safe place on the side you came from. Caves are preferred, then the sky, then the surface. A drop from the sky is always chosen so the fall cannot kill you, even when you are hurt, and armour only reduces it further. You never land in lava, water, the void, another soul's grave or outside the world border.",
+        "On Borrowed Time you are never dropped from the sky."
+      ],
+      "facts": [
+        {
+          "label": "Within",
+          "text": "{thresholds.nether.rift.throw-radius}"
+        }
+      ]
+    },
+    {
+      "id": "heat",
+      "section": "nether",
+      "title": "Heat",
+      "body": [
+        "The Nether is hostile until you are prepared. While you are in it a heat meter rises. At full heat you take fire-like damage every few seconds and get hungry faster. Heat never kills on its own below a minimum health.",
+        "Fire protection on your armour slows heat, and enough of it makes you immune. Fire resistance, water and cauldrons cool you down. The first crossing of a stable portal by each soul gives immunity for a while."
+      ],
+      "facts": [
+        {
+          "label": "Full after",
+          "text": "{thresholds.nether.heat.full-after}"
+        },
+        {
+          "label": "Cools after",
+          "text": "{thresholds.nether.heat.cool-after}"
+        },
+        {
+          "label": "Damage",
+          "text": "{thresholds.nether.heat.damage}"
+        },
+        {
+          "label": "Damage every",
+          "text": "{thresholds.nether.heat.damage-interval}"
+        },
+        {
+          "label": "Extra hunger",
+          "text": "{thresholds.nether.heat.hunger-per-second}"
+        },
+        {
+          "label": "Immune at fire protection",
+          "text": "{thresholds.nether.heat.immune-fire-protection}"
+        },
+        {
+          "label": "Never below",
+          "text": "{thresholds.nether.heat.min-health}"
+        },
+        {
+          "label": "Bonus after a stable crossing",
+          "text": "{thresholds.nether.heat.stable-crossing-bonus}"
+        }
+      ]
+    },
+    {
+      "id": "rift-leaks",
+      "section": "nether",
+      "title": "Rift leaks",
+      "body": [
+        "While a portal stabilises it now and then spits Nether goods out next to the frame: quartz, gold nuggets, netherrack, glowstone dust, and rarely a blaze rod or a scrap of netherite. Sometimes it is a magma cube instead. Leaks stop once the portal is stable."
+      ],
+      "facts": [
+        {
+          "label": "Every",
+          "text": "{thresholds.nether.leak.interval}"
+        },
+        {
+          "label": "Chance each time",
+          "text": "{thresholds.nether.leak.chance}"
+        },
+        {
+          "label": "Magma cube chance",
+          "text": "{thresholds.nether.leak.magma-cube-chance}"
+        }
+      ]
+    },
+    {
+      "id": "one-to-one",
+      "section": "nether",
+      "title": "One to one travel",
+      "body": [
+        "The Nether is the same size as the Overworld: one block there is one block here. It is no shortcut across the world. It applies to worlds created after the feature was switched on."
+      ],
+      "facts": [
+        {
+          "label": "Scale",
+          "text": "{thresholds.nether.coordinate-scale}"
+        }
+      ]
+    },
+    {
+      "id": "first-rift",
+      "section": "nether",
+      "title": "Firsts",
+      "body": [
+        "The first portal of a round to become stable and the first entry into the Nether are announced to the whole network and show on the timeline."
+      ]
+    },
+    {
+      "id": "far-strongholds",
+      "section": "end",
+      "title": "Distant strongholds",
+      "body": [
+        "Strongholds are much further from the middle of the world than in the base game. This applies to worlds created after the feature was switched on, and to the stronghold overhaul the server uses."
+      ],
+      "facts": [
+        {
+          "label": "Ring distance",
+          "text": "{thresholds.end.stronghold.distance}"
+        }
+      ]
+    },
+    {
+      "id": "eye-range",
+      "section": "end",
+      "title": "Eyes of ender",
+      "body": [
+        "A thrown eye of ender only follows a stronghold that is near. Further away it rises, hovers and drops as an item without breaking, and the action bar says it finds nothing. Inside the range it behaves as in the base game."
+      ],
+      "facts": [
+        {
+          "label": "Senses within",
+          "text": "{thresholds.end.eye.sense-range}"
+        }
+      ]
+    },
+    {
+      "id": "disorientation",
+      "section": "end",
+      "title": "Disorientation",
+      "body": [
+        "Near a stronghold's portal frame you blink: every few seconds you are moved a few blocks to a safe spot, with a sound and particles. Each eye placed in that frame makes it stronger. It stops once that portal is open. A Void Anchor in your inventory cancels it."
+      ],
+      "facts": [
+        {
+          "label": "Radius",
+          "text": "{thresholds.end.disorient.radius}"
+        },
+        {
+          "label": "Shortest wait",
+          "text": "{thresholds.end.disorient.interval-min}"
+        },
+        {
+          "label": "Longest wait",
+          "text": "{thresholds.end.disorient.interval-max}"
+        },
+        {
+          "label": "Shortest move",
+          "text": "{thresholds.end.disorient.distance-min}"
+        },
+        {
+          "label": "Longest move",
+          "text": "{thresholds.end.disorient.distance-max}"
+        }
+      ]
+    },
+    {
+      "id": "void-anchor",
+      "section": "end",
+      "title": "Void Anchor",
+      "body": [
+        "A sliver of obsidian bound in brass with a glowing eye. Carry it anywhere in your inventory and the blinking near a stronghold portal stops. Each blink it cancels wears it down, and a broken anchor is gone like a tool. It does not stack.",
+        "Anchors turn up rarely in loot chests of strongholds, ancient cities, temples, mansions and trial vaults. You can also craft one, and repair it on an anvil with void shards."
+      ],
+      "facts": [
+        {
+          "label": "Durability",
+          "text": "{thresholds.end.anchor.durability}"
+        },
+        {
+          "label": "Repaired per shard",
+          "text": "{thresholds.end.anchor.repair-per-shard}"
+        }
+      ],
+      "item": "onesoul:void_anchor",
+      "recipes": [
+        "void-anchor",
+        "void-anchor-repair"
+      ]
+    },
+    {
+      "id": "eye-tears",
+      "section": "end",
+      "title": "Eyes tear space apart",
+      "body": [
+        "Each eye you place in the frame tears space apart a little more. The hole grows upwards through everything above the frame. With the twelfth eye it reaches the sky and the portal opens.",
+        "Each eye has a price: blocks in the tear crack and vanish, endermites come out (endermen too from a later eye), a shockwave knocks back everyone in the room, and the disorientation gets stronger. Water is not sealed, so an ocean above will pour in. Flowing lava turns to basalt and lava sources to obsidian.",
+        "Each eye also pays: the torn blocks drop as items with their experience, ores included, and void shards fall from the tear. Each eye pulls the night closer, so the last eye is placed at midnight. Graves, waystones and players are never removed by the tear. The finished shaft keeps a pillar of light that shows later souls where the portal is."
+      ],
+      "facts": [
+        {
+          "label": "Fewest shards per eye",
+          "text": "{thresholds.end.tear.shards-min}"
+        },
+        {
+          "label": "Most shards per eye",
+          "text": "{thresholds.end.tear.shards-max}"
+        },
+        {
+          "label": "Endermites per eye",
+          "text": "{thresholds.end.tear.endermites}"
+        },
+        {
+          "label": "Endermen from eye",
+          "text": "{thresholds.end.tear.endermen-from-eye}"
+        },
+        {
+          "label": "Endermen then",
+          "text": "{thresholds.end.tear.endermen}"
+        },
+        {
+          "label": "Room knockback",
+          "text": "{thresholds.end.tear.room-push}"
+        }
+      ]
+    },
+    {
+      "id": "void-shards",
+      "section": "end",
+      "title": "Void shards",
+      "body": [
+        "A crystal that falls from the eye tears and nowhere else. It is used to craft a Void Anchor, to repair one, to make armour Void-weighted, and it can be burned for time on Borrowed Time."
+      ],
+      "facts": [
+        {
+          "label": "Burn value",
+          "text": "{onesoul.offerings.void-shard}"
+        }
+      ],
+      "item": "onesoul:void_shard"
+    },
+    {
+      "id": "arrival",
+      "section": "end",
+      "title": "Arrival",
+      "body": [
+        "There is no obsidian platform. You arrive at a random safe spot on the edge of the main island, facing the middle. The way back stays closed until the dragon is dead."
+      ],
+      "facts": [
+        {
+          "label": "Nearest to the centre",
+          "text": "{thresholds.end.arrival.min-distance}"
+        },
+        {
+          "label": "Furthest from the centre",
+          "text": "{thresholds.end.arrival.max-distance}"
+        }
+      ]
+    },
+    {
+      "id": "shockwaves",
+      "section": "end",
+      "title": "Shockwaves",
+      "body": [
+        "At random intervals a ring rolls out from the middle of the island, with a rumble and particles before it arrives. Unprepared players are flung outward, towards the edge. Well-armoured players, and players wearing enough Void-weighted pieces, feel nothing. The wave does no damage of its own and never carries anyone over the edge: you stop on solid ground at the rim. They pause while the dragon perches on the exit portal."
+      ],
+      "facts": [
+        {
+          "label": "Shortest wait",
+          "text": "{thresholds.end.shockwave.interval-min}"
+        },
+        {
+          "label": "Longest wait",
+          "text": "{thresholds.end.shockwave.interval-max}"
+        },
+        {
+          "label": "Warning",
+          "text": "{thresholds.end.shockwave.warning}"
+        },
+        {
+          "label": "Furthest push",
+          "text": "{thresholds.end.shockwave.max-push}"
+        },
+        {
+          "label": "Safe at gear score",
+          "text": "{thresholds.end.shockwave.full-score}"
+        }
+      ]
+    },
+    {
+      "id": "end-firsts",
+      "section": "end",
+      "title": "Firsts",
+      "body": [
+        "The twelfth eye of the round's first End portal and the first entry into the End are announced to the whole network and show on the timeline."
+      ]
+    }
+  ]
+}

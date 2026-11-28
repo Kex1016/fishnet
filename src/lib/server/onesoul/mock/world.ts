@@ -19,6 +19,19 @@ export type OsFeatures = {
   map: boolean;
   /** WE-10: scope=round:<server>/<cycle> and `standalone` on /v2/network */
   rounds_scope: boolean;
+  /** TH-26: GET /v2/onesoul/guide (the mod's guide snapshot); absent = a proxy without it */
+  guide?: boolean;
+};
+
+/** A threshold event of a round (TH-C0 §11.2): the Nether and End firsts and the torch. `pos` is stored and masked while the round runs. */
+export type OsMockThreshold = {
+  cycle: number;
+  kind: "rift_stable" | "nether_entered" | "end_opened" | "end_entered" | "torch_passed";
+  /** the soul's turn; null = no living soul at that moment (a rift that steadied on its own) */
+  turn: number | null;
+  ago: number;
+  first?: boolean;
+  pos?: { dim: string; x: number; y: number; z: number };
 };
 
 export type OsMockStat = { type: string; subject: string; value: number };
@@ -97,6 +110,8 @@ export type OneSoulWorld = {
   registrations: OsMockReg[];
   pranks: OsMockPrank[];
   waystones: OsMockWaystone[];
+  /** TH-26 events; absent = none */
+  thresholds?: OsMockThreshold[];
 };
 
 type Who = { uuid: string; name: string };
@@ -339,7 +354,7 @@ export function generateOneSoulBusy(people: Who[]): OneSoulWorld {
   return {
     server: "onesoul",
     display_name: "One Soul at a Time",
-    features: { live: true, tracking: true, map: true, rounds_scope: true },
+    features: { live: true, tracking: true, map: true, rounds_scope: true, guide: true },
     cycle: 2,
     state: "running",
     phase_ends_ago: null,
@@ -353,7 +368,12 @@ export function generateOneSoulBusy(people: Who[]): OneSoulWorld {
     graves,
     registrations,
     pranks,
-    waystones
+    waystones,
+    thresholds: [
+      // the portals and the first steps into the Nether and the End come from the souls' trails (handler.ts events(), TH-31);
+      // round 2 (running): one soul passed the torch when their turn ended
+      { cycle: 2, kind: "torch_passed", turn: 3, ago: souls.find((x) => x.cycle === 2 && x.turn === 3)!.ended_ago! + 2 }
+    ]
   };
 }
 
@@ -362,7 +382,7 @@ export function generateOneSoulFresh(): OneSoulWorld {
   return {
     server: "onesoul",
     display_name: "One Soul at a Time",
-    features: { live: true, tracking: true, map: true, rounds_scope: true },
+    features: { live: true, tracking: true, map: true, rounds_scope: true, guide: true },
     cycle: 1,
     state: "prep",
     phase_ends_ago: -2 * DAY,

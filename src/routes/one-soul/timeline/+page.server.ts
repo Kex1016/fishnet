@@ -7,9 +7,10 @@ import { offsetParam } from "#lib/url.ts";
 
 const LIMIT = 50;
 const KINDS: Record<string, string> = {
-  deaths: "death,second_chance,second_chance_ended,offering",
+  deaths: "death,second_chance,second_chance_ended,offering,torch_passed",
   souls: "soul_chosen,absence_warning,absence_skip",
   graves: "grave_created,grave_claimed",
+  thresholds: "rift_stable,nether_entered,end_opened,end_entered,torch_passed",
   round: "prep_started,prep_extended,prep_ended,round_started,exhausted,grace_started,grace_ended,round_ended,spawn_moved",
   ghosts: "prank"
 };

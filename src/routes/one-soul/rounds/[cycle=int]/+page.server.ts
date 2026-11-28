@@ -11,9 +11,10 @@ import { allGraves, allSouls, roundSummaries } from "#lib/server/onesoul/section
 import { prepareAdvancements, prepareFeed } from "#lib/milestones/prepare.server.ts";
 import { PLAYTIME } from "#lib/api/metric.ts";
 import { roundShapes, roundTiles } from "#lib/map/layers/round.server.ts";
+import { roundThresholds } from "#lib/server/onesoul/thresholds.ts";
 
 export const load: PageServerLoad = async ({ parent, params, url }) => {
-  const { os } = await parent();
+  const { os, osFeatures } = await parent();
   if (!os) error(404, "Not found");
   const cycle = params.cycle as unknown as number;
   const [sums, detail, souls, graves] = await Promise.all([roundSummaries(os.server, os.cycle), oneSoul().round(cycle, os.server), allSouls(os.server, cycle), allGraves(os.server, cycle)]);
@@ -39,8 +40,11 @@ export const load: PageServerLoad = async ({ parent, params, url }) => {
     const tile = shapes.ok ? await roundTiles(os.server, cycle, shapes.maps, true, url.searchParams.get("world")) : null;
     if (tile) map = { tile, layers: shapes.maps };
   }
+  // the round's steps into the Nether and the End (TH-26); null when the proxy cannot filter events by kind
+  const thresholds = osFeatures.tracking ? await roundThresholds(os.server, cycle) : null;
   return {
     map,
+    thresholds,
     title: `Round ${cycle}`,
     crumbs: [
       { label: "One Soul", href: "/one-soul" },

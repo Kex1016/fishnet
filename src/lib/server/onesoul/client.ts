@@ -12,12 +12,14 @@ import type {
   SoulDetail, SoulList, SoulStats, Status, Trail, Waystones
 } from "#lib/onesoul/types.ts";
 import type { Core, Priority } from "../cakeutils/core.ts";
-import { mapOk, refuseLiving, withoutPosition, withoutQueue } from "./privacy.ts";
+import { normalizeGuide } from "#lib/onesoul/guide/text.ts";
+import type { Guide } from "#lib/onesoul/guide/types.ts";
+import { hasPortalPlace, mapOk, refuseLiving, withoutPosition, withoutQueue, withoutRunningPortalPlaces } from "./privacy.ts";
 
 export type Params = Record<string, string | number | boolean | undefined | null>;
 
 /** Route groups as the cakeutils work units ship them (WEBSITE-EXPANSION-PLAN §3). */
-export type Group = "status" | "live" | "tracking" | "map";
+export type Group = "status" | "live" | "tracking" | "map" | "guide";
 
 const PROBES: Record<Group, string> = {
   status: "/v2/onesoul",
@@ -25,7 +27,9 @@ const PROBES: Record<Group, string> = {
   // WE-12: rounds, soul detail, run stats, filters, pranks, the player route
   tracking: "/v2/onesoul/rounds?limit=1",
   // WE-13: trail, waystones, map index and layers
-  map: "/v2/onesoul/map"
+  map: "/v2/onesoul/map",
+  // TH-26: the mod's guide snapshot (a 404 until the server has sent one: the tab stays away until then)
+  guide: "/v2/onesoul/guide"
 };
 
 const CHECK_MS = 10 * 60_000;
@@ -55,6 +59,8 @@ export interface OneSoulClient {
   mapIndex(w?: Where): Promise<Result<MapIndex>>;
   mapLayer(layer: string, w?: Where & { dim?: string }): Promise<Result<FeatureCollection>>;
   player(ref: string): Promise<Result<PlayerOneSoul>>;
+  /** The guide snapshot (TH-26), read defensively; `off` on a proxy without the route or before a guide arrived. */
+  guide(server?: string): Promise<Result<Guide>>;
 }
 
 export function query(p: Params = {}): string {
@@ -94,6 +100,15 @@ export function createOneSoulClient(core: Core, priority: () => Priority = () =>
     return souls.ok ? souls.data.souls.some((x) => x.turn === turn && x.outcome === "playing") : s.played === turn;
   }
 
+  /** Is that round over (so a portal's position may be shown)? Older rounds are; the current one when it is in grace or ended. */
+  async function roundOver(server: string | undefined, cycle: number | undefined): Promise<boolean> {
+    const st = await core.get<Status>({ path: "/v2/onesoul" }, priority());
+    if (!st.ok || cycle === undefined) return false;
+    const s = server ? st.data.servers.find((x) => x.server === server) : st.data.servers[0];
+    if (!s) return false;
+    return cycle < s.cycle || (cycle === s.cycle && (s.state === "grace" || s.state === "ended"));
+  }
+
   /** Runs `f` only when the group exists; `off` otherwise. */
   const gated = async <T>(g: Group, f: () => Promise<Result<T>>): Promise<Result<T>> => ((await enabled(g)) ? f() : fail("off"));
 
@@ -130,7 +145,12 @@ export function createOneSoulClient(core: Core, priority: () => Priority = () =>
     events: async (q = {}) => {
       const { uuid, kind, ...base } = q;
       if ((uuid || kind) && !(await enabled("tracking"))) return fail("off");
-      return gated("status", () => get<EventList>(`/v2/onesoul/events${query({ ...base, uuid, kind })}`));
+      const r = await gated("status", () => get<EventList>(`/v2/onesoul/events${query({ ...base, uuid, kind })}`));
+      if (!r.ok || !hasPortalPlace(r.data)) return r;
+      // defence in depth (TH-26): a portal event of a running round carries no place, whatever the proxy sent
+      const over = new Map<number | undefined, boolean>();
+      for (const e of r.data.events) if (!over.has(e.cycle)) over.set(e.cycle, await roundOver(q.server ?? e.server, e.cycle));
+      return mapOk(r, (d) => withoutRunningPortalPlaces(d, (c) => over.get(c) ?? false));
     },
     pranks: (w = {}) => gated("tracking", () => get<Pranks>(`/v2/onesoul/pranks${query(w)}`)),
     waystones: (w = {}) => gated("map", () => get<Waystones>(`/v2/onesoul/waystones${query({ ...w, format: "list" })}`)),
@@ -139,6 +159,12 @@ export function createOneSoulClient(core: Core, priority: () => Priority = () =>
       if (!/^[a-z]{1,32}$/.test(layer)) return Promise.resolve(fail("not_found"));
       return gated("map", () => get<FeatureCollection>(`/v2/onesoul/map/${layer}${query(w)}`));
     },
-    player: (ref) => gated("tracking", () => get<PlayerOneSoul>(`/v2/players/${enc(ref)}/onesoul`))
+    player: (ref) => gated("tracking", () => get<PlayerOneSoul>(`/v2/players/${enc(ref)}/onesoul`)),
+    guide: async (server) => {
+      const r = await gated("guide", () => get<unknown>(`/v2/onesoul/guide${query({ server })}`));
+      if (!r.ok) return r;
+      const g = normalizeGuide(r.data);
+      return g ? { ...r, data: g } : fail("down");
+    }
   };
 }

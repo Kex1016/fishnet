@@ -16,12 +16,13 @@
     ["deaths", "deaths"],
     ["souls", "souls"],
     ["graves", "graves"],
+    ["thresholds", "Nether and End"],
     ["round", "the round"],
     ["ghosts", "ghosts"]
   ];
 </script>
 
-<PageHead path="~/one-soul" cmd="tail" args="timeline.log" title="timeline" lede="Sign-ups, souls, deaths and graves, newest first.">
+<PageHead path="~/one-soul" cmd="tail" args="timeline.log" title="timeline" lede="Sign-ups, souls, deaths, graves and the first steps into the Nether and the End, newest first.">
   <OsTabs />
   <div class="fx-filters">
     {#if data.rounds.length > 1}

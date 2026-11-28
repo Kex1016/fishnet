@@ -9,7 +9,7 @@
 
   let { bar = false }: { bar?: boolean } = $props();
 
-  type Tab = { href: string; label: string; needs?: "tracking" | "map" };
+  type Tab = { href: string; label: string; needs?: "tracking" | "map" | "guide" };
   const TABS: Tab[] = [
     { href: "/one-soul", label: "overview" },
     { href: "/one-soul/chronicle", label: "chronicle" },
@@ -19,9 +19,10 @@
     { href: "/one-soul/charts", label: "charts" },
     { href: "/one-soul/timeline", label: "timeline" },
     { href: "/one-soul/sign-ups", label: "sign-ups" },
-    { href: "/one-soul/records", label: "records" }
+    { href: "/one-soul/records", label: "records" },
+    { href: "/one-soul/guide", label: "guide", needs: "guide" }
   ];
-  const d = $derived(page.data as unknown as { os?: { cycle: number; state: OsState } | null; osFeatures?: { tracking: boolean; map: boolean } });
+  const d = $derived(page.data as unknown as { os?: { cycle: number; state: OsState } | null; osFeatures?: { tracking: boolean; map: boolean; guide: boolean } });
   const at = (href: string) => (href === "/one-soul" ? page.url.pathname === href : page.url.pathname === href || page.url.pathname.startsWith(`${href}/`));
   const options = $derived(TABS.filter((t) => !t.needs || d.osFeatures?.[t.needs]).map((t) => ({ href: t.href, label: t.label, current: at(t.href) })));
 </script>

@@ -18,6 +18,11 @@
     grave_created: ["⌂", "c7"],
     grave_claimed: ["⌂", "c3"],
     waystone_activated: ["»", "c3"],
+    rift_stable: ["○", "c3"],
+    nether_entered: ["▲", "c2"],
+    end_opened: ["◙", "c6"],
+    end_entered: ["►", "c6"],
+    torch_passed: ["♪", "c4"],
     prank: ["☻", "c7"]
   };
   const TONES: Record<string, [string, string]> = { death: ["✝", "c2"], soul: ["☼", "c6"], grave: ["⌂", "c7"], round: ["◘", "c3"], ghost: ["☻", "c7"], other: ["»", "c1"] };

@@ -89,11 +89,30 @@ export function eventLine(e: OsEvent): EventLine {
         ? { text: "fell, but got a second chance", quote: str(d.cause), tone: "death" }
         : { text: `died${num(d.duration_ms) !== null ? ` after ${life(num(d.duration_ms))}` : ""}`, quote: str(d.cause), tone: "death" };
     case "second_chance":
-      return { text: "is on borrowed time", quote: null, tone: "soul" };
+      // TH-29: with the prompt, the soul chose it (`choice: borrowed`); a mod without the prompt only starts it
+      return { text: str(d.choice) === "borrowed" ? "chose borrowed time" : "is on borrowed time", quote: null, tone: "soul" };
     case "offering": {
       const add = num(d.added_ms);
-      return { text: `burned ${str(d.item) ? titleId(str(d.item)!) : "an offering"}${add ? ` for ${life(add)}` : ""}`, quote: null, tone: "soul" };
+      const n = num(d.items);
+      const what = str(d.item) ? titleId(str(d.item)!) : "an offering";
+      // `source: grave` = burned from the soul's own grave (TH-29); no source = a soul campfire of an older mod
+      return { text: `burned ${n !== null && n > 1 ? `${n} × ` : ""}${what}${str(d.source) === "grave" ? " from their grave" : ""}${add ? ` for ${life(add)}` : ""}`, quote: null, tone: "soul" };
     }
+    // TH-26: the Nether and End firsts and the torch. A place is never drawn here (a running round never gives one).
+    case "rift_stable": {
+      const first = d.first === true;
+      return e.name
+        ? { text: first ? "steadied the round's first Nether portal" : "steadied a Nether portal", quote: null, tone: "other" }
+        : { text: first ? "The round's first Nether portal became stable" : "A Nether portal became stable", quote: null, tone: "other" };
+    }
+    case "nether_entered":
+      return { text: "was the first into the Nether this round", quote: null, tone: "soul" };
+    case "end_opened":
+      return { text: d.first === true ? "opened the round's first End portal" : "opened an End portal", quote: null, tone: "soul" };
+    case "end_entered":
+      return { text: "was the first into the End this round", quote: null, tone: "soul" };
+    case "torch_passed":
+      return { text: "passed the torch", quote: null, tone: "soul" };
     case "second_chance_ended": {
       const o = str(d.outcome);
       const what = o === "redeemed" ? "survived borrowed time" : o === "expired" ? "ran out of borrowed time" : o === "died" ? "died on borrowed time" : "left borrowed time";

@@ -7,6 +7,7 @@ import type {
   EventList, Feature, FeatureCollection, Grave, GraveList, Journal, Live, MapIndex, OsEvent, PlayerOneSoul, Pranks, Registrations, Round,
   RoundDetail, RoundList, Soul, SoulDetail, SoulList, SoulStats, Status, Trail, Waystone, Waystones
 } from "#lib/onesoul/types.ts";
+import { buildGuide } from "./guide.ts";
 import type { OneSoulWorld, OsMockGrave, OsMockSoul } from "./world.ts";
 import { DAY } from "./world.ts";
 
@@ -102,6 +103,12 @@ export function handleOneSoul(os: OneSoulWorld | undefined, req: Request, url: U
 
   const route = seg[1];
   const off = () => problem(404, "not_found", "no such route");
+
+  // TH-26: the mod's guide snapshot. Nothing in it depends on the round.
+  if (route === "guide" && seg.length === 2) {
+    if (!os.features.guide) return off();
+    return json(req, buildGuide(os.server, now));
+  }
 
   if (route === "live" && seg.length === 2) {
     if (!os.features.live) return off();
@@ -283,7 +290,7 @@ export function handleOneSoul(os: OneSoulWorld | undefined, req: Request, url: U
     const pg = kit.paging(url);
     if (pg instanceof Response) return pg;
     let rows = events(os, now);
-    if (!os.features.tracking) rows = rows.filter((e) => !["offering", "second_chance_ended", "waystone_activated", "waystone_removed"].includes(e.kind));
+    if (!os.features.tracking) rows = rows.filter((e) => !["offering", "second_chance_ended", "waystone_activated", "waystone_removed", "rift_stable", "nether_entered", "end_opened", "end_entered", "torch_passed"].includes(e.kind));
     if (cycleParam !== null) rows = rows.filter((e) => e.cycle === cycleParam);
     const since = sp.get("since");
     if (since) rows = rows.filter((e) => e.at >= Number(since));
@@ -497,8 +504,8 @@ export function events(os: OneSoulWorld, now: number): OsEvent[] {
       // the non-final death that opened Borrowed Time: its position stays masked while the soul plays
       const masked = s.outcome === "playing";
       ev(scAt + 1, s.cycle, "death", who, { cause: `${s.name} was slain by Piglin`, final: false, duration_ms: s.started_ago - scAt, ...(masked ? {} : { dim: "minecraft:the_nether", x: -12, y: 70, z: 33 }) });
-      ev(scAt, s.cycle, "second_chance", who, { variant: s.second_chance, deadline: now - scAt + 3_600_000 });
-      ev(scAt - 600_000, s.cycle, "offering", who, { item: "minecraft:diamond_pickaxe", added_ms: 840_000 });
+      ev(scAt, s.cycle, "second_chance", who, { variant: s.second_chance, deadline: now - scAt + 3_600_000, choice: "borrowed" });
+      ev(scAt - 600_000, s.cycle, "offering", who, { item: "minecraft:diamond_pickaxe", added_ms: 840_000, source: "grave" });
       if (s.sc_result) ev(s.ended_ago! + 1, s.cycle, "second_chance_ended", who, { ...s.sc_result });
     }
     if (s.outcome === "skipped") {
@@ -508,6 +515,14 @@ export function events(os: OneSoulWorld, now: number): OsEvent[] {
     if (s.outcome === "died" && s.death) {
       ev(s.ended_ago!, s.cycle, "death", who, { cause: s.cause, ...s.death, duration_ms: dur(s), final: true, damage_type: s.damage_type, killer: s.killer, reason: s.reason });
     }
+  }
+  // TH-26: the Nether and End firsts and the torch. A portal's position is served only once the round is over
+  // (the proxy's rule, CONTRACTS §11.2); a running round's rows carry none.
+  for (const t of os.thresholds ?? []) {
+    const s = t.turn === null ? undefined : os.souls.find((x) => x.cycle === t.cycle && x.turn === t.turn);
+    const over = os.rounds.some((r) => r.cycle === t.cycle && r.ended_ago !== null);
+    const where = t.pos && over && (t.kind === "rift_stable" || t.kind === "end_opened") ? t.pos : {};
+    ev(t.ago, t.cycle, t.kind, s ? { uuid: s.uuid, name: s.name } : null, { ...(s ? { turn: s.turn } : {}), ...where, ...(t.first ? { first: true } : {}) });
   }
   for (const g of os.graves) {
     const s = soulOf(os, g);

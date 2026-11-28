@@ -176,6 +176,11 @@ export class Ctx {
       }
     }
     if ((await this.get("/one-soul/map")).status === 200) out.add("/one-soul/map");
+    if ((await this.get("/one-soul/guide")).status === 200) {
+      out.add("/one-soul/guide");
+      const secs = [...new Set(((await this.html("/one-soul/guide")).match(/href="(\/one-soul\/guide\/[a-z0-9_-]+)"/g) ?? []).map((m) => m.slice(6, -1)))];
+      for (const s of secs.slice(0, 3)) out.add(s);
+    }
     return [...out];
   }
 

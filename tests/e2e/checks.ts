@@ -517,7 +517,7 @@ export const CHECKS: Check[] = [
           const f = await ctx.get(a);
           expect(f.status === 200 && (f.headers.get("content-type") ?? "").startsWith("image/png"), `${a} answered ${f.status}`);
         }
-        expect(/aria-label="Crafting table: 4 × Void Shard, 4 × Obsidian, Eye of Ender gives Void Anchor"/.test(text), "the Void Anchor recipe is not described for a screen reader");
+        expect(/aria-label="Crafting table: 4 × Obsidian, 4 × Void Shard, Eye of Ender gives Void Anchor"/.test(text), "the Void Anchor recipe is not described for a screen reader");
       }
       return `${sections.length} sections, ${entries} entries`;
     }

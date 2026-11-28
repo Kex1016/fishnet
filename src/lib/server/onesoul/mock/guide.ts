@@ -134,12 +134,16 @@ const NAMES: Record<string, string> = {
   "onesoul:gravestone": "Gravestone",
   "minecraft:obsidian": "Obsidian",
   "minecraft:ender_eye": "Eye of Ender",
-  "minecraft:iron_chestplate": "Iron Chestplate"
+  "minecraft:diamond_chestplate": "Diamond Chestplate"
 };
 
 const R = (slot: number, item: string, count = 1, name: string | null = null) => ({ slot, item, count, name });
 
-/** The recipes the mod reads from the server: the Void Anchor's (design §6.2) and the Void-weighted mark's (§6.4). */
+/**
+ * The recipes the mod describes (cakeutils GuideRecipes): the Void Anchor's is read from its datapack file
+ * (`data/onesoul/recipe/void_anchor.json`, pattern OSO / SES / OSO), the repair and the Void-weighted mark's are
+ * described in code with the wording below.
+ */
 export function recipes(shards = Number(DEFAULTS["thresholds.end.void-weighted.shards"])): GuideRecipe[] {
   const S = "onesoul:void_shard";
   const O = "minecraft:obsidian";
@@ -148,7 +152,7 @@ export function recipes(shards = Number(DEFAULTS["thresholds.end.void-weighted.s
       id: "void-anchor",
       type: "crafting",
       shapeless: false,
-      slots: [R(0, S), R(1, O), R(2, S), R(3, O), R(4, "minecraft:ender_eye"), R(5, O), R(6, S), R(7, O), R(8, S)],
+      slots: [R(0, O), R(1, S), R(2, O), R(3, S), R(4, "minecraft:ender_eye"), R(5, S), R(6, O), R(7, S), R(8, O)],
       result: { item: "onesoul:void_anchor", count: 1, name: null },
       note: null
     },
@@ -156,17 +160,17 @@ export function recipes(shards = Number(DEFAULTS["thresholds.end.void-weighted.s
       id: "void-anchor-repair",
       type: "anvil",
       shapeless: false,
-      slots: [R(0, "onesoul:void_anchor", 1, "A worn Void Anchor"), R(1, S, 1)],
-      result: { item: "onesoul:void_anchor", count: 1, name: "The same anchor, repaired" },
+      slots: [R(0, "onesoul:void_anchor", 1, "A damaged Void Anchor"), R(1, S, 1)],
+      result: { item: "onesoul:void_anchor", count: 1, name: "The repaired Void Anchor" },
       note: "Each void shard restores {thresholds.end.anchor.repair-per-shard} durability."
     },
     {
       id: "void-weighted",
       type: "anvil",
       shapeless: false,
-      slots: [R(0, "minecraft:iron_chestplate", 1, "Any armour piece"), R(1, S, shards)],
-      result: { item: "minecraft:iron_chestplate", count: 1, name: "The same piece, Void-weighted" },
-      note: "Works with any trim and with the Mark of Love."
+      slots: [R(0, "minecraft:diamond_chestplate", 1, "Any armour piece"), R(1, S, shards)],
+      result: { item: "minecraft:diamond_chestplate", count: 1, name: "The same piece, void-weighted" },
+      note: null
     }
   ];
 }

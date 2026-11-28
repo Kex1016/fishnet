@@ -97,7 +97,7 @@ describe("sections, names and recipes in words", () => {
   test("the Void Anchor recipe in words", () => {
     const g = mockGuide();
     const r = g.recipes.find((x) => x.id === "void-anchor")!;
-    expect(recipeInWords(r, itemNames(g))).toBe("4 × Void Shard, 4 × Obsidian, Eye of Ender");
+    expect(recipeInWords(r, itemNames(g))).toBe("4 × Obsidian, 4 × Void Shard, Eye of Ender");
   });
   test("slots come in slot order, one per slot", () => {
     const r = { id: "r", type: "crafting", shapeless: false, slots: [{ slot: 2, item: "a:c", count: 1, name: null }, { slot: 0, item: "a:a", count: 1, name: null }, { slot: 0, item: "a:dup", count: 1, name: null }], result: { item: "a:r", count: 1, name: null }, note: null };
